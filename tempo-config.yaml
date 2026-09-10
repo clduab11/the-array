@@ -1,0 +1,68 @@
+# =============================================================================
+# Grafana Tempo configuration (single-binary, local storage)
+#
+# Receives OTLP traces directly from the gateway (gRPC 4317 + HTTP 4318) - no
+# collector in between. 72h block retention. The metrics-generator emits
+# service-graph + span metrics (RED metrics, gateway -> provider edges) and
+# local-blocks (TraceQL metrics queries), remote-writing to Prometheus with
+# exemplars on. span_metrics dimensions are deliberately BOUNDED to the model
+# and provider - never add key hashes or per-user labels here (cardinality).
+# The ingester / compactor sections and the local-blocks processor are 2.x
+# constructs (verified through 2.10, which still documents all of them). Tempo 3.x
+# removes them, relocates block_retention and parses config strictly, so this file
+# would fail to boot there: a 3.x move is a rewrite of this file, not a tag bump.
+# =============================================================================
+
+stream_over_http_enabled: true
+
+server:
+  http_listen_port: 3200
+
+distributor:
+  receivers:
+    otlp:
+      protocols:
+        grpc:
+          endpoint: 0.0.0.0:4317
+        http:
+          endpoint: 0.0.0.0:4318
+
+ingester:
+  max_block_duration: 5m
+
+compactor:
+  compaction:
+    block_retention: 72h
+
+metrics_generator:
+  registry:
+    external_labels:
+      source: tempo
+  storage:
+    path: /var/tempo/generator/wal
+    remote_write:
+      - url: http://prometheus:9090/api/v1/write
+        send_exemplars: true
+  traces_storage:
+    path: /var/tempo/generator/traces # required by local-blocks processor
+  processor:
+    span_metrics:
+      dimensions:
+        - gen_ai.request.model
+        - gen_ai.system
+    local_blocks:
+      filter_server_spans: false
+      flush_to_storage: true
+
+overrides:
+  defaults:
+    metrics_generator:
+      processors: [service-graphs, span-metrics, local-blocks]
+
+storage:
+  trace:
+    backend: local
+    local:
+      path: /var/tempo/blocks
+    wal:
+      path: /var/tempo/wal

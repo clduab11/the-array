@@ -1,0 +1,280 @@
+# =============================================================================
+# LiteLLM proxy configuration - ILLUSTRATIVE EXAMPLE
+# Demonstrates the shape of a single-operator proxy config: provider wildcards
+# plus curated entries, per-entry budgets, visible and hidden aliases, fallback
+# chains that always terminate at a local model, a fail-closed private lane, an
+# embedding route with NO fallback, a complexity router, and the OpenAI
+# service_tier as a named choice. NOT the maintainer's live config: "-example"
+# names are placeholders and every price and budget below is illustrative.
+#
+# Two rules every entry is written around: (1) every price in every entry must
+# be verified against the vendor's own page and re-verified whenever vendors
+# change prices - a stale override or a stale bundled price silently under- or
+# over-meters real traffic; (2) assert on the echoed model, never the status
+# code - three different vendors have returned HTTP 200 serving the wrong model.
+# =============================================================================
+
+general_settings:
+  master_key: os.environ/LITELLM_MASTER_KEY
+  database_url: os.environ/DATABASE_URL
+  # Keep config OUT of the database. With store_model_in_db enabled, anything
+  # saved through the admin UI lands in the LiteLLM_Config table and is overlaid
+  # on top of this YAML at every boot - the DB value wins and an edit here never
+  # takes effect. YAML is the only authoritative surface (keep STORE_MODEL_IN_DB unset too).
+  store_model_in_db: false
+  # Alerting is wired but disabled until a webhook exists (reads SLACK_WEBHOOK_URL).
+  # alerting: ["slack"]
+  # alerting_threshold: 300
+  # alert_types: ["llm_exceptions", "llm_too_slow", "budget_alerts", "db_exceptions"]
+
+litellm_settings:
+  # Prometheus + OpenTelemetry on success and failure. The OTLP endpoint and headers
+  # come from OTEL_* env vars in docker-compose; prometheus_system adds redis/postgres/router metrics.
+  success_callback: ["prometheus", "otel"]
+  failure_callback: ["prometheus", "otel"]
+  service_callback: ["prometheus_system"]
+  turn_off_message_logging: true   # prompts/completions never reach trace or log backends
+  # Single-tenant posture: the scrape job runs inside the same private network,
+  # so /metrics stays unauthenticated rather than inlining a key into the
+  # Prometheus scrape config. Do not do this on a shared proxy.
+  require_auth_for_metrics_endpoint: false
+  cache: true
+  cache_params:
+    type: redis
+    host: os.environ/REDIS_HOST
+    port: os.environ/REDIS_PORT
+  drop_params: true          # drop unsupported OpenAI params instead of erroring
+  request_timeout: 180       # seconds; a per-entry `timeout` below overrides it
+  num_retries: 3
+  # Soft global ceiling across ALL traffic. The enforcement surface is the
+  # per-team and per-key budget minted by provision-keys.example.sh.
+  max_budget: 140.0
+  budget_duration: 1mo
+  # Fallback chains live under litellm_settings on this line (router_settings
+  # also accepts `fallbacks` - keep them in ONE place). Every chain ends at a
+  # local model so the proxy never goes fully dark when a vendor does.
+  fallbacks:
+    # cloud -> cloud -> local. The alias primary is claude-cached-example
+    # (see model_group_alias); these are the rungs beneath it.
+    - reasoning: [gpt-standard-example, fast-cloud-example, local-chat-example]
+    - fast: [gpt-standard-example, local-chat-example]
+    - coding: [claude-cached-example, local-chat-example]
+    # FAIL-CLOSED. The private lane may degrade only to other private-class
+    # rungs (api_base-pinned to the same privacy-preserving endpoint) and then
+    # straight to a local model. No plain-cloud rung, ever - privacy must never
+    # silently downgrade to a vendor that logs prompts.
+    - private-example: [private-secondary-example, local-chat-example]
+    - private: [private-secondary-example, local-chat-example]
+    # Per-entry catch chains for curated cloud entries.
+    - gpt-standard-example: [claude-cached-example, local-chat-example]
+    - claude-cached-example: [gpt-standard-example, local-chat-example]
+    # NO chain for local-embed-example - see that entry for the reason.
+
+router_settings:
+  routing_strategy: simple-shuffle
+  num_retries: 3
+  timeout: 180
+  allowed_fails: 3           # failures before a deployment is cooled down
+  cooldown_time: 60          # seconds a cooled-down deployment sits out
+  retry_policy:
+    TimeoutErrorRetries: 1
+    RateLimitErrorRetries: 3
+    InternalServerErrorRetries: 3
+    ContentPolicyViolationErrorRetries: 0
+    AuthenticationErrorRetries: 0
+    BadRequestErrorRetries: 0
+  # Visible aliases are what a picker-driven app sees in /v1/models. A hidden
+  # alias still routes by name but is excluded from the listing - useful for a
+  # legacy name that programmatic callers still send.
+  model_group_alias:
+    "fast": "fast-cloud-example"
+    "reasoning": "claude-cached-example"
+    "coding": "gpt-standard-example"
+    "private": "private-example"
+    "reasoning-v1": {model: "claude-cached-example", hidden: true}
+
+model_list:
+  # ---------------------------------------------------------------------------
+  # Provider wildcards. Each expands against the vendor's live catalog, so the
+  # routable count is upstream-driven and never a fixed target. A wildcard-
+  # routed model has NO budget and NO chain of its own - curate an explicit
+  # entry for anything that carries real traffic.
+  # ---------------------------------------------------------------------------
+  - model_name: "openai/*"
+    litellm_params:
+      model: "openai/*"
+      api_key: os.environ/OPENAI_API_KEY
+  - model_name: "anthropic/*"
+    litellm_params:
+      model: "anthropic/*"
+      api_key: os.environ/ANTHROPIC_API_KEY
+  - model_name: "gemini/*"
+    litellm_params:
+      model: "gemini/*"
+      api_key: os.environ/GEMINI_API_KEY
+  - model_name: "mistral/*"
+    litellm_params:
+      model: "mistral/*"
+      api_key: os.environ/MISTRAL_API_KEY
+  - model_name: "perplexity/*"
+    litellm_params:
+      model: "perplexity/*"
+      api_key: os.environ/PERPLEXITY_API_KEY
+  - model_name: "openrouter/*"
+    litellm_params:
+      model: "openrouter/*"
+      api_key: os.environ/OPENROUTER_API_KEY
+  - model_name: "xai/*"
+    litellm_params:
+      model: "xai/*"
+      api_key: os.environ/XAI_API_KEY
+  - model_name: "cohere_chat/*"
+    litellm_params:
+      model: "cohere_chat/*"
+      api_key: os.environ/COHERE_API_KEY
+  - model_name: "groq/*"
+    litellm_params:
+      model: "groq/*"
+      api_key: os.environ/GROQ_API_KEY
+  - model_name: "huggingface/*"
+    litellm_params:
+      model: "huggingface/*"
+      api_key: os.environ/HUGGINGFACE_API_KEY
+
+  # ---------------------------------------------------------------------------
+  # Curated cloud entries: explicit budget, explicit chain, explicit tier.
+  # ---------------------------------------------------------------------------
+  - model_name: gpt-standard-example
+    litellm_params:
+      model: openai/gpt-5.6
+      api_key: os.environ/OPENAI_API_KEY
+      # A bare request to the OpenAI API with NO service_tier field came back
+      # service_tier "priority" and was billed about 2x - an account-level
+      # default nothing in this stack asked for. So the tier is a NAMED CHOICE:
+      # every OpenAI-direct entry pins "default" and the one opt-in priority
+      # lane below carries its own budget. Requesting "priority" is echoed back
+      # as "fast" - one server-side tier; the spend log records the billed tier.
+      service_tier: "default"
+      # Prices drift without notice: a stale injected override over-metered one
+      # model 5x for nine days, and a stale bundled price over-metered another
+      # 2x on live traffic for weeks. Re-verify against the vendor's page on
+      # every price change; add an override only when the bundled map is wrong.
+      max_budget: 35.0
+      budget_duration: 1mo
+
+  - model_name: gpt-priority-example
+    litellm_params:
+      model: openai/gpt-5.6            # SAME upstream model as gpt-standard-example
+      api_key: os.environ/OPENAI_API_KEY
+      # Opt-in 2x lane. Its own cap means the fast lane cannot eat the standard
+      # envelope above; priority costs a deliberate keystroke.
+      service_tier: "priority"
+      max_budget: 18.0
+      budget_duration: 1mo
+
+  - model_name: claude-cached-example
+    litellm_params:
+      model: anthropic/claude-sonnet-4-6
+      api_key: os.environ/ANTHROPIC_API_KEY
+      # Marks the system prompt as a cache prefix on every call. The minimum
+      # cacheable prefix differs per model (roughly 1K to 4K tokens); below the
+      # threshold the marker is a silent no-op, so confirm cache reads appear
+      # in usage before assuming any saving.
+      cache_control_injection_points:
+        - location: message
+          role: system
+      max_budget: 90.0
+      budget_duration: 1mo
+
+  - model_name: fast-cloud-example
+    litellm_params:
+      model: gemini/gemini-3.5-flash
+      api_key: os.environ/GEMINI_API_KEY
+      max_budget: 12.0
+      budget_duration: 1mo
+
+  # ---------------------------------------------------------------------------
+  # Private lane: explicit entries pinned by api_base to a privacy-preserving
+  # OpenAI-compatible endpoint. THE api_base PIN IS THE PRIVACY GATE. NEVER
+  # express this as a wildcard with an api_base override: catalog expansion at
+  # /v1/models queries the upstream by litellm provider ("openai"), ignores
+  # api_base, and mirrors the WRONG vendor's whole catalog under this namespace
+  # as hundreds of phantom routes. Custom per-token costs are required - the
+  # bundled map does not know this endpoint, so without them every call meters as 0.
+  # ---------------------------------------------------------------------------
+  - model_name: private-example
+    litellm_params:
+      model: openai/private-served-model-id
+      api_base: https://private-inference.example.com/v1
+      api_key: os.environ/PRIVATE_INFERENCE_API_KEY
+      input_cost_per_token: 0.00000150      # verified against the vendor's page
+      output_cost_per_token: 0.00000550     # re-verify on every price change
+      max_budget: 12.0
+      budget_duration: 1mo
+
+  - model_name: private-secondary-example
+    litellm_params:
+      model: openai/private-served-model-id-2
+      api_base: https://private-inference.example.com/v1
+      api_key: os.environ/PRIVATE_INFERENCE_API_KEY
+      input_cost_per_token: 0.00000090
+      output_cost_per_token: 0.00000360
+      max_budget: 6.0
+      budget_duration: 1mo
+
+  # ---------------------------------------------------------------------------
+  # Local tier (LM Studio, OpenAI-compatible). WINDOWS_LM_STUDIO_URL is the base
+  # URL as seen from INSIDE the proxy container - probe it from the container's
+  # network namespace before trusting it; the host reaching it proves nothing.
+  # ---------------------------------------------------------------------------
+  - model_name: local-chat-example
+    litellm_params:
+      model: openai/local-served-model-id   # openai/ = litellm route prefix; the rest is the server's own id
+      api_base: os.environ/WINDOWS_LM_STUDIO_URL
+      api_key: not-needed
+      # Both knobs are sized from MEASURED throughput, not guessed: at roughly
+      # 40 tok/s, 8192 output tokens is about 205 s of decode plus a cold load,
+      # so a 360 s clock covers it. Re-measure after any runtime, quantization or
+      # context change - a clock shorter than its token budget truncates the last rung.
+      max_tokens: 8192
+      timeout: 360
+      input_cost_per_token: 0
+      output_cost_per_token: 0
+    model_info:
+      # A 200 from this route is NOT proof the requested model answered: with a
+      # model already resident, the local server can serve whatever is loaded
+      # under an unresolvable id. Assert on the echoed `model`, never the status code.
+      supports_function_calling: true
+      supports_vision: false
+
+  - model_name: local-embed-example
+    litellm_params:
+      model: openai/local-embedding-model-id
+      api_base: os.environ/WINDOWS_LM_STUDIO_URL
+      api_key: not-needed
+      input_cost_per_token: 0
+      output_cost_per_token: 0
+    model_info:
+      mode: embedding
+      output_vector_size: 1024
+      # NO fallback chain for this entry, by design:
+      #   1024-dim and 768-dim vectors are not interchangeable; a silent failover
+      #   to another embedder writes incompatible vectors into the same
+      #   collection and corrupts retrieval WITHOUT raising an error.
+      # Fail closed by absence. Verify an embedder by the DIMENSION it returns, never by name.
+
+  # ---------------------------------------------------------------------------
+  # Complexity router: a rule-based, in-proxy scorer maps each request to one
+  # tier with zero extra API calls. Set the default at litellm_params level
+  # (complexity_router_default_model) - that is the key the router reads.
+  # ---------------------------------------------------------------------------
+  - model_name: local-router-example
+    litellm_params:
+      model: auto_router/complexity_router
+      complexity_router_default_model: fast-cloud-example
+      complexity_router_config:
+        tiers:
+          SIMPLE: local-chat-example
+          MEDIUM: fast-cloud-example
+          COMPLEX: gpt-standard-example
+          REASONING: claude-cached-example

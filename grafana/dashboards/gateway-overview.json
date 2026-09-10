@@ -1,0 +1,607 @@
+{
+  "uid": "gateway-overview",
+  "title": "Gateway Overview",
+  "tags": [
+    "litellm",
+    "gateway",
+    "example"
+  ],
+  "timezone": "browser",
+  "editable": false,
+  "graphTooltip": 1,
+  "schemaVersion": 42,
+  "time": {
+    "from": "now-7d",
+    "to": "now"
+  },
+  "refresh": "1m",
+  "templating": {
+    "list": []
+  },
+  "annotations": {
+    "list": []
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "GATEWAY UP",
+      "description": "Prometheus scrape of the proxy's /metrics endpoint. 1 = the gateway is answering.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "afimxbo42ap6oe"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 4,
+        "h": 4
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "afimxbo42ap6oe"
+          },
+          "refId": "A",
+          "expr": "up{job=\"litellm\"}",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 2,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#C8464A",
+                "value": null
+              },
+              {
+                "color": "#3FA37A",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "value_and_name",
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center"
+      }
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "CALLS / MIN",
+      "description": "Successful proxied requests per minute (5m rate).",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "afimxbo42ap6oe"
+      },
+      "gridPos": {
+        "x": 4,
+        "y": 0,
+        "w": 4,
+        "h": 4
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "afimxbo42ap6oe"
+          },
+          "refId": "A",
+          "expr": "sum(rate(litellm_requests_metric_total[5m])) * 60",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 2,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#6B7A88",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "value_and_name",
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center"
+      }
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "FAILED / MIN",
+      "description": "Upstream failures per minute. Fallback chains absorb these; the number shows what the chains are absorbing.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "afimxbo42ap6oe"
+      },
+      "gridPos": {
+        "x": 8,
+        "y": 0,
+        "w": 4,
+        "h": 4
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "afimxbo42ap6oe"
+          },
+          "refId": "A",
+          "expr": "sum(rate(litellm_llm_api_failed_requests_metric_total[5m])) * 60",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 2,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#3FA37A",
+                "value": null
+              },
+              {
+                "color": "#D9822B",
+                "value": 0.5
+              },
+              {
+                "color": "#C8464A",
+                "value": 5
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "value_and_name",
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center"
+      }
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "SPEND (range)",
+      "description": "Total metered spend over the dashboard range, from the proxy's Prometheus spend counter (aggregated by the underlying model label).",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "afimxbo42ap6oe"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 4,
+        "h": 4
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "afimxbo42ap6oe"
+          },
+          "refId": "A",
+          "expr": "sum(increase(litellm_spend_metric_total[$__range]))",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD",
+          "decimals": 2,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#6B7A88",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "value_and_name",
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center"
+      }
+    },
+    {
+      "id": 5,
+      "type": "stat",
+      "title": "OFF-TIER CALLS",
+      "datasource": {
+        "type": "postgres",
+        "uid": "praxen-litellm-pg"
+      },
+      "gridPos": {
+        "x": 16,
+        "y": 0,
+        "w": 8,
+        "h": 4
+      },
+      "description": "DETECTOR. Calls in range that the vendor BILLED at a premium service tier (OpenAI 'priority'/'fast' are one server-side tier, about 2x) on a route that did NOT opt in (convention: opt-in routes carry the suffix '-priority'). Source: the proxy's spend log records the billed tier per call in metadata.cost_breakdown.service_tier, taken from the vendor response. Why it exists: an OpenAI organization can default to priority. A bare request with no service_tier field comes back 'priority' and is billed about 2x, with nothing in the config asking for it. Pin service_tier: \"default\" on every direct entry and keep this at 0. Anything else means a route lost its pin, a wildcard route was called bare, or the vendor default changed.",
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "praxen-litellm-pg"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "refId": "A",
+          "rawSql": "SELECT count(*) AS \"off_tier_calls\"\nFROM \"LiteLLM_SpendLogs\"\nWHERE $__timeFilter(\"startTime\")\n  AND metadata->'cost_breakdown'->>'service_tier' IN ('priority','fast')\n  AND model_group !~ '-priority$'"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 0,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#3FA37A",
+                "value": null
+              },
+              {
+                "color": "#D9822B",
+                "value": 1
+              },
+              {
+                "color": "#C8464A",
+                "value": 5
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "value_and_name",
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center"
+      }
+    },
+    {
+      "id": 6,
+      "type": "table",
+      "title": "Billed Service Tier // route - tier - x vs standard rate (range)",
+      "datasource": {
+        "type": "postgres",
+        "uid": "praxen-litellm-pg"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 4,
+        "w": 24,
+        "h": 10
+      },
+      "description": "Per route (model_group) and BILLED tier: calls, tokens, billed $ vs what the same tokens cost at the model's STANDARD rate (recomputed from the price map the proxy recorded on each row: input, output, cache-read and cache-write rates) and the ratio. verdict 'OFF-TIER' = premium tier on a route that did not opt in; 'opt-in lane' = an explicit -priority route (ratio about 2.00); 'discount' = flex; 'standard' = 1.00. The tier string is the trigger; the ratio is informative and drifts where an entry carries an injected price override, where cached tokens dominate, or above a long-context pricing boundary. Anthropic reports 'standard'/'priority'; Gemini, xAI and Perplexity 'default'; local model servers report no tier and are excluded. Only rows carrying cost_breakdown appear (LiteLLM proxy releases from mid-2026).",
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "praxen-litellm-pg"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "refId": "A",
+          "rawSql": "WITH r AS (\n  SELECT\n    model_group,\n    custom_llm_provider AS provider,\n    metadata->'cost_breakdown'->>'service_tier' AS tier,\n    spend,\n    prompt_tokens,\n    completion_tokens,\n    COALESCE((metadata->'usage_object'->'prompt_tokens_details'->>'cached_tokens')::bigint, 0) AS cached_tok,\n    COALESCE((metadata->'usage_object'->'prompt_tokens_details'->>'cache_creation_tokens')::bigint, 0) AS cache_write_tok,\n    (metadata->'model_map_information'->'model_map_value'->>'input_cost_per_token')::float AS in_rate,\n    (metadata->'model_map_information'->'model_map_value'->>'output_cost_per_token')::float AS out_rate,\n    (metadata->'model_map_information'->'model_map_value'->>'cache_read_input_token_cost')::float AS cr_rate,\n    (metadata->'model_map_information'->'model_map_value'->>'cache_creation_input_token_cost')::float AS cw_rate,\n    \"startTime\"\n  FROM \"LiteLLM_SpendLogs\"\n  WHERE $__timeFilter(\"startTime\")\n    AND metadata->'cost_breakdown'->>'service_tier' IS NOT NULL\n),\nx AS (\n  SELECT *,\n    CASE WHEN in_rate IS NOT NULL AND out_rate IS NOT NULL THEN\n      GREATEST(prompt_tokens - cached_tok - cache_write_tok, 0) * in_rate\n      + cached_tok * COALESCE(cr_rate, in_rate)\n      + cache_write_tok * COALESCE(cw_rate, in_rate)\n      + completion_tokens * out_rate\n    END AS std_usd\n  FROM r\n)\nSELECT\n  model_group AS \"route\",\n  provider,\n  tier,\n  CASE WHEN tier IN ('priority','fast') AND model_group !~ '-priority$' THEN 'OFF-TIER ⚠'\n       WHEN tier IN ('priority','fast') THEN 'opt-in lane'\n       WHEN tier = 'flex' THEN 'discount'\n       ELSE 'standard' END AS \"verdict\",\n  count(*) AS \"calls\",\n  sum(prompt_tokens) AS \"in_tok\",\n  sum(completion_tokens) AS \"out_tok\",\n  round(sum(spend)::numeric, 5) AS \"billed_usd\",\n  round(sum(std_usd)::numeric, 5) AS \"std_rate_usd\",\n  round((sum(spend) / NULLIF(sum(std_usd), 0))::numeric, 2) AS \"x_vs_standard\",\n  max(\"startTime\") AS \"last_seen\"\nFROM x\nGROUP BY model_group, provider, tier\nORDER BY (tier IN ('priority','fast') AND model_group !~ '-priority$') DESC, \"x_vs_standard\" DESC NULLS LAST, sum(spend) DESC"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "filterable": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "billed_usd"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "currencyUSD"
+              },
+              {
+                "id": "decimals",
+                "value": 5
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "std_rate_usd"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "currencyUSD"
+              },
+              {
+                "id": "decimals",
+                "value": 5
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "x_vs_standard"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background",
+                  "mode": "basic"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "#3F7FA3",
+                      "value": null
+                    },
+                    {
+                      "color": "#3FA37A",
+                      "value": 0.95
+                    },
+                    {
+                      "color": "#D9822B",
+                      "value": 1.15
+                    },
+                    {
+                      "color": "#C8464A",
+                      "value": 1.6
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "decimals",
+                "value": 2
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "verdict"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "OFF-TIER ⚠": {
+                        "color": "#C8464A",
+                        "index": 0
+                      },
+                      "opt-in lane": {
+                        "color": "#3F7FA3",
+                        "index": 1
+                      },
+                      "discount": {
+                        "color": "#3FA37A",
+                        "index": 2
+                      },
+                      "standard": {
+                        "color": "#6B7A88",
+                        "index": 3
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "last_seen"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "dateTimeAsIso"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false,
+          "reducer": [
+            "sum"
+          ],
+          "countRows": false
+        },
+        "sortBy": []
+      }
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "Spend by model (range, $)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "afimxbo42ap6oe"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 14,
+        "w": 12,
+        "h": 8
+      },
+      "description": "Aggregate spend by the underlying `model` label. Token and latency metrics carry `requested_model` instead. Mixing the two label sets returns nothing.",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "afimxbo42ap6oe"
+          },
+          "refId": "A",
+          "expr": "sum by (model) (increase(litellm_spend_metric_total[$__interval]))",
+          "legendFormat": "{{model}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD",
+          "custom": {
+            "drawStyle": "bars",
+            "stacking": {
+              "mode": "normal"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "Tokens by requested model (in + out, tok/s)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "afimxbo42ap6oe"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 14,
+        "w": 12,
+        "h": 8
+      },
+      "description": "Throughput by the `requested_model` label (the alias the client asked for).",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "afimxbo42ap6oe"
+          },
+          "refId": "A",
+          "expr": "sum by (requested_model) (rate(litellm_input_tokens_metric_total[5m]) + rate(litellm_output_tokens_metric_total[5m]))",
+          "legendFormat": "{{requested_model}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    }
+  ],
+  "description": "Example file-provisioned dashboard: gateway health, spend, and the billed-service-tier detector. Disk is the only author surface (allowUiUpdates: false)."
+}

@@ -1,0 +1,77 @@
+# =============================================================================
+# Prometheus scrape configuration
+#
+# Targets: the LiteLLM gateway, Tempo, Grafana, Loki, Alloy and Prometheus
+# itself, all reached by compose service name over the stack network.
+# Tempo's metrics-generator series (traces_spanmetrics_*, traces_service_graph_*)
+# arrive by REMOTE WRITE (prometheus --web.enable-remote-write-receiver), not by
+# scrape, so no job is needed for them. For the distroless images that carry no
+# in-container healthcheck (Tempo, Loki) the scrape job here IS the liveness signal.
+# The gateway's /metrics must be reachable without a virtual key (LiteLLM setting
+# `require_auth_for_metrics_endpoint: false`), or this job needs a credentials_file.
+# =============================================================================
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: litellm
+    metrics_path: /metrics/   # trailing slash skips LiteLLM's 307 redirect
+    scheme: http
+    static_configs:
+      - targets: ["litellm-proxy:4000"]
+        labels:
+          environment: production
+          service: litellm
+    # Cardinality hygiene: drop three labels at scrape time, BEFORE they reach storage.
+    #   user_agent     - unbounded (one value per client build / UA string)
+    #   client_ip      - PII-adjacent and no dashboard needs it
+    #   hashed_api_key - redundant with api_key_alias; doubles label memory for nothing
+    # Reversible: delete this block and restart; future scrapes carry the labels again.
+    metric_relabel_configs:
+      - regex: '(user_agent|client_ip|hashed_api_key)'
+        action: labeldrop
+
+  - job_name: tempo
+    metrics_path: /metrics
+    scheme: http
+    static_configs:
+      - targets: ["tempo:3200"]
+        labels:
+          environment: production
+          service: tempo
+
+  - job_name: grafana
+    metrics_path: /metrics
+    scheme: http
+    static_configs:
+      - targets: ["grafana:3200"]
+        labels:
+          environment: production
+          service: grafana
+
+  - job_name: loki
+    metrics_path: /metrics
+    scheme: http
+    static_configs:
+      - targets: ["loki:3100"]
+        labels:
+          environment: production
+          service: loki
+
+  - job_name: alloy
+    metrics_path: /metrics
+    scheme: http
+    static_configs:
+      - targets: ["alloy:12345"]
+        labels:
+          environment: production
+          service: alloy
+
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]
+        labels:
+          environment: production
+          service: prometheus

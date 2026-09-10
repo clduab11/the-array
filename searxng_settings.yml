@@ -1,0 +1,46 @@
+# =============================================================================
+# SearXNG settings
+#
+# Enables the JSON output format so API clients (LLM tooling, MCP search tools)
+# can query it, and inherits every other default from the base config. The
+# server.secret_key value below is a placeholder: the SEARXNG_SECRET environment
+# variable passed by compose overrides it at runtime (the settings loader does
+# NOT expand environment variables itself). The cache backend key is `valkey`
+# (the upstream name); the backing store is the stack's Redis container.
+# =============================================================================
+
+use_default_settings: true
+
+general:
+  instance_name: "Praxen Search"
+  debug: false
+  enable_metrics: true
+
+search:
+  safe_search: 0
+  autocomplete: "google"
+  default_lang: "en"
+  formats:
+    - html
+    - json
+
+server:
+  secret_key: "${SEARXNG_SECRET}"
+  limiter: false
+  image_proxy: true
+  method: "GET"
+
+valkey:
+  url: "redis://redis:6379/0"
+
+ui:
+  static_use_hash: true
+  default_theme: simple
+  theme_args:
+    simple_style: dark
+
+enabled_plugins:
+  - 'Hash plugin'
+  - 'Self Information'
+  - 'Tracker URL remover'
+  - 'Open Access DOI rewrite'

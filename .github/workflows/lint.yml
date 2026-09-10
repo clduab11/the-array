@@ -1,0 +1,90 @@
+# Lint / parse / validate — the ONLY class of check CI can run here.
+#
+# A GitHub-hosted runner has no proxy on :4000, no Docker socket with the stack in
+# it and no Postgres, so scripts/verify-stack.py (the real gate) cannot run in CI.
+# This workflow stops at: YAML parses, compose renders, JSON dashboards parse and
+# carry a stable uid, Python compiles, the leak gate is clean. Green here means
+# "syntactically deployable", never "the stack works".
+name: lint
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Harden runner (egress audit)
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
+        with:
+          egress-policy: audit
+
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+
+      - name: Install lint tools
+        run: python -m pip install --disable-pip-version-check "yamllint==1.35.1" "pyyaml==6.0.2"
+
+      - name: yamllint
+        run: |
+          cfg='{extends: default, rules: {line-length: {max: 160}, document-start: disable,
+                truthy: disable, comments: {min-spaces-from-content: 1}}}'
+          yamllint -d "$cfg" docker-compose.yml prometheus.yml tempo-config.yaml loki-config.yaml \
+            searxng_settings.yml litellm_config.example.yaml grafana/provisioning .github
+
+      - name: Compose renders with the example env
+        run: docker compose -f docker-compose.yml --env-file .env.example --profile observe config -q
+
+      - name: Dashboards parse and carry a stable uid, no fixed id
+        run: |
+          python - <<'PY'
+          import json, glob, sys
+          bad = []
+          for f in sorted(glob.glob("grafana/dashboards/*.json")):
+              d = json.load(open(f, encoding="utf-8"))
+              if not d.get("uid"):
+                  bad.append(f"{f}: missing uid")
+              if d.get("id") not in (None,):
+                  bad.append(f"{f}: top-level id must be absent/null for file provisioning")
+              print(f, "uid=", d.get("uid"), "panels=", len(d.get("panels", [])))
+          if bad:
+              print("\n".join(bad)); sys.exit(1)
+          PY
+
+      - name: Example LiteLLM config parses
+        run: |
+          python - <<'PY'
+          import yaml
+          d = yaml.safe_load(open("litellm_config.example.yaml", encoding="utf-8"))
+          assert "model_list" in d and d["model_list"], "model_list missing"
+          print(len(d["model_list"]), "model entries")
+          PY
+
+      - name: Python compiles
+        run: python -m py_compile scripts/*.py
+
+      - name: Leak gate self-test then tree scan
+        run: |
+          python scripts/leak-gate.py --self-test
+          python scripts/leak-gate.py .
+
+      - name: Shell syntax
+        run: bash -n provision-keys.example.sh

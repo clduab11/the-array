@@ -1,0 +1,26 @@
+# =============================================================================
+# Grafana dashboard file-provisioning provider
+#
+# Disk is the ONLY author surface. allowUiUpdates:false makes Grafana reject
+# UI and API saves on these dashboards ("Cannot save provisioned dashboard");
+# edit the JSON under grafana/dashboards and Grafana applies it within
+# updateIntervalSeconds. Keep updateIntervalSeconds ABOVE 10 under Docker bind
+# mounts: fs-watch events are unreliable across the VM boundary, and >10 forces
+# polling. disableDeletion:true keeps an accidental file deletion from removing
+# the live dashboard. Dashboard JSON rules: stable uid, never reuse a uid or
+# title, and NO top-level id (provisioning rejects fixed ids). On a uid
+# conflict the provisioned file always overwrites the DB copy.
+# =============================================================================
+apiVersion: 1
+
+providers:
+  - name: praxen
+    orgId: 1
+    folder: ""
+    type: file
+    disableDeletion: true
+    updateIntervalSeconds: 30
+    allowUiUpdates: false
+    options:
+      path: /etc/grafana/dashboards
+      foldersFromFilesStructure: false

@@ -1,0 +1,498 @@
+# =============================================================================
+# the-array - Docker Compose stack
+#
+# A self-hosted LLM gateway (LiteLLM) with its data tier (Postgres, Redis), a
+# full observability tier (Prometheus, Grafana, Tempo, Loki, Alloy, image
+# renderer), optional metasearch (SearXNG) and optional agent/RAG services
+# (Qdrant, n8n).
+#
+# Every image is pinned to an exact tag ON PURPOSE. A floating tag only
+# re-resolves on an explicit `docker pull`; `compose up -d` reuses whatever is
+# already local, so a floating tag delivers no patches and leaves no rollback
+# target. scripts/check-image-updates.py is the update detector: it reads every
+# pin in this file plus the LiteLLM base in litellm/Dockerfile, queries
+# upstream, and REPORTS ONLY - nothing is ever applied automatically.
+#
+# Profiles: core = gateway + data tier; observe = core + observability tier
+# (observe supersets core); agents = Qdrant + n8n; full / dev = everything.
+# A bare `docker compose up` selects NOTHING - always pass a profile:
+#     docker compose --profile observe up -d
+# COMPOSE_PROJECT_NAME (set in .env) fixes container/volume/network names so
+# they do not depend on the checkout directory name.
+# =============================================================================
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+x-restart: &default-restart
+  restart: unless-stopped
+
+services:
+  # ===========================================================================
+  # TIER 1: CORE - gateway + data tier
+  # ===========================================================================
+
+  postgres:
+    image: postgres:16.15-alpine   # a MAJOR bump (17+) needs dump/restore, not a tag edit
+    container_name: praxen-postgres
+    profiles: ["core", "observe", "agents", "full", "dev"]
+    <<: *default-restart
+    logging: *default-logging
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-litellm}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-litellm}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:5432:5432"   # loopback only
+    networks:
+      - praxen-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-litellm} -d ${POSTGRES_DB:-litellm}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "1.0"
+
+  redis:
+    image: redis:7.4.11-alpine   # Redis 8.x is a major jump - evaluate separately
+    container_name: praxen-redis
+    profiles: ["core", "observe", "agents", "full", "dev"]
+    <<: *default-restart
+    logging: *default-logging
+    command: redis-server --maxmemory 200mb --maxmemory-policy allkeys-lru --appendonly yes
+    volumes:
+      - redisdata:/data
+    ports:
+      - "127.0.0.1:6379:6379"   # loopback only
+    networks:
+      - praxen-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: "0.5"
+
+  litellm-proxy:
+    build:
+      context: ./litellm
+      dockerfile: Dockerfile   # tag-lock wrapper - the LiteLLM base pin lives there, not here
+    container_name: praxen-litellm
+    profiles: ["core", "observe", "agents", "full", "dev"]
+    <<: *default-restart
+    logging: *default-logging
+    ports:
+      # ALL interfaces on purpose: other machines on the LAN reach the gateway here.
+      # This is LAN-EXPOSED - the operator must firewall port 4000 to trusted sources.
+      - "4000:4000"
+    networks:
+      - praxen-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-litellm}:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@postgres:5432/${POSTGRES_DB:-litellm}
+      # STORE_MODEL_IN_DB is deliberately NOT set. When it is "True" the env var overrides
+      # the YAML's store_model_in_db and DB-stored config params merge OVER the file at
+      # boot, so a row saved once through the admin UI shadows every later edit on disk.
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:?set LITELLM_MASTER_KEY in .env}
+      UI_USERNAME: ${UI_USERNAME:-admin}          # dedicated admin-UI login; keeps the master key API-only
+      UI_PASSWORD: ${UI_PASSWORD:?set UI_PASSWORD in .env}
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo:4318   # traces go straight to Tempo - no collector needed
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+      OTEL_SERVICE_NAME: praxen-litellm
+      # Local inference servers (OpenAI-compatible, e.g. LM Studio). The container sees
+      # ONLY the variables listed in this block - a key added to .env but not here is
+      # invisible to the proxy and its routes fail auth silently.
+      WINDOWS_LM_STUDIO_URL: ${WINDOWS_LM_STUDIO_URL:-http://host.docker.internal:1234/v1}
+      # Pre-wired slot for an optional second inference box. NOT consumed by
+      # litellm_config.example.yaml as shipped: nothing uses it until a route sets
+      # api_base: os.environ/SECOND_LM_STUDIO_URL - and probe the URL from INSIDE this
+      # container before wiring one (a host-side probe proves nothing).
+      SECOND_LM_STUDIO_URL: ${SECOND_LM_STUDIO_URL:-}
+      # Provider keys - leave unset for providers you do not use.
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      MISTRAL_API_KEY: ${MISTRAL_API_KEY:-}
+      PERPLEXITY_API_KEY: ${PERPLEXITY_API_KEY:-}
+      COHERE_API_KEY: ${COHERE_API_KEY:-}
+      XAI_API_KEY: ${XAI_API_KEY:-}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      HUGGINGFACE_API_KEY: ${HUGGINGFACE_API_KEY:-}
+      MERCURY_API_KEY: ${MERCURY_API_KEY:-}
+      # Private lane: the api_base-pinned private-* entries in litellm_config.example.yaml
+      # read this one (os.environ/PRIVATE_INFERENCE_API_KEY). Unset = that lane fails auth.
+      PRIVATE_INFERENCE_API_KEY: ${PRIVATE_INFERENCE_API_KEY:-}
+    volumes:
+      - ./litellm_config.yaml:/app/config.yaml:ro
+    command:
+      - "--config"
+      - "/app/config.yaml"
+      - "--port"
+      - "4000"
+    healthcheck:
+      # The Wolfi base image ships no wget/curl; Python is guaranteed present, so probe
+      # with urllib (urlopen raises on non-2xx -> non-zero exit -> unhealthy).
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:4000/health/liveliness', timeout=5)"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          memory: 1G   # 512M OOM-kills at boot (Python import + Prisma engine init peak)
+          cpus: "1.5"
+
+  # ===========================================================================
+  # TIER 2: OBSERVABILITY + SEARCH
+  # ===========================================================================
+
+  tempo:
+    # Stay on 2.x. 2.10 is the last 2.x minor and still documents every section this
+    # config uses (verified: 2.10.8 boots and serves against the UNCHANGED file). 3.x
+    # is a config REWRITE, not a tag edit: it removes the ingester/compactor sections
+    # and the local-blocks processor, relocates block_retention and parses strictly,
+    # with no downgrade path - so a 3.x move is its own gated op.
+    image: grafana/tempo:2.10.8
+    container_name: praxen-tempo
+    profiles: ["observe", "full", "dev"]
+    <<: *default-restart
+    logging: *default-logging
+    volumes:
+      - ./tempo-config.yaml:/etc/tempo.yaml:ro
+      - tempodata:/var/tempo
+    command:
+      - "-config.file=/etc/tempo.yaml"
+    ports:
+      - "127.0.0.1:3210:3200"   # loopback only (3200 on the host belongs to Grafana)
+    networks:
+      - praxen-network
+    # NO healthcheck: the image is fully distroless (no shell, no busybox, no HTTP client),
+    # so an exec-form probe fails with an OCI exec error and pins the container UNHEALTHY
+    # while Tempo is fine. Liveness rides the Prometheus `tempo` scrape job instead.
+    deploy:
+      resources:
+        limits:
+          memory: 512M   # metrics-generator WAL + registry + local-blocks store
+          cpus: "0.5"
+
+  loki:
+    image: grafana/loki:3.7.7   # note: this tag has NO v-prefix
+    container_name: praxen-loki
+    profiles: ["observe", "full", "dev"]
+    <<: *default-restart
+    logging: *default-logging
+    volumes:
+      - ./loki-config.yaml:/etc/loki/loki-config.yaml:ro
+      - lokidata:/loki   # named volume REQUIRED: the image runs as UID 10001; a bind mount would need a chown
+    command:
+      - "-config.file=/etc/loki/loki-config.yaml"
+    # No host port: Grafana and Alloy reach it at loki:3100 over the stack network.
+    # NO healthcheck: distroless image, same reason as Tempo - liveness = the Prometheus `loki` job.
+    networks:
+      - praxen-network
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "0.5"
+
+  alloy:
+    image: grafana/alloy:v1.19.2   # runs as root by default - required for the docker.sock mount
+    container_name: praxen-alloy
+    profiles: ["observe", "full", "dev"]
+    <<: *default-restart
+    logging: *default-logging
+    volumes:
+      # Container-log collection via the Docker API. On Docker Desktop this needs
+      # Settings -> Advanced -> "Allow the default Docker socket to be used".
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./alloy-config.alloy:/etc/alloy/config.alloy:ro
+      - alloydata:/var/lib/alloy/data   # log-cursor positions persist across restarts (no re-read from scratch)
+    command:
+      - "run"
+      - "/etc/alloy/config.alloy"
+      - "--storage.path=/var/lib/alloy/data"
+      - "--server.http.listen-addr=0.0.0.0:12345"   # default binds 127.0.0.1, which Prometheus cannot reach across the stack network (target reads DOWN)
+    networks:
+      - praxen-network
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: "0.5"
+
+  prometheus:
+    image: prom/prometheus:v3.14.0
+    container_name: praxen-prometheus
+    profiles: ["observe", "full", "dev"]
+    <<: *default-restart
+    logging: *default-logging
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - promdata:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.retention.time=30d"
+      - "--storage.tsdb.retention.size=2GB"
+      - "--web.enable-remote-write-receiver"   # Tempo's metrics-generator remote-writes span/service-graph metrics here
+      - "--enable-feature=exemplar-storage"    # metrics -> traces exemplar links in Grafana
+    ports:
+      - "127.0.0.1:9090:9090"   # loopback only
+    networks:
+      - praxen-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:9090/-/healthy || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: "0.5"
+
+  grafana:
+    image: grafana/grafana:13.1.5   # MINOR bumps migrate grafana.db forward on first boot - back it up first
+    container_name: praxen-grafana
+    profiles: ["observe", "full", "dev"]
+    <<: *default-restart
+    logging: *default-logging
+    depends_on:
+      prometheus:
+        condition: service_healthy
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?set GRAFANA_ADMIN_PASSWORD in .env}
+      GF_SERVER_HTTP_PORT: 3200
+      GF_RENDERING_SERVER_URL: http://grafana-image-renderer:8081/render
+      GF_RENDERING_CALLBACK_URL: http://grafana:3200/
+      # Grafana 13 REQUIRES a non-default renderer token and boot-fails without one.
+      # Same value as the renderer's AUTH_TOKEN below.
+      GF_RENDERING_RENDERER_TOKEN: ${RENDERER_AUTH_TOKEN:?set RENDERER_AUTH_TOKEN in .env}
+      # Pinned panel plugin, installed at boot (needs egress). Only required if your
+      # dashboards use ECharts panels. GF_INSTALL_PLUGINS is deprecated on 13.x;
+      # GF_PLUGINS_PREINSTALL_SYNC is its documented replacement (id@version).
+      GF_PLUGINS_PREINSTALL_SYNC: "volkovlabs-echarts-panel@7.2.5"
+      # Credentials for the file-provisioned read-only Postgres datasource
+      # (grafana/provisioning/datasources/datasources.yaml expands these at boot).
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_USER: ${POSTGRES_USER:-litellm}
+      POSTGRES_DB: ${POSTGRES_DB:-litellm}
+      # Opt-in ONLY for single-tenant deployments: both relax XSS protections so text
+      # panels can render rich HTML / iframes. Leave off when Grafana is LAN-exposed.
+      # GF_PANELS_DISABLE_SANITIZE_HTML: "true"
+      # GF_SECURITY_ALLOW_EMBEDDING: "true"
+    volumes:
+      - grafanadata:/var/lib/grafana
+      - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./grafana/dashboards:/etc/grafana/dashboards:ro
+    ports:
+      # ALL interfaces on purpose (dashboards from other machines). LAN-EXPOSED -
+      # the operator must firewall port 3200 to trusted sources.
+      - "3200:3200"
+    networks:
+      - praxen-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:3200/api/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          # Grafana 13 runs an embedded apiserver alongside the renderer callback and
+          # the provisioning poller. At 256M it ran at ~99% of its MEMORY limit and
+          # threw "http: Handler timeout" - which looks like a dashboard bug (cheap
+          # panels render, multi-query panels fail). 768M still sat near the ceiling
+          # under a batch of panel renders, so 1G keeps the render path clear of OOM.
+          memory: 1G
+          cpus: "1.0"
+
+  grafana-image-renderer:
+    image: grafana/grafana-image-renderer:v5.12.3
+    container_name: praxen-renderer
+    profiles: ["observe", "full", "dev"]
+    <<: *default-restart
+    logging: *default-logging
+    environment:
+      AUTH_TOKEN: ${RENDERER_AUTH_TOKEN:?set RENDERER_AUTH_TOKEN in .env}   # shared with GF_RENDERING_RENDERER_TOKEN
+    # No host port: Grafana reaches it at grafana-image-renderer:8081 over the stack network.
+    networks:
+      - praxen-network
+    healthcheck:
+      # Image ships bash but no curl/wget - raw /dev/tcp HTTP probe of /healthz.
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/8081 && printf 'GET /healthz HTTP/1.0\\r\\n\\r\\n' >&3 && grep -q '200' <&3"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "1.0"
+
+  searxng:
+    image: searxng/searxng:2026.9.8-3fdc6d753   # rolling release (date-tagged); verify settings schema + format=json after any bump
+    container_name: praxen-searxng
+    profiles: ["observe", "full", "dev"]
+    <<: *default-restart
+    logging: *default-logging
+    environment:
+      SEARXNG_BASE_URL: http://localhost:8080/
+      SEARXNG_SECRET: ${SEARXNG_SECRET:?set SEARXNG_SECRET in .env}   # overrides server.secret_key in the mounted settings file
+      UWSGI_WORKERS: 2
+      UWSGI_THREADS: 2
+    volumes:
+      - searxngdata:/etc/searxng
+      - ./searxng_settings.yml:/etc/searxng/settings.yml:rw
+    ports:
+      # Loopback only by default. SearXNG is UNAUTHENTICATED - switch to "8080:8080"
+      # only if other machines need it, and firewall it when you do.
+      - "127.0.0.1:8080:8080"
+    networks:
+      - praxen-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:8080/healthz || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: "0.5"
+
+  # ===========================================================================
+  # TIER 3: AGENT + RAG INFRASTRUCTURE (on demand)
+  # ===========================================================================
+
+  qdrant:
+    image: qdrant/qdrant:v1.15.4
+    container_name: praxen-qdrant
+    profiles: ["agents", "full", "dev"]
+    <<: *default-restart
+    logging: *default-logging
+    volumes:
+      - qdrantdata:/qdrant/storage
+    ports:
+      - "127.0.0.1:6333:6333"   # loopback only; in-stack consumers use qdrant:6333
+    networks:
+      - praxen-network
+      - agent-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:6333/healthz || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: "1.0"
+
+  n8n:
+    image: n8nio/n8n:2.23.3
+    container_name: praxen-n8n
+    profiles: ["agents", "full", "dev"]
+    <<: *default-restart
+    logging: *default-logging
+    environment:
+      N8N_HOST: localhost
+      N8N_PORT: 5678
+      N8N_PROTOCOL: http
+      WEBHOOK_URL: http://localhost:5678/
+      # Access control: n8n removed basic auth (N8N_BASIC_AUTH_*) at 1.0 - those
+      # variables are inert on this tag. It prompts for an owner account on first
+      # launch; the loopback-only port below is the exposure control until then.
+      # The secret n8n actually depends on is its credential encryption key. It
+      # generates one on first launch and persists it on the n8ndata volume. To pin
+      # it instead (queue mode, volume rebuilds), set N8N_ENCRYPTION_KEY in .env and
+      # uncomment the passthrough. Never pass a placeholder: a value that does not
+      # match the key already on the volume stops n8n from initializing.
+      # N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY:?set N8N_ENCRYPTION_KEY in .env}
+    volumes:
+      - n8ndata:/home/node/.n8n
+    ports:
+      - "127.0.0.1:5678:5678"   # loopback only
+    networks:
+      - praxen-network
+      - agent-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:5678/healthz || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "1.0"
+
+# =============================================================================
+# NETWORKS
+# =============================================================================
+
+networks:
+  praxen-network:
+    name: praxen-network
+    driver: bridge
+  agent-network:            # internal: no egress; agent services talk to each other here
+    name: agent-network
+    driver: bridge
+    internal: true
+
+# =============================================================================
+# VOLUMES (named, so they survive `down` and carry the project name)
+# =============================================================================
+
+volumes:
+  pgdata:
+    name: praxen-pgdata
+  redisdata:
+    name: praxen-redisdata
+  promdata:
+    name: praxen-promdata
+  grafanadata:
+    name: praxen-grafanadata
+  searxngdata:
+    name: praxen-searxngdata
+  qdrantdata:
+    name: praxen-qdrantdata
+  n8ndata:
+    name: praxen-n8ndata
+  tempodata:
+    name: praxen-tempodata
+  lokidata:
+    name: praxen-lokidata
+  alloydata:
+    name: praxen-alloydata

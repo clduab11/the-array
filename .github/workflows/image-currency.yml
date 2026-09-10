@@ -1,0 +1,86 @@
+# Scheduled image-currency REPORT. Runs scripts/check-image-updates.py, which reads
+# every compose `image:` pin plus the LiteLLM base FROM line, asks the registries what
+# is newer, and prints a table. It never edits a file and never opens a PR. The table
+# lands in the job summary and, when something is behind, in ONE rolling issue that
+# the job updates in place (so the repo does not fill with duplicates).
+#
+# Why a script and not only Dependabot: Dependabot cannot compare calendar-plus-hash
+# tags, and it does not know that a Postgres major is a dump/restore rather than a
+# tag edit. The script encodes those policies; Dependabot is the second opinion.
+name: image-currency
+
+on:
+  schedule:
+    - cron: "17 6 * * 1" # Mondays 06:17 UTC
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Harden runner (egress audit)
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
+        with:
+          egress-policy: audit
+
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Run the checker (report only)
+        id: check
+        run: |
+          python3 scripts/check-image-updates.py --github-summary | tee report.txt
+          python3 scripts/check-image-updates.py --json > report.json
+          behind=$(python3 - <<'PY'
+          import json
+          d = json.load(open("report.json"))
+          rows = d if isinstance(d, list) else d.get("images", [])
+          print(sum(1 for r in rows if str(r.get("status", "")).upper() == "BEHIND"))
+          PY
+          )
+          echo "behind=$behind" >> "$GITHUB_OUTPUT"
+
+      - name: Keep the report as an artifact (90 days)
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: image-currency-${{ github.run_id }}
+          path: |
+            report.txt
+            report.json
+          retention-days: 90
+
+      - name: Open or update the rolling issue when something is behind
+        if: steps.check.outputs.behind != '0'
+        run: |
+          title="Image currency: ${{ steps.check.outputs.behind }} pinned image(s) behind upstream"
+          body_file=body.md
+          {
+            echo "Automated report from \`scripts/check-image-updates.py\` (run ${{ github.run_id }}, $(date -u +%Y-%m-%dT%H:%MZ))."
+            echo
+            echo "This is a REPORT. Nothing was changed. Bump deliberately: take the rollback rung first, bump, run the stack gate, then merge."
+            echo
+            echo '```'
+            cat report.txt
+            echo '```'
+          } > "$body_file"
+          existing=$(gh issue list --label image-currency --state open --json number --jq '.[0].number // empty')
+          if [ -n "$existing" ]; then
+            gh issue edit "$existing" --title "$title" --body-file "$body_file"
+            echo "updated issue #$existing"
+          else
+            gh label create image-currency --description "automated image currency report" --color 0E8A16 2>/dev/null || true
+            gh issue create --title "$title" --body-file "$body_file" --label image-currency
+          fi

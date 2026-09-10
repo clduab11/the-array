@@ -1,0 +1,26 @@
+# --- secrets: never commit ----------------------------------------------------
+.env
+.env.*
+!.env.example
+.virtual-keys.env
+.virtual-keys.env.*
+
+# --- backups, rollback rungs, soft-delete staging ----------------------------
+*.bak*
+backup/
+to-be-deleted/
+
+# --- scratch ------------------------------------------------------------------
+tmp/
+
+# --- runtime data (database dumps, sqlite state) -----------------------------
+*.sql
+*.db
+
+# --- OS noise -----------------------------------------------------------------
+.DS_Store
+desktop.ini
+
+# --- Python bytecode (scripts/ is run in-tree) ----------------------------------
+__pycache__/
+*.pyc

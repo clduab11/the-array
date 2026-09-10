@@ -1,0 +1,98 @@
+# =============================================================================
+# Grafana datasource file-provisioning
+#
+# Disk is the ONLY author surface: editable:false locks UI edits, and on a uid
+# match provisioning overwrites the DB copy at every boot. Never add or edit a
+# datasource through the UI/API - a DB-stored copy silently shadows this file.
+#
+# The uids are LOAD-BEARING: every dashboard JSON under grafana/dashboards
+# binds panels by datasource uid, and the Tempo serviceMap / tracesToMetrics
+# correlation binds the Prometheus uid. Changing one breaks every panel that
+# references it. Keep them exactly as written:
+#   afimxbo42ap6oe    prometheus
+#   dfipt8nyznn5sc    tempo
+#   praxen-loki       loki
+#   praxen-litellm-pg litellm-postgres (read-only gateway DB)
+#
+# Escaping: `$$__tags` is the Grafana macro $__tags written for provisioning
+# ($$ yields a literal $), resolved to the trace-to-metrics filter at query time.
+#
+# Env interpolation TRAP: provisioning expands `${VAR}` from the Grafana
+# container environment but NOT the shell form `${VAR:-default}` - that expands
+# to EMPTY and silently breaks the datasource. Use plain `${VAR}` here and put
+# the default on the compose passthrough instead. Secrets go in secureJsonData.
+# =============================================================================
+apiVersion: 1
+
+datasources:
+  - name: prometheus
+    uid: afimxbo42ap6oe
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    orgId: 1
+    isDefault: false
+    editable: false
+    jsonData:
+      pdcInjected: false
+
+  - name: tempo
+    uid: dfipt8nyznn5sc
+    type: tempo
+    access: proxy
+    url: http://tempo:3200
+    orgId: 1
+    isDefault: true
+    editable: false
+    jsonData:
+      serviceMap:
+        datasourceUid: afimxbo42ap6oe
+      streamingEnabled:
+        metrics: true
+        search: true
+      tracesToMetrics:
+        datasourceUid: afimxbo42ap6oe
+        queries:
+          - name: "Span rate"
+            query: "sum(rate(traces_spanmetrics_calls_total{$$__tags}[5m]))"
+          - name: "Span latency p90"
+            query: "histogram_quantile(0.9, sum(rate(traces_spanmetrics_latency_bucket{$$__tags}[5m])) by (le))"
+        tags:
+          - key: service.name
+            value: service
+
+  # Read-only view of the gateway's Postgres (spend logs, keys, teams) for the
+  # request-log panels. Credentials are expanded from the Grafana container env
+  # (compose passes POSTGRES_USER / POSTGRES_DB / POSTGRES_PASSWORD).
+  # Hardening: point this at a dedicated read-only Postgres role rather than the
+  # application user; the panels only ever SELECT.
+  - name: litellm-postgres
+    uid: praxen-litellm-pg
+    type: postgres
+    access: proxy
+    url: postgres:5432
+    user: ${POSTGRES_USER}
+    orgId: 1
+    isDefault: false
+    editable: false
+    jsonData:
+      database: ${POSTGRES_DB}
+      sslmode: disable
+      postgresVersion: 1600
+      maxOpenConns: 5
+      maxIdleConns: 2
+      connMaxLifetime: 14400
+    secureJsonData:
+      password: ${POSTGRES_PASSWORD}
+
+  # Container logs shipped by Alloy (alloy-config.alloy) - one `container` label per service.
+  - name: loki
+    uid: praxen-loki
+    type: loki
+    access: proxy
+    url: http://loki:3100
+    orgId: 1
+    isDefault: false
+    editable: false
+    jsonData:
+      maxLines: 1000

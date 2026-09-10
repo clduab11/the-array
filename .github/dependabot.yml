@@ -1,0 +1,79 @@
+# Dependabot — version-update ADVISOR for the pinned images and the pinned actions.
+#
+# Doctrine: report, never auto-apply. Dependabot only ever OPENS pull requests here;
+# nothing merges them (no auto-merge setting, no `gh pr merge --auto` workflow).
+# A human reads the PR, takes the rollback rung the DEPLOYMENT guide prescribes
+# (pg_dump before a LiteLLM base bump; grafana.db before a Grafana minor bump),
+# bumps the live stack from its own tree, runs scripts/verify-stack.py, then merges.
+#
+# scripts/check-image-updates.py stays the authority for anything Dependabot cannot
+# parse — calendar-plus-hash tags like searxng's `2026.9.8-<sha>` are not comparable
+# in Dependabot's tag grammar (the suffix must start with a letter), so that image
+# is expected to be silently skipped here and reported by the script instead.
+version: 2
+updates:
+  # Compose `image:` tags (package-ecosystem docker-compose, GA since 2025-02).
+  - package-ecosystem: "docker-compose"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Etc/UTC"
+    open-pull-requests-limit: 3
+    cooldown:
+      default-days: 7      # security fixes are exempt from cooldown by design
+    groups:
+      compose-patch-minor:
+        update-types: ["patch", "minor"]
+    ignore:
+      # Postgres and Redis MAJOR moves need dump/restore or a migration decision,
+      # never a tag edit.
+      - dependency-name: "postgres"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "redis"
+        update-types: ["version-update:semver-major"]
+      # Grafana 13.2+ externalizes the datasources into catalog plugins that
+      # auto-update from grafana.com on every restart — held until the pins are
+      # reproduced in GF_PLUGINS_PREINSTALL_SYNC with auto-update off.
+      - dependency-name: "grafana/grafana"
+        versions: [">= 13.2"]
+      # Tempo 3.x removes the ingester/compactor/local-blocks config this stack
+      # uses and has no downgrade path — a config rewrite, gated separately.
+      - dependency-name: "grafana/tempo"
+        versions: [">= 3.0"]
+    labels: ["dependencies", "docker"]
+    commit-message:
+      prefix: "compose"
+
+  # The LiteLLM base image lives in litellm/Dockerfile (FROM), not in compose.
+  - package-ecosystem: "docker"
+    directory: "/litellm"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Etc/UTC"
+    open-pull-requests-limit: 2
+    cooldown:
+      default-days: 7
+    labels: ["dependencies", "litellm"]
+    commit-message:
+      prefix: "litellm"
+
+  # Keep the SHA-pinned actions current (Dependabot updates the SHA and the
+  # trailing `# vX.Y.Z` comment together).
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Etc/UTC"
+    open-pull-requests-limit: 2
+    groups:
+      actions:
+        patterns: ["*"]
+    labels: ["dependencies", "ci"]
+    commit-message:
+      prefix: "ci"
