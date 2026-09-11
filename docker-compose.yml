@@ -294,10 +294,11 @@ services:
       # Grafana 13 REQUIRES a non-default renderer token and boot-fails without one.
       # Same value as the renderer's AUTH_TOKEN below.
       GF_RENDERING_RENDERER_TOKEN: ${RENDERER_AUTH_TOKEN:?set RENDERER_AUTH_TOKEN in .env}
-      # Pinned panel plugin, installed at boot (needs egress). Only required if your
-      # dashboards use ECharts panels. GF_INSTALL_PLUGINS is deprecated on 13.x;
-      # GF_PLUGINS_PREINSTALL_SYNC is its documented replacement (id@version).
-      # GF_PLUGINS_PREINSTALL_SYNC: "volkovlabs-echarts-panel@7.2.5"   # uncomment only if your dashboards use ECharts panels (needs egress to grafana.com at boot)
+      # Pinned panel plugin, installed at boot (needs egress to grafana.com). Only
+      # required if your dashboards use ECharts panels. GF_INSTALL_PLUGINS is
+      # deprecated on 13.x; GF_PLUGINS_PREINSTALL_SYNC is its documented
+      # replacement (id@version). Uncomment to enable.
+      # GF_PLUGINS_PREINSTALL_SYNC: "volkovlabs-echarts-panel@7.2.5"
       # Credentials for the file-provisioned read-only Postgres datasource
       # (grafana/provisioning/datasources/datasources.yaml expands these at boot).
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
