@@ -17,8 +17,9 @@
 # (observe supersets core); agents = Qdrant + n8n; full / dev = everything.
 # A bare `docker compose up` selects NOTHING - always pass a profile:
 #     docker compose --profile observe up -d
-# COMPOSE_PROJECT_NAME (set in .env) fixes container/volume/network names so
-# they do not depend on the checkout directory name.
+# COMPOSE_PROJECT_NAME (set in .env) sets the compose project label. Every container,
+# volume and network name in this file is explicit, so the label governs none of them,
+# but keep it stable: compose warns when named volumes were created under another name.
 # =============================================================================
 
 x-logging: &default-logging
@@ -296,7 +297,7 @@ services:
       # Pinned panel plugin, installed at boot (needs egress). Only required if your
       # dashboards use ECharts panels. GF_INSTALL_PLUGINS is deprecated on 13.x;
       # GF_PLUGINS_PREINSTALL_SYNC is its documented replacement (id@version).
-      GF_PLUGINS_PREINSTALL_SYNC: "volkovlabs-echarts-panel@7.2.5"
+      # GF_PLUGINS_PREINSTALL_SYNC: "volkovlabs-echarts-panel@7.2.5"   # uncomment only if your dashboards use ECharts panels (needs egress to grafana.com at boot)
       # Credentials for the file-provisioned read-only Postgres datasource
       # (grafana/provisioning/datasources/datasources.yaml expands these at boot).
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}

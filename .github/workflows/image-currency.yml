@@ -48,7 +48,8 @@ jobs:
           import json
           d = json.load(open("report.json"))
           rows = d if isinstance(d, list) else d.get("images", [])
-          print(sum(1 for r in rows if str(r.get("status", "")).upper() == "BEHIND"))
+          # count LIVE pins only: profile-gated (parked) images are never bumped by design
+          print(sum(1 for r in rows if str(r.get("status", "")).upper() == "BEHIND" and not r.get("parked")))
           PY
           )
           echo "behind=$behind" >> "$GITHUB_OUTPUT"

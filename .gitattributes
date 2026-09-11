@@ -1,0 +1,6 @@
+# Normalise line endings in the repository; checkouts get LF so shebangs and shell scripts run on Linux.
+* text=auto eol=lf
+*.sh text eol=lf
+*.py text eol=lf
+*.png binary
+*.jpg binary

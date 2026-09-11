@@ -89,7 +89,7 @@ python scripts/verify-stack.py --no-llm
    `provision-keys.example.sh`, then:
 
 ```bash
-./provision-keys.example.sh
+chmod +x provision-keys.example.sh && ./provision-keys.example.sh
 ```
 
    Tokens land in `./.virtual-keys.env`, a chmod-600 file that `.gitignore`
@@ -122,7 +122,7 @@ the route needs an explicit `input_cost_per_token` / `output_cost_per_token`.
 
 ## 4. Changing the proxy configuration
 
-1. Back up: `cp litellm_config.yaml backup/litellm_config.yaml.bak.<stage>`.
+1. Back up: `mkdir -p backup && cp litellm_config.yaml backup/litellm_config.yaml.bak.<stage>` (`backup/` is gitignored).
 2. Edit. Prefer append-only changes.
 3. Restart the proxy service (the compose service key is `litellm-proxy`; the
    container name is `praxen-litellm`):
@@ -209,7 +209,7 @@ cleanup; move candidates to a visible staging directory and purge by hand.
 - **Routing contradicts the YAML.** Check the database-stored config table
   first (see section 4).
 - **Budgets did not reset on the 1st.** Resets fire on the proxy's scheduler
-  a few minutes after boot; if the stack was down over the boundary, they
+  roughly ten minutes after boot; if the stack was down over the boundary, they
   fire after the next start. Do not zero spend by hand.
 - **Spend reads zero on a paid model.** No price-map entry. Add an override
   and re-verify the metered cost against the vendor's rate card.

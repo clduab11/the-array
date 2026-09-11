@@ -35,8 +35,10 @@ OpenAI-direct model entry, plus a single opt-in priority route with its own
 budget for the rare prompt that genuinely needs the fast lane. Verified after
 the change: the priority lane cost exactly 2.0x the standard lane on identical
 tokens, so the tier served is the tier billed. One more detail worth knowing:
-requesting `priority` is echoed back as `fast`. They are one server-side tier
-under two names.
+on the model probed, requesting `priority` came back echoed as `fast`; the
+vendor documents the two as one server-side tier under two names. The premium
+is about 2x but varies by model family, so the dashboard shows the ratio per
+route rather than assuming one number.
 
 ### 2. Prices move under you, both ways
 
@@ -209,7 +211,8 @@ reported: the checker's version-line policy was pinned to 2.9 and hid the
 2.10 line entirely. That is what a checker under-reporting looks like; the
 policy was corrected the same day.
 
-Dependabot and GitHub Actions open pull requests. A human merges them. The
+Dependabot opens pull requests; the scheduled image-currency workflow files a
+rolling issue. A human merges and bumps. The
 continuous integration in this repository cannot reach a live stack, so it
 only lints, parses and validates: compose file syntax, YAML and JSON
 validity, script syntax, and the leak gate.

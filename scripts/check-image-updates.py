@@ -50,7 +50,7 @@ UA = {"User-Agent": "compose-image-audit"}
 
 # Services that are profile-gated and never brought up in normal operation. They are
 # real pins, but reporting them beside the live tier would pad the actionable list.
-DEFAULT_PARKED = "qdrant,n8n,tailscale"
+DEFAULT_PARKED = "qdrant,n8n"
 
 # Per-image policy. `line` pins the comparison to a version line so a MAJOR jump is
 # never reported as "behind": postgres 16->17 needs dump/restore, not a tag edit, and
@@ -166,7 +166,7 @@ def assess(ref):
 
     cur = key_of(tag)
     if cur is None:
-        # date-based (searxng) or otherwise unparseable -- report newest seen, judge by eye
+        # non-semver tags only -- report newest seen, judge by eye
         newest = [t for t in tags if t != "latest"][:3]
         return {"image": repo, "current": tag, "status": "MANUAL",
                 "detail": "non-semver tag; newest upstream: " + ", ".join(newest), "newer": newest}
@@ -228,6 +228,8 @@ def main():
     def is_parked(r):
         return any(n in r["image"] for n in parked_names)
 
+    for r in results:
+        r["parked"] = is_parked(r)   # --json consumers can filter profile-gated pins out of "behind" counts
     live = [r for r in results if not is_parked(r)]
     parked = [r for r in results if is_parked(r)]
 
