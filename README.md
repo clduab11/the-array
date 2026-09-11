@@ -216,10 +216,6 @@ the reference build with the operator's specifics removed.
 | `DEPLOYMENT.md` | The step-by-step guide: first start-up, connecting a client, changing routes, updating components, rolling back. |
 | `.github/` | Automation that opens pull requests and files reports. A human merges. |
 
-What is not here, and will not be: the operator's live routing
-configuration, any API keys or access tokens, real budget figures, and any
-dashboard that shows real spend.
-
 ## How it fits together
 
 ```
