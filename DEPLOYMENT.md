@@ -108,7 +108,29 @@ chmod +x provision-keys.example.sh && ./provision-keys.example.sh
 
 Point any OpenAI-compatible client at `http://<host>:4000/v1` with a virtual
 key as the bearer token. The proxy's `/v1/models` lists what that key may
-call. Then send one request and read it back from the spend ledger:
+call.
+
+Three ways that line goes wrong. The scheme is `http`, not `https` — nothing in
+this stack terminates TLS on 4000, and a client configured for `https` fails at
+the handshake, which reads in most client UIs as "gateway unreachable" rather
+than as a scheme error. The `/v1` suffix is required by clients built on
+`@ai-sdk/openai-compatible` and similar SDKs, which append `/chat/completions`
+to whatever base they are given; drop it and every call 404s against the proxy
+root. And `<host>` is `localhost` only from the Docker host itself — the port is
+published on all interfaces (`4000:4000`), so other machines on the LAN use the
+host's address and the operator is responsible for firewalling it.
+
+Give each client its own virtual key rather than sharing one. `api_key_alias` is
+the only client label that reaches storage — `prometheus.yml` drops `user_agent`
+at scrape time for cardinality reasons — so the key is what the dashboard's
+client panels group by. Two tools behind one key are one series, and splitting
+them later does not backfill the history.
+
+Some clients present the API key field as optional, which is true of the
+protocol and false here: the proxy is master-key gated, so an empty key is a
+401 on the first call.
+
+Then send one request and read it back from the spend ledger:
 
 ```bash
 docker exec praxen-postgres sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT model_group, model, spend, prompt_tokens, completion_tokens FROM \"LiteLLM_SpendLogs\" ORDER BY \"startTime\" DESC LIMIT 5"'

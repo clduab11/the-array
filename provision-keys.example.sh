@@ -85,10 +85,17 @@ TEAMS=(
 #   models_csv  empty => full roster (no model restriction)
 # Allow-lists pin MODEL NAMES as written in the proxy config. Renaming a
 # route that a key pins breaks that key: update the key FIRST, then the YAML.
+#
+# One key per client, not one key per person. key_alias is the only client
+# label that survives the Prometheus scrape (prometheus.yml drops user_agent),
+# so two tools sharing a key can never be told apart on the dashboard after
+# the fact - the label was never stored. Splitting them later does not
+# backfill.
 KEYS=(
   "research-agent|research|45.0|60||reasoning,coding"
   "apps-frontend|apps|18.0|60|15.0|fast,coding"
   "apps-private-lane|apps|9.0|30||private"
+  "apps-opencode|apps|8.0|60||coding,reasoning"
   "sandbox-probe|sandbox|6.0|||"
 )
 
