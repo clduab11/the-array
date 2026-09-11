@@ -48,12 +48,12 @@ it, which model answered, how many words went in and out, and the cost to a
 fraction of a cent.
 
 Each tool then gets its own key, a password-like code the gateway uses to
-know who is asking. A key can carry a budget and a short list of models it
+know who is asking. A key can have a budget and a short list of models it
 may use; anything outside the list is refused. A private lane can be limited
 to vendors you chose for their privacy terms plus the machine in your office.
-Cheap questions can go to a cheap model. One caveat belongs here: the gateway
-can only count a model it knows the price of, so the budget is only as
-accurate as that price table. The section on prices below shows what happens
+Cheap questions can go to a cheap model. The gateway can only count a model
+it knows the price of, so the budget is only as accurate as that price
+table. The section on prices below shows what happens
 when the table is wrong.
 
 Vendors also reprice, retire models and go down. Behind one gateway, moving a
@@ -110,9 +110,8 @@ shipped inside the gateway software over-counted another model two-fold on
 live traffic for weeks until an explicit override corrected it. One mistake
 was a number we wrote; the other was a number we inherited.
 
-Owning the configuration lets you find mistakes like these. The ledger shows
-the drift, and the fix is a text edit checked against the vendor's published
-rate card.
+The ledger shows the drift, and the fix is a text edit checked against the
+vendor's published rate card.
 
 ### A rule saying no
 
@@ -171,8 +170,7 @@ server, a frontier API vendor and a privacy-focused reseller, have each
 returned a normal-looking success while serving a different model than the
 one requested. Status code and reply looked exactly like success. The rule
 this deployment runs on is to check the name of the model that actually
-answered; the success code proves nothing. The rule exists because the
-alternative was learned the expensive way.
+answered; the success code proves nothing.
 
 Some failures cannot be caught by a fallback at all. One kind of AI request
 turns your documents into numbers so they can be searched. Two different
@@ -242,7 +240,7 @@ the reference build with the operator's specifics removed.
 
 What is not here, and will not be: the operator's live routing
 configuration, any API keys or access tokens, real budget figures, and any
-dashboard that shows real spend. This shows how to build the thing.
+dashboard that shows real spend.
 
 ## How it fits together
 
@@ -320,7 +318,7 @@ This public repository has templates and tooling. A live deployment updates
 from its own private configuration, with its own backups, using the same
 checker and the same gate.
 
-## Status and disclaimer
+## Disclaimer
 
 This project is not affiliated with or endorsed by any vendor named in this
 document or in the configuration. Product names belong to their owners. The
