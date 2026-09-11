@@ -190,10 +190,10 @@ is underneath it, this is the price of finding out.
 
 ## Questions people ask
 
-Is this a product I can buy? No. It is a reference build under an open
+**Is this a product I can buy?** No. It is a reference build under an open
 licence. You can run it or adapt it, or pay someone to.
 
-Do I need my own hardware? Only for the "still answers when a vendor is down"
+**Do I need my own hardware?** Only for the "still answers when a vendor is down"
 and "private lane" properties. Metering and budgets work with cloud vendors
 alone; the local model is what makes the fallback and the closed private lane
 possible. On the reference deployment that hardware is an ordinary desktop
@@ -201,23 +201,23 @@ computer with a consumer graphics card. Without it the gateway still meters
 and caps, but the last step of every fallback list would have to be a cloud
 model or a refusal.
 
-Will my existing AI tools work with it? Most tools that let you type in a
+**Will my existing AI tools work with it?** Most tools that let you type in a
 server address and a key will work. In the tool's settings this is usually
 labelled "OpenAI-compatible" or "custom endpoint". Many desktop AI assistants
 and coding tools have that setting; check yours before assuming.
 
-How much does the gateway itself cost to run? The software is free. You still
+**How much does the gateway itself cost to run?** The software is free. You still
 pay the AI vendors for usage; that is the bill the gateway meters and caps.
 The reference deployment runs on one workstation, and the components together
 are limited to a few gigabytes of memory. The rest of the cost is the time
 described above.
 
-Will it warn me before a budget runs out? Only if you connect a chat webhook;
+**Will it warn me before a budget runs out?** Only if you connect a chat webhook;
 alerting ships switched off in the example configuration. The budget itself is
 built to refuse requests whether or not a webhook is connected. "A rule saying
 no" above says what has and has not been observed.
 
-Who maintains this? One operator, for the operator's own use, published
+**Who maintains this?** One operator, for the operator's own use, published
 as-is. There is no support promise and no release schedule. Issues that
 describe a real failure are more useful than issues that ask for features.
 
