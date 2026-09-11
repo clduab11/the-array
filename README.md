@@ -2,6 +2,8 @@
 
 Own the front door to your AI.
 
+![Every device in the building sends its requests through one dark gateway arch; from there the light splits toward distant cloud servers and toward a small desk machine in the same room, while a ribbon of ledger entries runs to a wall of dashboards. One red strand is the request that was diverted.](docs/images/the-array-hero.jpg)
+
 the-array is a front door you run for all the AI your business uses. Every
 request passes through it and is written to a ledger with its cost, and the
 front door is built to enforce whatever rules you set about who may spend
