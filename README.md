@@ -99,20 +99,7 @@ ratio per route.
 
 ### Prices move under you, in both directions
 
-Vendors reprice constantly. On 2026-07-30 one vendor cut prices across a
-whole model family, one model by 80 percent and another by 20 percent. A price
-table you copied once is now wrong, and nothing tells you.
-
-This deployment got it wrong both ways. The vendor's invoice was right both
-times; it was our own ledger that was wrong, and that matters because budgets
-stop spending based on the ledger. A price override written by hand
-over-counted one model five-fold for nine days after the cut. A price that
-shipped inside the gateway software over-counted another model two-fold on
-live traffic for weeks until an explicit override corrected it. One mistake
-was a number we wrote; the other was a number we inherited.
-
-The ledger shows the drift, and the fix is a text edit checked against the
-vendor's published rate card.
+Vendors reprice constantly. On 2026-07-30 one vendor cut prices across a whole model family, one model by 80 percent and another by 20 percent. A price table you copied once can change in a day, and nothing tells you. The vendor's invoice was right both times; it was our own ledger that was wrong, and that matters because budgets stop spending based on the ledger. A price override written by hand over-counted one model five-fold for nine days after the cut. One mistake was a number we wrote; the other was a number we inherited. The ledger shows the drift, and the fix is a text edit checked against the vendor's published rate card.
 
 ### A rule saying no
 
@@ -201,14 +188,14 @@ is underneath it, this is the price of finding out.
 - *Most tools that let you type in a server address and a key will work. In the tool's settings this is usually labelled "OpenAI-compatible" or "custom endpoint". Many desktop AI assistants and coding tools have that setting; check yours before assuming.*
 
 **How much does the gateway itself cost to run?** 
-- The software is free. You still pay the AI vendors for usage; that is the bill the gateway meters and caps. The reference deployment runs on one workstation, and the components together are limited to a few gigabytes of memory. The rest of the cost is the time described above.
+- *The software is free. You still pay the AI vendors for usage; that is the bill the gateway meters and caps. The reference deployment runs on one workstation, and the components together are limited to a few gigabytes of memory. The rest of the cost is the time described above.*
 
 **Will it warn me before a budget runs out?** 
 - *Only if you connect a chat webhook; alerting ships switched off in the example configuration. The budget itself is built to refuse requests whether or not a webhook is connected. "A rule saying
 no" above says what has and has not been observed.*
 
 **Who maintains this?** 
-- *One operator, for the operator's own use, published as-is. There is no support promise and no release schedule. Issues that describe a real failure are more useful than issues that ask for features.
+- *One operator, for the operator's own use, published as-is. There is no support promise and no release schedule. Issues that describe a real failure are more useful than issues that ask for features.*
 
 ---
 
