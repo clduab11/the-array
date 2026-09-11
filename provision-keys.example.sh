@@ -85,10 +85,28 @@ TEAMS=(
 #   models_csv  empty => full roster (no model restriction)
 # Allow-lists pin MODEL NAMES as written in the proxy config. Renaming a
 # route that a key pins breaks that key: update the key FIRST, then the YAML.
+#
+# One key per client, not one key per person. key_alias is the only client
+# label that survives the Prometheus scrape (prometheus.yml drops user_agent),
+# so two tools sharing a key can never be told apart on the dashboard after
+# the fact - the label was never stored. Splitting them later does not
+# backfill.
+#
+# apps-ide-client is the lane for OpenAI-compatible coding clients - OpenCode,
+# Kilo Code, Cline, Continue and similar. Give each tool its own key if you run
+# several: an interactive editor assistant and an autonomous task runner are
+# different workloads with different cost profiles, and one shared key collapses
+# them into one series.
+#
+# Confirm a client can authenticate BEFORE you size its budget. Not every client
+# sends the bearer token the way the proxy expects, and some surface the failure
+# as a generic connection error rather than a 401. Probe /v1/models with the key,
+# then send one request and read it back from the spend ledger.
 KEYS=(
   "research-agent|research|45.0|60||reasoning,coding"
   "apps-frontend|apps|18.0|60|15.0|fast,coding"
   "apps-private-lane|apps|9.0|30||private"
+  "apps-ide-client|apps|8.0|60||coding,reasoning"
   "sandbox-probe|sandbox|6.0|||"
 )
 

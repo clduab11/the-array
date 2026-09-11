@@ -5,6 +5,16 @@
 .virtual-keys.env
 .virtual-keys.env.*
 
+# --- operator config derived from the tracked *.example files ----------------
+# DEPLOYMENT.md step 2 has you save your edited copy as litellm_config.yaml,
+# which is the name docker-compose.yml bind-mounts and verify-stack.py reads.
+# A live config carries api_base pins (the private lane's privacy gate), real
+# per-route budgets and the full provider routing. The leak gate will NOT stop
+# it: a config that references keys as os.environ/NAME contains no key-shaped
+# string, so it scans clean while still disclosing every endpoint you route to.
+litellm_config.yaml
+provision-keys.sh
+
 # --- backups, rollback rungs, soft-delete staging ----------------------------
 *.bak*
 backup/

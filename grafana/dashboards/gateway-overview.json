@@ -601,6 +601,93 @@
           "placement": "bottom"
         }
       }
+    },
+    {
+      "id": 9,
+      "type": "timeseries",
+      "title": "Spend by client (range, $)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "afimxbo42ap6oe"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 22,
+        "w": 12,
+        "h": 8
+      },
+      "description": "Broken out by `api_key_alias`, the only client discriminator that survives the scrape. prometheus.yml drops `user_agent`, `client_ip` and `hashed_api_key` as cardinality hygiene, so two clients sharing one virtual key are indistinguishable here forever - the label was never stored. Mint one key per client (provision-keys.example.sh) or this panel reads as a single blended series.",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "afimxbo42ap6oe"
+          },
+          "refId": "A",
+          "expr": "sum by (api_key_alias) (increase(litellm_spend_metric_total[$__interval]))",
+          "legendFormat": "{{api_key_alias}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD",
+          "custom": {
+            "drawStyle": "bars",
+            "stacking": {
+              "mode": "normal"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 10,
+      "type": "timeseries",
+      "title": "Calls by client (calls/min)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "afimxbo42ap6oe"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 22,
+        "w": 12,
+        "h": 8
+      },
+      "description": "Request rate per `api_key_alias`. A client that appears here but not in the spend panel is being served entirely from the Redis cache or from a zero-cost local route - that gap is the signal, not a fault.",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "afimxbo42ap6oe"
+          },
+          "refId": "A",
+          "expr": "sum by (api_key_alias) (rate(litellm_requests_metric_total[5m])) * 60",
+          "legendFormat": "{{api_key_alias}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "line"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
     }
   ],
   "description": "Example file-provisioned dashboard: gateway health, spend, and the billed-service-tier detector. Disk is the only author surface (allowUiUpdates: false)."
