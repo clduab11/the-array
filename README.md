@@ -140,8 +140,6 @@ under the private chain, where anyone can read it.
 
 ## What it costs you
 
-This is the part a sales pitch leaves out.
-
 The first start-up is an afternoon. Getting the metering right took months;
 the fallbacks and the dashboards took about as long. Every finding above was
 preceded by a period in which the system was confidently wrong.
