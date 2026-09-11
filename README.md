@@ -1,241 +1,332 @@
 # the-array
 
-A self-hosted AI gateway. One proxy sits in front of every model vendor you
-use and in front of the models running on your own hardware, and everything
-that passes through it is metered, budgeted and graphed by software you run
-yourself. The parts are deliberately ordinary: a LiteLLM proxy, Postgres for
-the spend ledger, Redis for caching, Prometheus for metrics, Grafana for
-dashboards, Tempo for traces, Loki and Alloy for logs, and a local model
-server such as LM Studio for the models that never leave the building.
+Own the front door to your AI.
 
-This README makes the case for owning that layer, argued from this stack's
-own numbers rather than from principle. Some of the numbers are unflattering.
-That is why they are persuasive.
+the-array is a front door you run for all the AI your business uses. Every
+request passes through it and is written to a ledger with its cost, and the
+front door is built to enforce whatever rules you set about who may spend
+what. This repository is the reference build: a worked example you copy and
+adapt. It is published so the patterns, and the mistakes, are available to
+anyone who wants the same thing.
 
-## Why own it
+If you have never run a server, read the first three sections and the
+questions at the end. If you have, skip to "What is in this repository".
 
-### 1. Governance you can see
+## The short version
 
-When one proxy is the only way out to any vendor, every call is metered,
-attributed to a key, and stopped by a budget. That sounds like bookkeeping
-until it catches something.
+A seat subscription works like cable television: a fixed fee per person, a
+fixed menu, one number on the bill, and no way to see what happened between
+"I typed a question" and "I got an answer".
 
-It caught this. A bare request to the OpenAI API, with no service tier
-specified, came back tagged `service_tier: priority` and was billed at
-roughly twice the standard rate. Nothing in the stack had asked for that. It
-was a default set on the vendor side, at the project level in the account
-settings, applied to every call that did not say otherwise.
+the-array replaces that with something closer to owning the front door.
+Every request from every person and every tool in your organisation passes
+through one gateway you run. A gateway is the front door in software terms,
+the one place every request goes in and every answer comes out. It decides
+which AI model answers (a model is one AI engine, the kind of thing behind the
+chat assistants you already know) and records exactly what the answer cost.
+It is built to refuse further requests once a budget is used up, and when
+the outside vendor is unavailable it is built to hand the question to a model
+running on a machine in your own office so the answer can still arrive. Which
+parts of that have been seen working on real traffic is set out below.
 
-You cannot find that inside a subscription. There is no invoice line that
-says "priority tier, 2x". The only reason it surfaced here is that the proxy
-records the billed tier per call in its cost breakdown, and someone looked.
+The AI companies still get paid, per use instead of per seat, through
+accounts you hold. What you own is the front door. Whether per-use comes to
+less than seats depends on how much your people use. Vendors price by the
+volume of text that goes in and comes out, the way a print shop charges by
+the page, so a one-line question costs pennies at most and a long document
+pasted in costs more. Light users usually pay less per use than a seat costs.
+A team asking questions all day can pay more. This README gives no figure of
+its own; after a month behind the gateway the ledger replaces any estimate
+with the real one. The software is free and the vendors are paid per use. A
+computer in your office for the local model is optional. Somebody's time to
+run it all is the one cost you cannot skip. A seat subscription never exposed
+you to any of the hazards described below; they come with paying per use, and
+the gateway is what makes them visible once you do.
 
-The fix was one configuration key, `service_tier: default`, on every
-OpenAI-direct model entry, plus a single opt-in priority route with its own
-budget for the rare prompt that genuinely needs the fast lane. Verified after
-the change: the priority lane cost exactly 2.0x the standard lane on identical
-tokens, so the tier served is the tier billed. One more detail worth knowing:
-on the model probed, requesting `priority` came back echoed as `fast`; the
-vendor documents the two as one server-side tier under two names. The premium
-is about 2x but varies by model family, so the dashboard shows the ratio per
-route rather than assuming one number.
+The bill is the first thing that changes. Every call is recorded: who made
+it, which model answered, how many words went in and out, and the cost to a
+fraction of a cent.
 
-### 2. Prices move under you, both ways
+Each tool then gets its own key, a password-like code the gateway uses to
+know who is asking. A key can carry a budget and a short list of models it
+may use; anything outside the list is refused. A private lane can be limited
+to vendors you chose for their privacy terms plus the machine in your office.
+Cheap questions can go to a cheap model. One caveat belongs here: the gateway
+can only count a model it knows the price of, so the budget is only as
+accurate as that price table. The section on prices below shows what happens
+when the table is wrong.
 
-Vendors reprice. On 2026-07-30 OpenAI cut prices across the GPT-5.6 family,
-one model by 80 percent and another by 20 percent. If your metering is a
-table you copied once, it is now wrong, and nothing tells you.
+Vendors also reprice, retire models and go down. Behind one gateway, moving a
+route to a different vendor is a small edit to one file once you hold an
+account there. A route is one line in the gateway's rulebook: when a tool
+asks for this, send it there, and if that fails, try these. When a vendor is
+down, the answer is meant to still arrive from further down that list. The
+next section says what has and has not been watched working.
 
-This stack got it wrong in both directions. A stale price override that had
-been written by hand over-metered one model 5x for nine days after the cut.
-Separately, a stale price bundled with the proxy software over-metered a
-Gemini flash model 2x on live traffic for weeks, until an explicit override
-corrected it. One error came from a number we wrote; the other came from a
-number we inherited.
+The price of all this is that it is yours to run. That part gets its own
+section.
 
-The argument is not that owning the config prevents mistakes. It is that
-owning the config lets you be wrong and then measurably right. The spend
-ledger shows the drift, the fix is a text edit, and the next probe checks
-the metered cost against the vendor's published rate card.
+## What you can see from behind your own gateway
 
-### 3. It never goes dark
+Once you pay per use, each vendor sends one monthly total. Everything below
+sat underneath one of those totals and was invisible until the gateway's own
+ledger was laid beside it. Each of these happened on the reference deployment.
 
-Every fallback chain in the configuration terminates at a local model on
-hardware in the room. When a vendor returns an error, the request walks down
-the chain and the answer degrades instead of disappearing. A cheaper cloud
-model first, then a local one, and the caller gets a response either way.
+### The double charge nobody asked for
 
-The configuration behind this README carries 82 such chains across 189
-explicit model entries and 10 provider wildcards. At last measurement the
-proxy could route about 1,069 model ids; that number is driven by upstream
-catalogs and is never a fixed target.
+A vendor account was billing roughly double on every request through a
+"priority" processing tier that nothing in this system had requested. It was
+a default, set on the vendor's side, applied to every call that did not say
+otherwise.
 
-### 4. Privacy is a routing decision, not a policy promise
+A monthly total does not tell you this. It surfaced during a routine check of
+the vendor's endpoints: a request sent with no tier at all came back tagged
+"priority". The gateway's per-call ledger then showed which routes had been
+paying the premium, and it showed something worse. On three routes a price
+override we had written ourselves was recording only half of what the vendor
+actually charged. The vendor was charging double; our ledger was recording
+standard.
 
-A vendor's privacy policy is a promise. A route is a mechanism.
+The fix was one line of configuration on every route to that vendor, plus a
+few deliberately separate "priority" routes with their own small budgets for
+the rare prompt that needs the fast lane. After the change, the gateway
+confirmed the standard route was billed at the standard rate and the priority
+route at the premium, on identical inputs. The ledger now records the tier on
+every call, and the dashboard flags any premium-tier call on a route that did
+not ask for it. The premium varies by model family, so the dashboard shows the
+ratio per route.
 
-The `private` lane in this configuration fails closed. Its chain contains
-only confidential-class rungs, ending at a local model. If the confidential
-path is down, the request is refused. It is never quietly retried against a
-vendor that logs prompts, because no such vendor is in the chain to retry
-against. Whether a request can reach a logging vendor is decided by the
-shape of a list in a YAML file, and you can read the list.
+### Prices move under you, in both directions
+
+Vendors reprice constantly. On 2026-07-30 one vendor cut prices across a
+whole model family, one model by 80 percent and another by 20 percent. A price
+table you copied once is now wrong, and nothing tells you.
+
+This deployment got it wrong both ways. The vendor's invoice was right both
+times; it was our own ledger that was wrong, and that matters because budgets
+stop spending based on the ledger. A price override written by hand
+over-counted one model five-fold for nine days after the cut. A price that
+shipped inside the gateway software over-counted another model two-fold on
+live traffic for weeks until an explicit override corrected it. One mistake
+was a number we wrote; the other was a number we inherited.
+
+Owning the configuration lets you find mistakes like these. The ledger shows
+the drift, and the fix is a text edit checked against the vendor's published
+rate card.
+
+### A rule saying no
+
+A rule only counts if it binds. On the reference deployment an access key
+limited to a short list of models was asked for a model outside that list.
+The gateway refused, and the same key's own list kept answering. No monthly
+budget has yet been reached on real traffic here, so the budget stop has not
+been watched firing on a real person mid-task. It is the same mechanism, a
+key the gateway turns away, applied to a running total instead of a list.
+
+### The answer still arrives when the vendor is down
+
+When a vendor returns an error, the request walks down a list of
+alternatives, a cheaper cloud model first, then a local one, and the person
+who asked still gets an answer. That list is called a fallback chain, and
+every fallback chain in this configuration ends at a model running on
+hardware in the room. Routes that pass a vendor's whole catalog straight
+through have no chain of their own and fail loudly instead. The reference
+configuration has more than 80 fallback chains across roughly 190 named
+routes and 10 vendor-wide pass-throughs, and can currently reach about 1,070
+model ids. That last figure moves with the vendors' catalogs.
+
+So far the only thing watched walking the list is a refusal. A vendor said no
+to a newly released model this account could not yet use, and the next model
+on the list answered; the ledger showed which one. An outage walks the same
+list. One has not yet been watched happening on real traffic.
+
+### Privacy is a routing decision
+
+The private lane is a list, and the list is the whole guarantee. The lane
+still begins at a vendor; what the route guarantees is the set of places a
+request can ever go. In this configuration that set is: vendors chosen for
+their privacy terms, then your own machine. If the chosen vendor is down the
+question is answered locally, and if that is down too the request is refused.
+It is never quietly retried against a vendor that logs prompts, because no
+such vendor is on the list. The list lives in `litellm_config.example.yaml`
+under the private chain, where anyone can read it.
 
 ## What it costs you
 
-This is the part a pitch would leave out.
+This is the part a sales pitch leaves out.
 
-It took months. Not the first `docker compose up`, which is an afternoon, but
-the part where the metering is correct, the fallbacks are real, and the
-dashboards say true things. Every finding above was preceded by a period in
-which the stack was confidently wrong.
+The first start-up is an afternoon. Getting the metering right took months;
+the fallbacks and the dashboards took about as long. Every finding above was
+preceded by a period in which the system was confidently wrong.
 
-It breaks in ways a subscription does not. A subscription's failure mode is
-"the service is down". A self-hosted gateway's failure modes include a
-database migration on an image bump, a healthcheck that lies, a Docker engine
-that wedges under memory pressure, and a fallback chain whose last rung
-silently pointed at a model that had been deleted from disk.
+A subscription's failure mode is "the service is down". A self-run gateway
+has more of them. A software update can break the database. The "all good"
+light can be wrong. The thing that runs the components can freeze when the
+machine runs out of memory. A fallback can end at a model someone deleted
+from disk. The technical names for those are in `DEPLOYMENT.md`, with the
+fixes.
 
-Dead model ids do not reliably return errors. Three separate vendors, a local
-model server, a frontier API vendor and a privacy-focused inference reseller,
-have each returned HTTP 200 while serving a different model than the one
-requested. The status code, the response shape and the content were all
-indistinguishable from success. The rule this stack runs on is: assert on the
-echoed model name, never on the status code. That rule exists because the
+Dead models do not reliably say so. Three separate vendors, a local model
+server, a frontier API vendor and a privacy-focused reseller, have each
+returned a normal-looking success while serving a different model than the
+one requested. Status code and reply looked exactly like success. The rule
+this deployment runs on is to check the name of the model that actually
+answered; the success code proves nothing. The rule exists because the
 alternative was learned the expensive way.
 
-Some failures cannot be caught by a fallback at all. Embedding routes here
-carry no fallback on purpose. A 1024-dimension embedder and a 768-dimension
-embedder are not interchangeable, and a silent failover between them writes
-incompatible vectors into the same store, corrupting retrieval without ever
-raising an error. Failing closed is the only safe behavior.
+Some failures cannot be caught by a fallback at all. One kind of AI request
+turns your documents into numbers so they can be searched. Two different
+models produce numbers of different shapes that cannot be mixed, so those
+routes deliberately have no fallback. Swapping models silently would corrupt
+the search without any error. Refusing is the only safe behaviour.
 
-Maintenance is real and recurring: image pins to review, price maps to
-re-verify against rate cards, model ids that vendors retire without notice,
-and healthchecks to re-validate whenever a base image changes. A distroless
-image bump silently kills any healthcheck that expects a shell in the
-container, which is why Tempo and Loki liveness here rides the Prometheus
-scrape job rather than an in-container probe.
+There is also the recurring maintenance: version pins to review, price
+tables to re-check against rate cards, model ids that vendors retire without
+notice, and health checks to re-validate whenever a component changes.
 
-If you want a model and nothing else, buy a subscription. If you want to
-know what you are paying for, where your prompts go, and what happens when a
-vendor is down, this is the price of finding out.
+If you want a model and nothing else, a subscription is the right product. If
+you want to lay the vendor's monthly total beside your own ledger and see what
+is underneath it, this is the price of finding out.
+
+## Questions people ask
+
+Is this a product I can buy? No. It is a reference build under an open
+licence. You can run it or adapt it, or pay someone to.
+
+Do I need my own hardware? Only for the "still answers when a vendor is down"
+and "private lane" properties. Metering and budgets work with cloud vendors
+alone; the local model is what makes the fallback and the closed private lane
+possible. On the reference deployment that hardware is an ordinary desktop
+computer with a consumer graphics card. Without it the gateway still meters
+and caps, but the last step of every fallback list would have to be a cloud
+model or a refusal.
+
+Will my existing AI tools work with it? Most tools that let you type in a
+server address and a key will work. In the tool's settings this is usually
+labelled "OpenAI-compatible" or "custom endpoint". Many desktop AI assistants
+and coding tools have that setting; check yours before assuming.
+
+How much does the gateway itself cost to run? The software is free. You still
+pay the AI vendors for usage; that is the bill the gateway meters and caps.
+The reference deployment runs on one workstation, and the components together
+are limited to a few gigabytes of memory. The rest of the cost is the time
+described above.
+
+Will it warn me before a budget runs out? Only if you connect a chat webhook;
+alerting ships switched off in the example configuration. The budget itself is
+built to refuse requests whether or not a webhook is connected. "A rule saying
+no" above says what has and has not been observed.
+
+Who maintains this? One operator, for the operator's own use, published
+as-is. There is no support promise and no release schedule. Issues that
+describe a real failure are more useful than issues that ask for features.
 
 ## What is in this repository
 
-Sanitized infrastructure. Everything here is a template or a tool, built to
-be read and adapted.
+Everything here is a template or a tool, built to be read and adapted. It is
+the reference build with the operator's specifics removed.
 
-- A pinned Docker Compose stack. Every image is pinned to an exact tag:
-  LiteLLM on a pinned base image with a small custom wrapper (the wrapper
-  removes the hiredis 3.4.0 extension from the image), Postgres
-  16.15-alpine, Redis 7.4.11-alpine, Grafana 13.1.5, grafana-image-renderer
-  v5.12.3, Prometheus v3.14.0, Loki 3.7.7, Tempo 2.10.8, Alloy v1.19.2,
-  SearXNG 2026.9.8-3fdc6d753. The `observe` profile brings up 10 containers.
-  Qdrant v1.15.4 and n8n 2.23.3 are defined under separate profiles and have
-  never been run in the reference deployment.
-- Observability configuration for Prometheus, Tempo, Loki and Alloy,
-  including the scrape-job liveness pattern described above.
-- File-provisioned Grafana provisioning for datasources and dashboards, plus
-  one example dashboard. Dashboards and datasources are authored on disk
-  only. Saves from the Grafana UI are rejected by design, so the files in
-  this tree are the single source of truth.
-- `litellm_config.example.yaml`, an example LiteLLM configuration that shows
-  the patterns without the maintainer's routes: provider wildcards, a standard-tier OpenAI entry next
-  to an opt-in priority lane with its own budget, a fail-closed private
-  chain, fallback chains that terminate at local model rungs, and an
-  embedding route with deliberately no fallback.
-- `scripts/check-image-updates.py`, which reports which pinned images are
-  behind upstream and never applies anything.
-- `scripts/verify-stack.py`, a 14-probe gate that exits non-zero on any
-  failure. It read 14 of 14 on the reference deployment on the day this
-  README was written.
-- `scripts/leak-gate.py`, a leak gate that scans the tree, including the
-  raw members of zip-based files, against a denylist before anything is
-  pushed, so the public copy stays public. The list that ships here is
-  generic; a private, identity-bearing list is layered on with `--denylist`
-  and never published, because publishing a denylist publishes what it denies.
-- `DEPLOYMENT.md`, the step-by-step bring-up guide.
+| Piece | What it is |
+|---|---|
+| `docker-compose.yml` | The whole stack as one file: the gateway (LiteLLM), its database (Postgres) and cache (Redis), metrics (Prometheus), dashboards (Grafana), traces (Tempo), logs (Loki and Alloy), and a private web-search engine (SearXNG). Every component is pinned to an exact version. |
+| `litellm/Dockerfile` | The gateway's image, pinned to one release, with one deliberate change explained in the file. |
+| `litellm_config.example.yaml` | The routing rules shown as patterns: vendor pass-throughs, a standard-rate route beside an opt-in priority route with its own budget, a privacy-preserving route pinned to its endpoint, local models, a fail-closed private chain, and an embedding route with deliberately no fallback. |
+| `prometheus.yml`, `tempo-config.yaml`, `loki-config.yaml`, `alloy-config.alloy` | The observability configuration, including the liveness pattern for components that ship without a shell. |
+| `grafana/` | Dashboards and data sources provisioned from disk. Edits made in the Grafana web interface are rejected by design, so these files are the single source of truth. The example dashboard includes the billed-tier detector described above. |
+| `provision-keys.example.sh` | Creates teams and per-tool access keys with budgets that reset monthly. |
+| `scripts/check-image-updates.py` | Reports which pinned components are behind upstream. It applies nothing. |
+| `scripts/verify-stack.py` | A health gate that checks 14 specific things and stops at the first one that fails. It read 14 of 14 on the reference deployment on the day this was written. |
+| `scripts/leak-gate.py` | Scans the tree, including the insides of spreadsheets and documents, for anything that must not be published. |
+| `DEPLOYMENT.md` | The step-by-step guide: first start-up, connecting a client, changing routes, updating components, rolling back. |
+| `.github/` | Automation that opens pull requests and files reports. A human merges. |
 
-What is not here, and will not be: the maintainer's live model
-configuration, any API keys or virtual keys, real budget figures, and any
-dashboard that carries real spend. This repository is a reference for how to
-build the thing, not a copy of the thing.
+What is not here, and will not be: the operator's live routing
+configuration, any API keys or access tokens, real budget figures, and any
+dashboard that shows real spend. This shows how to build the thing.
+
+## How it fits together
+
+```
+ people and tools ---> the gateway (one front door, one key per tool, one budget per key)
+                            |
+              +-------------+------------------+
+              v             v                  v
+        cloud vendor A  cloud vendor B   local model server (your hardware)
+              |             |                  ^
+              +---- on error, walk the list ---+   <- every fallback list ends here
+
+        every call ---> spend ledger ---> dashboards and budgets (alerts optional)
+```
+
+The gateway speaks the same protocol most AI tools already use, so existing
+applications connect to it by changing one address and one key. Nothing about
+the tools has to change.
 
 ## Quick start
 
-`DEPLOYMENT.md` has the full procedure and the decisions behind each step.
-The short version:
+`DEPLOYMENT.md` has the full procedure and the reasoning behind each step.
+The short version, for someone comfortable with a terminal:
 
-1. Copy `.env.example` to `.env` and fill in the vendor API keys you hold,
-   a master key for the proxy, and passwords for Postgres and Grafana.
+1. Copy `.env.example` to `.env` and fill in the vendor API keys you hold, a
+   master key for the gateway, and passwords for the database and dashboards.
 2. Copy `litellm_config.example.yaml` to `litellm_config.yaml`, keep the
-   patterns you need, and remove any vendor you do not have a key for. A wildcard for a vendor without a key will fail at
-   request time, not at startup.
-3. If you run a local model server, point the local model entries at it and
-   confirm the served model ids match what the server actually loads.
-4. Bring up the stack with `docker compose --profile observe up -d`. A bare
-   `docker compose up` selects no services, because every service is
-   profile-gated.
-5. Run `python scripts/verify-stack.py`. Do not proceed until it passes.
-6. Open Grafana, confirm the provisioned datasources are present, and open
-   the example dashboard.
-7. Create a virtual key with a budget through the proxy, and bind one client
-   to the proxy's OpenAI-compatible endpoint using that key.
-8. Send a request, then confirm it appears in the spend ledger with a
-   non-zero cost and the model you expected. If the cost is zero, the price
-   for that model is missing and needs an override.
+   patterns you need, and remove any vendor you do not have a key for.
+3. If you run a local model server, point the local routes at it and confirm
+   the model names match what the server actually loads.
+4. Start the stack with `docker compose --profile observe up -d`. A bare
+   `docker compose up` starts nothing, because every component sits behind a
+   named profile.
+5. Run `python scripts/verify-stack.py`. Do not continue until it passes.
+6. Open the dashboards, confirm the data sources are present, and open the
+   example dashboard.
+7. Create one access key with a budget, point one tool at the gateway with
+   that key, and send one request.
+8. Read that request back from the spend ledger. Confirm the model named
+   there is the one you expected and the cost is not zero. If the cost is
+   zero, the price for that model is missing and needs an override.
+
+Not comfortable with a terminal? That is normal. This is a build guide. Hand
+it to whoever runs your computers, or to whoever you would hire to.
 
 ## How updates work here
 
-Every image is pinned on purpose. A floating tag such as `postgres:16-alpine`
-does not keep you patched, because Docker only re-resolves a moving tag on an
-explicit `docker pull`, and `compose up` reuses whatever image is already
-local. A floating tag buys unpredictable update timing and no rollback
-target. Pinning everything and automating the check is the alternative.
+Every component is pinned to an exact version. A floating tag such as
+`postgres:16-alpine` does not keep you patched: the engine only re-checks a
+moving tag when explicitly asked, and a routine restart reuses whatever is
+already downloaded. Floating buys unpredictable timing and no way back.
 
-`scripts/check-image-updates.py` reads every `image:` line in the compose
-file, plus the proxy's base image from its Dockerfile, queries the upstream
-registries, and prints what is behind. It never applies an update. That is a
-rule, not a limitation: a database engine must not restart itself, and a
-proxy image bump walks database migrations forward, which needs a backup
-first. On the day this README was written the checker reported, before that day's
-bumps, three live images behind: the LiteLLM base one patch release behind,
-Grafana 13.2.1, and SearXNG, which is a rolling tag. One of the three, the
-LiteLLM base, was bumped the same day after its rollback rung was taken;
-SearXNG's rolling tag was left two days old; Grafana was held on purpose
-(`DEPLOYMENT.md` explains why 13.2 changes how datasources are pinned). A
-held image is a decision the checker keeps surfacing, which is the point.
-Tempo also moved that day, 2.9.5 to 2.10.8, and it was NOT one of the three
-reported: the checker's version-line policy was pinned to 2.9 and hid the
-2.10 line entirely. That is what a checker under-reporting looks like; the
-policy was corrected the same day.
+`scripts/check-image-updates.py` reads every pinned version and asks the
+upstream registries what is newer. It prints a table and applies nothing. A
+database must not restart itself, and a gateway update walks database
+migrations forward, which needs a backup first. On the day this README was
+written the checker reported, before that day's updates, three components
+behind: the gateway one patch release behind, the dashboard software one
+minor version behind, and the search engine two days behind its latest
+date-stamped build. The gateway was updated after its database backup was
+taken. The search engine was left alone, since no advisory stood against the
+build it runs. The dashboard software was held on purpose; `DEPLOYMENT.md`
+explains why that version changes how data sources are pinned. The same run
+exposed a bug in the checker itself: a version-line policy had been hiding an
+entire minor line of the trace store and reporting it current. The policy was
+fixed and the trace store updated the same day. Policy lines get reviewed for
+that reason.
 
 Dependabot opens pull requests; the scheduled image-currency workflow files a
-rolling issue. A human merges and bumps. The
-continuous integration in this repository cannot reach a live stack, so it
-only lints, parses and validates: compose file syntax, YAML and JSON
-validity, script syntax, and the leak gate.
+rolling issue. A human merges and updates. The automation in this repository
+cannot reach a live stack, so it only checks that the files parse, the compose
+file renders, the scripts compile and the leak gate is clean.
 
-One honest note on scope. This public repository carries templates and
-tooling. A live deployment does not update from here; it updates from its
-own private tree, with its own configuration and its own backups, using the
-same checker and the same gate.
+This public repository has templates and tooling. A live deployment updates
+from its own private configuration, with its own backups, using the same
+checker and the same gate.
 
 ## Status and disclaimer
 
-This is a reference stack, maintained by one operator, published so that the
-patterns and the findings are available to anyone building the same thing.
-There is no support promise and no release schedule. Pull requests that fix
-something real are welcome; issues that describe a real failure are more
-useful than issues that ask for features.
-
-Nothing here is affiliated with, endorsed by, or supported by any vendor
-named in this document or in the configuration. Product names belong to
-their owners. Prices, tiers and model ids cited above were true on the dates
-given and will drift, which is rather the point.
+This project is not affiliated with or endorsed by any vendor named in this
+document or in the configuration. Product names belong to their owners. The
+prices and model ids cited above were true on the dates given and will
+drift.
 
 ## License
 
-To be chosen before publication. No `LICENSE` file ships yet; until one is
-added, no license is granted.
+MIT. See `LICENSE`.
