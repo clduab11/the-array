@@ -104,6 +104,20 @@ chmod +x provision-keys.example.sh && ./provision-keys.example.sh
    from the UI are rejected by design: the JSON on disk is the only author
    surface and Grafana re-reads it every 30 seconds.
 
+7. Optional: spend alerts by email. The gateway's own warning setting stores
+   nothing (see the notes in `litellm_config.example.yaml`), so warnings come
+   from Grafana alert rules that query the spend ledger:
+   `grafana/provisioning/alerting/spend-watch.yaml`. Set `GRAFANA_SMTP_*` in
+   `.env`, replace the address in that file, edit the per-key watch lines to
+   your plan, then recreate Grafana so the new variables and mount apply:
+
+```bash
+docker compose --profile observe up -d grafana
+```
+
+   Confirm the rules appear under Alerting. Rules provisioned from disk cannot
+   be edited in the UI; change the file instead.
+
 ## 3. Binding a client
 
 Point any OpenAI-compatible client at `http://<host>:4000/v1` with a virtual
@@ -119,6 +133,31 @@ three vendors are known to answer HTTP 200 under a substitute when a model id
 is dead, so assert on the echoed model, never on the status code. And `spend`
 must be non-zero for a paid model; zero means the price map has no entry and
 the route needs an explicit `input_cost_per_token` / `output_cost_per_token`.
+
+**Clients that import the model list.** Some front ends call `/v1/models`
+themselves to fill a model picker. LiteLLM builds that list by looking up each
+model in turn, so a gateway with around a thousand routes can take half a
+minute to answer, and a client with a shorter timeout shows none of the
+gateway's models. If the client can register models explicitly, do that
+instead of relying on its live import, and repeat it after any change that
+adds or removes models.
+
+**A read-only key for dashboards.** A dashboard that shows budgets should not
+hold a key that can spend. Create a user with the `internal_user_viewer` role,
+add it to each team the dashboard should see (`/team/info` answers team
+members only), and mint a key for that user limited to the info endpoints:
+
+```bash
+H=(-H "Authorization: Bearer $LITELLM_MASTER_KEY" -H "Content-Type: application/json")
+curl -s http://localhost:4000/user/new "${H[@]}" -d '{"user_id": "dashboard-reader", "user_role": "internal_user_viewer", "auto_create_key": false}'
+curl -s http://localhost:4000/team/member_add "${H[@]}" -d '{"team_id": "research", "member": [{"role": "user", "user_id": "dashboard-reader"}]}'
+curl -s http://localhost:4000/key/generate "${H[@]}" -d '{"user_id": "dashboard-reader", "key_alias": "dashboard-reader", "allowed_routes": ["/key/info", "/team/info", "/user/info"]}'
+```
+
+Repeat the `member_add` call for every team. On the reference deployment the
+key read every team's spend and budget and got a 403 on model calls, on
+`/v1/models` and on key creation. A team added later needs the same member,
+or the dashboard never sees it.
 
 ## 4. Changing the proxy configuration
 
@@ -213,3 +252,13 @@ cleanup; move candidates to a visible staging directory and purge by hand.
   fire after the next start. Do not zero spend by hand.
 - **Spend reads zero on a paid model.** No price-map entry. Add an override
   and re-verify the metered cost against the vendor's rate card.
+- **A model returns HTTP 200 with an empty answer.** It declined the request
+  (finish_reason `content_filter`), and a refusal does not walk `fallbacks`.
+  List the route under `content_policy_fallbacks` and keep
+  `litellm/refusal_fallback.py` loaded for streamed calls.
+- **Caching looks broken on one model.** Check the probe replies were not
+  refusals first: a refused call is billed for the cache write and never reads.
+- **A front end shows none of the gateway's models.** It imports `/v1/models`
+  live and timed out; see "Clients that import the model list" in section 3.
+- **Spend alerts never arrive.** `GRAFANA_SMTP_ENABLED` is still false, or the
+  address in `grafana/provisioning/alerting/spend-watch.yaml` was not replaced.

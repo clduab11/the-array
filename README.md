@@ -160,10 +160,35 @@ configuration has more than 80 fallback chains across roughly 190 named
 routes and 10 vendor-wide pass-throughs, and can currently reach about 1,070
 model ids. That last figure moves with the vendors' catalogs.
 
-So far the only thing watched walking the list is a refusal. A vendor said no
+So far the only failure watched walking the list on real traffic is an account
+being turned away. A vendor said no
 to a newly released model this account could not yet use, and the next model
 on the list answered; the ledger showed which one. An outage walks the same
 list. One has not yet been watched happening on real traffic.
+
+### A refusal that looks like an empty answer
+
+Models sometimes decline a request. The gateway treated that as a success: it
+returned a normal-looking reply with nothing in it and did not try the next
+model on the list. A route built to fall back to a second model simply went
+quiet.
+
+The same behavior hid a second problem for ten weeks. A test of the discount
+vendors give for re-sending the same instructions showed one model paying the
+surcharge for storing them and never receiving the discount, so the feature
+was switched off for that model. The test prompts had been declined. A
+declined request still pays to store the instructions and never reads them
+back, which looks exactly like a discount that does not work. On ordinary text
+it worked, and it was switched back on.
+
+The configuration now names the routes that should move on when a model
+declines, and a small module in `litellm/` does the same for replies that
+arrive word by word. In testing, both kinds of reply moved to the next model
+and normal answers were untouched; it has not yet been watched happening on
+real traffic. One gap remains in the ledger: a declined request and the answer
+that replaced it share an identifier, and the ledger keeps one row per
+identifier, so one of the two calls goes unrecorded while the vendor bills
+both.
 
 ### Privacy is a routing decision
 
@@ -244,9 +269,10 @@ the reference build with the operator's specifics removed.
 |---|---|
 | `docker-compose.yml` | The whole stack as one file: the gateway (LiteLLM), its database (Postgres) and cache (Redis), metrics (Prometheus), dashboards (Grafana), traces (Tempo), logs (Loki and Alloy), and a private web-search engine (SearXNG). Every component is pinned to an exact version. |
 | `litellm/Dockerfile` | The gateway's image, pinned to one release, with one deliberate change explained in the file. |
+| `litellm/refusal_fallback.py` | A small module that lets a reply delivered word by word move to the next model when the first one declines the request, as described above. |
 | `litellm_config.example.yaml` | The routing rules shown as patterns: vendor pass-throughs, a standard-rate route beside an opt-in priority route with its own budget, a privacy-preserving route pinned to its endpoint, local models, a fail-closed private chain, and an embedding route with deliberately no fallback. |
 | `prometheus.yml`, `tempo-config.yaml`, `loki-config.yaml`, `alloy-config.alloy` | The observability configuration, including the liveness pattern for components that ship without a shell. |
-| `grafana/` | Dashboards and data sources provisioned from disk. Edits made in the Grafana web interface are rejected by design, so these files are the single source of truth. The example dashboard includes the billed-tier detector described above. |
+| `grafana/` | Dashboards and data sources provisioned from disk. Edits made in the Grafana web interface are rejected by design, so these files are the single source of truth. The example dashboard includes the billed-tier detector described above. The alert rules that email when spend passes its share of the plan live here too. |
 | `provision-keys.example.sh` | Creates teams and per-tool access keys with budgets that reset monthly. |
 | `scripts/check-image-updates.py` | Reports which pinned components are behind upstream. It applies nothing. |
 | `scripts/verify-stack.py` | A health gate that checks 14 specific things and stops at the first one that fails. It read 14 of 14 on the reference deployment on the day this was written. |

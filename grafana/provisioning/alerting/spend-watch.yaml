@@ -1,0 +1,130 @@
+# Spend-watch alert rules, provisioned from disk like the dashboards and datasources.
+#
+# Why these exist: the gateway's own warning setting does not work. A key-level
+# soft_budget is accepted, reported as saved, and stored nowhere, and the global
+# max_budget is a process-local counter that only a restart resets (see the notes in
+# litellm_config.example.yaml). So the hard stops live on the team budgets, and the
+# "tell me before it gets there" job happens here: a query over the gateway's own
+# spend ledger (LiteLLM_SpendLogs) through the read-only Postgres datasource.
+#
+# To use it: set GRAFANA_SMTP_* in .env (docker-compose.yml passes them to Grafana),
+# replace the address below with your own, and edit the watch lines to match your
+# plan. Nothing here blocks a request. These are warnings only.
+#
+# Removing a rule from this file does NOT delete it from Grafana; provisioning only
+# adds and updates. Add a deleteRules entry with the rule's uid to retire one.
+apiVersion: 1
+
+contactPoints:
+  - orgId: 1
+    name: spend-email
+    receivers:
+      - uid: spend-email
+        type: email
+        settings:
+          addresses: alerts@example.com   # replace with your own address
+          singleEmail: true
+          subject: '[the-array] {{ .CommonLabels.alertname }}'
+
+policies:
+  - orgId: 1
+    receiver: spend-email
+    group_by: ['alertname']
+    group_wait: 30s
+    group_interval: 5m
+    repeat_interval: 24h
+
+groups:
+  - orgId: 1
+    name: spend-watch
+    folder: gateway
+    interval: 15m
+    rules:
+      - uid: key-over-watch-line
+        title: Key past its watch line
+        condition: threshold
+        for: 0m
+        annotations:
+          summary: '{{ $labels.alias }} is at {{ humanize $values.reduced.Value }}x its monthly watch line'
+          description: >-
+            Month-to-date spend for this virtual key has passed 80% of its share of the monthly
+            plan. Nothing is blocked; this is a warning line, not a cap.
+        labels:
+          severity: warning
+        isPaused: false
+        data:
+          - refId: spend
+            relativeTimeRange: {from: 2764800, to: 0}
+            datasourceUid: praxen-litellm-pg
+            model:
+              refId: spend
+              format: table
+              rawSql: |
+                -- One row per key alias with its monthly watch line in USD. The aliases are the
+                -- example keys in provision-keys.example.sh; the lines add up to a $40 plan.
+                with watch(alias, line) as (values
+                  ('research-agent', 24.0), ('apps-frontend', 8.0),
+                  ('apps-private-lane', 5.0), ('sandbox-probe', 3.0)
+                )
+                select w.alias as alias,
+                       coalesce(sum(s.spend), 0) / w.line as ratio
+                from watch w
+                left join "LiteLLM_SpendLogs" s
+                  on s.metadata->>'user_api_key_alias' = w.alias
+                 and s."startTime" >= date_trunc('month', now())
+                group by w.alias, w.line
+          - refId: reduced
+            datasourceUid: __expr__
+            model:
+              refId: reduced
+              type: reduce
+              expression: spend
+              reducer: last
+          - refId: threshold
+            datasourceUid: __expr__
+            model:
+              refId: threshold
+              type: threshold
+              expression: reduced
+              conditions:
+                - evaluator: {type: gt, params: [0.8]}
+
+      - uid: total-over-plan
+        title: Month-to-date gateway spend past 80% of plan
+        condition: threshold
+        for: 0m
+        annotations:
+          summary: 'Gateway spend month-to-date is ${{ humanize $values.reduced.Value }} against a $40 plan'
+          description: >-
+            Total spend in the gateway's ledger this month has passed $32. The hard stops (the team
+            budgets, and the global backstop far above them) are deliberately higher; treat this as a
+            prompt to look at the dashboard.
+        labels:
+          severity: warning
+        isPaused: false
+        data:
+          - refId: total
+            relativeTimeRange: {from: 2764800, to: 0}
+            datasourceUid: praxen-litellm-pg
+            model:
+              refId: total
+              format: table
+              rawSql: |
+                select coalesce(sum(spend), 0) as total
+                from "LiteLLM_SpendLogs"
+                where "startTime" >= date_trunc('month', now())
+          - refId: reduced
+            datasourceUid: __expr__
+            model:
+              refId: reduced
+              type: reduce
+              expression: total
+              reducer: last
+          - refId: threshold
+            datasourceUid: __expr__
+            model:
+              refId: threshold
+              type: threshold
+              expression: reduced
+              conditions:
+                - evaluator: {type: gt, params: [32]}

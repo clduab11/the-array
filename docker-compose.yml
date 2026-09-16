@@ -147,6 +147,11 @@ services:
       PRIVATE_INFERENCE_API_KEY: ${PRIVATE_INFERENCE_API_KEY:-}
     volumes:
       - ./litellm_config.yaml:/app/config.yaml:ro
+      # Streamed-refusal fallback (litellm/refusal_fallback.py), loaded by `callbacks` in the
+      # config. LiteLLM imports callback modules from the config file's directory, so it is
+      # mounted beside config.yaml. A new bind mount needs a recreate, not a restart:
+      #   docker compose --profile observe up -d litellm-proxy
+      - ./litellm/refusal_fallback.py:/app/refusal_fallback.py:ro
     command:
       - "--config"
       - "/app/config.yaml"
@@ -297,12 +302,26 @@ services:
       # Pinned panel plugin, installed at boot (needs egress). Only required if your
       # dashboards use ECharts panels. GF_INSTALL_PLUGINS is deprecated on 13.x;
       # GF_PLUGINS_PREINSTALL_SYNC is its documented replacement (id@version).
-      # GF_PLUGINS_PREINSTALL_SYNC: "volkovlabs-echarts-panel@7.2.5"   # uncomment only if your dashboards use ECharts panels (needs egress to grafana.com at boot)
+      # Uncomment only if your dashboards use ECharts panels (needs egress to grafana.com at boot):
+      # GF_PLUGINS_PREINSTALL_SYNC: "volkovlabs-echarts-panel@7.2.5"
       # Credentials for the file-provisioned read-only Postgres datasource
       # (grafana/provisioning/datasources/datasources.yaml expands these at boot).
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
       POSTGRES_USER: ${POSTGRES_USER:-litellm}
       POSTGRES_DB: ${POSTGRES_DB:-litellm}
+      # Email for the spend-watch alert rules (grafana/provisioning/alerting/). Off until
+      # GRAFANA_SMTP_ENABLED=true, so a missing mail credential can never stop Grafana
+      # booting. Any SMTP relay works: a mail provider's submission port, or a mail bridge
+      # on the host reached through host.docker.internal (Docker Desktop forwards that name
+      # to the host's loopback). SKIP_VERIFY only for a relay with a self-signed certificate.
+      GF_SMTP_ENABLED: ${GRAFANA_SMTP_ENABLED:-false}
+      GF_SMTP_HOST: ${GRAFANA_SMTP_HOST:-}
+      GF_SMTP_USER: ${GRAFANA_SMTP_USER:-}
+      GF_SMTP_PASSWORD: ${GRAFANA_SMTP_PASSWORD:-}
+      GF_SMTP_FROM_ADDRESS: ${GRAFANA_SMTP_FROM:-}
+      GF_SMTP_FROM_NAME: "the-array"
+      GF_SMTP_SKIP_VERIFY: ${GRAFANA_SMTP_SKIP_VERIFY:-false}
+      GF_SMTP_STARTTLS_POLICY: ${GRAFANA_SMTP_STARTTLS_POLICY:-OpportunisticStartTLS}
       # Opt-in ONLY for single-tenant deployments: both relax XSS protections so text
       # panels can render rich HTML / iframes. Leave off when Grafana is LAN-exposed.
       # GF_PANELS_DISABLE_SANITIZE_HTML: "true"
@@ -311,6 +330,7 @@ services:
       - grafanadata:/var/lib/grafana
       - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
       - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./grafana/provisioning/alerting:/etc/grafana/provisioning/alerting:ro
       - ./grafana/dashboards:/etc/grafana/dashboards:ro
     ports:
       # ALL interfaces on purpose (dashboards from other machines). LAN-EXPOSED -

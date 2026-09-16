@@ -32,6 +32,10 @@ litellm_settings:
   # come from OTEL_* env vars in docker-compose; prometheus_system adds redis/postgres/router metrics.
   success_callback: ["prometheus", "otel"]
   failure_callback: ["prometheus", "otel"]
+  # Loads litellm/refusal_fallback.py (mounted beside this file by docker-compose), which
+  # lets a streamed refusal walk content_policy_fallbacks below. Remove this line if you
+  # do not mount the module, or the proxy fails at boot importing it.
+  callbacks: ["refusal_fallback.proxy_handler_instance"]
   service_callback: ["prometheus_system"]
   turn_off_message_logging: true   # prompts/completions never reach trace or log backends
   # Single-tenant posture: the scrape job runs inside the same private network,
@@ -78,6 +82,20 @@ litellm_settings:
     - gpt-standard-example: [claude-cached-example, local-chat-example]
     - claude-cached-example: [gpt-standard-example, local-chat-example]
     # NO chain for local-embed-example - see that entry for the reason.
+  # A refusal is not an error. When a model declines a request (Anthropic's stop_reason
+  # "refusal" arrives as finish_reason "content_filter"), the proxy returns HTTP 200 with an
+  # empty answer and does NOT walk `fallbacks`. Groups listed here fall back on a refusal
+  # instead: non-streamed calls through LiteLLM's built-in check (router_settings.retry_policy
+  # ContentPolicyViolationErrorRetries 0 sends them straight to this chain), streamed calls
+  # through litellm/refusal_fallback.py. A group missing from this list still returns the empty
+  # 200, so list every frontier route in both places and keep the chains identical. Tested on
+  # the reference deployment with streamed and non-streamed refusals; normal answers and
+  # unlisted groups were unchanged. Ledger caveat: a refused call and its fallback share a
+  # request id, and SpendLogs keeps one row per id, so one leg is not recorded while the
+  # vendor bills both.
+  content_policy_fallbacks:
+    - reasoning: [gpt-standard-example, fast-cloud-example, local-chat-example]
+    - claude-cached-example: [gpt-standard-example, local-chat-example]
 
 router_settings:
   routing_strategy: simple-shuffle
@@ -204,7 +222,10 @@ model_list:
       # Marks the system prompt as a cache prefix on every call. The minimum
       # cacheable prefix differs per model (roughly 1K to 4K tokens); below the
       # threshold the marker is a silent no-op, so confirm cache reads appear
-      # in usage before assuming any saving.
+      # in usage before assuming any saving. Check the reply was not a refusal first: a
+      # refused call is still billed for writing the cache and never reads it, which looks
+      # exactly like caching that does not work. Probe with ordinary text, not a long
+      # templated test prompt, which some models decline.
       cache_control_injection_points:
         - location: message
           role: system
