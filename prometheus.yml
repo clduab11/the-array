@@ -28,7 +28,13 @@ scrape_configs:
     #   user_agent     - unbounded (one value per client build / UA string)
     #   client_ip      - PII-adjacent and no dashboard needs it
     #   hashed_api_key - redundant with api_key_alias; doubles label memory for nothing
+    # api_key_alias is deliberately KEPT: with user_agent gone it is the only
+    # per-client discriminator left, and the dashboard's client panels group by it.
+    # That makes the virtual key the unit of attribution - clients sharing one key
+    # are one series here permanently.
     # Reversible: delete this block and restart; future scrapes carry the labels again.
+    # Not retroactive either way: samples already stored keep the shape they were
+    # written with, so a client split only separates traffic from that point on.
     metric_relabel_configs:
       - regex: '(user_agent|client_ip|hashed_api_key)'
         action: labeldrop
