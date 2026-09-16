@@ -46,9 +46,18 @@ litellm_settings:
   drop_params: true          # drop unsupported OpenAI params instead of erroring
   request_timeout: 180       # seconds; a per-entry `timeout` below overrides it
   num_retries: 3
-  # Soft global ceiling across ALL traffic. The enforcement surface is the
-  # per-team and per-key budget minted by provision-keys.example.sh.
-  max_budget: 140.0
+  # RUNAWAY BACKSTOP ONLY - do NOT put your real monthly number here.
+  # Reading LiteLLM's source (checked at a pinned release and again at main,
+  # 2026-09-15): this key also arms a module-global spend counter, incremented
+  # on non-streaming completions and reset by NOTHING but a process restart.
+  # Set it to the figure you intend to spend and the proxy stops serving
+  # part-way through some later month with no reset to release it. Keep it far
+  # above the plan and put the real ceiling on the TEAM budgets, which do reset
+  # on budget_duration. Upstream issue: BerriAI/litellm#40020.
+  # Note also that key-level `soft_budget` - the alert-only variant - accepts a
+  # value, returns success, and persists nothing. Alerting has to come from your
+  # own query over the SpendLogs table, not from the proxy.
+  max_budget: 1000.0
   budget_duration: 1mo
   # Fallback chains live under litellm_settings on this line (router_settings
   # also accepts `fallbacks` - keep them in ONE place). Every chain ends at a
@@ -112,6 +121,12 @@ model_list:
     litellm_params:
       model: "gemini/*"
       api_key: os.environ/GEMINI_API_KEY
+      # Pin the tier here as well, for a DIFFERENT reason than the OpenAI lane:
+      # LiteLLM translates the OpenAI-shaped `service_tier` value per provider,
+      # and "auto" maps to Gemini's PRIORITY tier - so a request naming no tier
+      # can still arrive at the premium one. "default" maps to Gemini standard.
+      # Verified by probe: the response then reports service_tier "default".
+      service_tier: "default"
   - model_name: "mistral/*"
     litellm_params:
       model: "mistral/*"
@@ -124,6 +139,16 @@ model_list:
     litellm_params:
       model: "openrouter/*"
       api_key: os.environ/OPENROUTER_API_KEY
+      # Aggregators pick a downstream provider for you, and the documented
+      # default here is data_collection "allow" - i.e. it may route to providers
+      # that store and train on prompts. Deny it and require zero retention.
+      # Note the free (":free") model slugs are a separate matter: they require
+      # an account-level training/logging opt-in, so they are never appropriate
+      # for client or otherwise sensitive work regardless of this setting.
+      extra_body:
+        provider:
+          data_collection: "deny"
+          zdr: true
   - model_name: "xai/*"
     litellm_params:
       model: "xai/*"

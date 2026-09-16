@@ -97,9 +97,47 @@ every call, and the dashboard flags any premium-tier call on a route that did
 not ask for it. The premium varies by model family, so the dashboard shows the
 ratio per route.
 
+### The same default, at a second vendor, by a different road
+
+Fixing the first vendor is what turned up the second one. This time nothing
+on the vendor's side was misconfigured. The gateway software itself was doing
+the translating: a neutral "choose for me" value, which sounds like a
+reasonable default, is converted on the way out into *that* vendor's premium
+tier. Nobody wrote "premium" anywhere. It was the honest reading of a word
+that means something different at each vendor.
+
+That lane had been running unpinned for months, and it is the one behind the
+everyday image-and-document route, so it saw real traffic. The fix was the
+same one line, on eleven routes and the catch-all beneath them, and a probe
+afterward confirmed the vendor now reports the standard tier back. The general
+lesson is worth more than the fix: words like "auto", "priority" and "fast"
+do not survive translation between vendors, and a gateway that speaks to all
+of them has to pin the meaning at every door.
+
 ### Prices move under you, in both directions
 
 Vendors reprice constantly. On 2026-07-30 one vendor cut prices across a whole model family, one model by 80 percent and another by 20 percent. A price table you copied once can change in a day, and nothing tells you. The vendor's invoice was right both times; it was our own ledger that was wrong, and that matters because budgets stop spending based on the ledger. A price override written by hand over-counted one model five-fold for nine days after the cut. One mistake was a number we wrote; the other was a number we inherited. The ledger shows the drift, and the fix is a text edit checked against the vendor's published rate card.
+
+### The ceiling that isn't one
+
+There is a single setting that reads like the obvious way to cap monthly
+spend, and it is the wrong place to put your real number. Reading the
+gateway's source at the pinned version, and again at its current code, shows
+what it arms: a counter that lives in the running process and is reset by
+nothing but a restart. Set it to the figure you actually intend to spend and,
+some weeks later, the gateway simply stops serving — with no month boundary
+to release it.
+
+The companion setting, the one that is supposed to warn instead of block,
+turned out to do nothing at all. It accepts the value, reports success, and
+stores none of it.
+
+So the working arrangement puts the real limits on the team budgets, which do
+reset each month, leaves the global figure far above anything intended as a
+runaway backstop, and moves the warning to the dashboard, where a query over
+the gateway's own ledger emails when a lane passes its share. A number that
+looks like a ceiling, a number that silently isn't a warning, and a reset that
+only a restart performs — none of that is visible from the setting names.
 
 ### A rule saying no
 
