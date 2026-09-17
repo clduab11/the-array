@@ -10,7 +10,7 @@ Per-client rules (verified against each client's documentation):
   Claude Code   .mcp.json "mcpServers"; ${VAR}; Windows stdio via cmd /c npx
   VS Code       mcp.json "servers"; ${env:VAR} for stdio env; ${input:...} for HTTP headers (vscode#336232)
   Zed           "context_servers"; no reference syntax: stdio inherits the user environment, keyed HTTP goes
-                through mcp-remote, which expands ${VAR} itself
+                through mcp-remote, which expands ${VAR} itself; commands use the runtimes.npx path (no shell)
   OpenCode      "mcp" (V1 shape); {env:VAR}; command is one array; "environment"
   Codex         [mcp_servers.<name>]; env_vars / bearer_token_env_var / env_http_headers (names, not values)
 """
@@ -132,15 +132,15 @@ def render_zed(manifest, tools):
     servers = {}
     for tool, enabled in tools:
         if tool["transport"] == "stdio":
-            command, args = stdio_parts(tool, manifest["runtimes"], "npx")
-            entry = {"command": command, "args": args}
+            command, args = stdio_parts(tool, manifest["runtimes"], manifest["runtimes"]["npx"])
+            entry = {"command": command, "args": args}  # full npx path (npx.cmd on Windows): Zed spawns without a shell
             if tool.get("env"):
                 entry["env"] = dict(tool["env"])  # literals only; keys come from Zed's inherited user environment
         elif (tool.get("auth") or {}).get("type") in ("bearer", "header"):
             args = ["-y", manifest["runtimes"]["mcp_remote"], tool["url"]]
             for header, value in http_headers(tool, lambda s: "${%s}" % s).items():
                 args += ["--header", f"{header}:{value}"]
-            entry = {"command": "npx", "args": args}
+            entry = {"command": manifest["runtimes"]["npx"], "args": args}
         else:
             entry = {"url": tool["url"]}
         entry["enabled"] = enabled
