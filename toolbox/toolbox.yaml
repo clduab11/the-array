@@ -1,0 +1,462 @@
+# Master MCP toolbox - the ONE list of tools, written once and rendered into every client.
+#
+#   python toolbox/render.py            -> toolbox/out/<client>/...  (configs with env references, never secrets)
+#   python toolbox/check.py             -> handshakes every hosted tool with the keys in your environment
+#
+# This is the reference list with the operator's specifics removed. Edit it, never the rendered files.
+# Secrets policy: keys live in environment variables. Configs only ever hold the variable NAME.
+# Pin versions; never @latest. A tool with a setup: line renders switched off until that step is done.
+# runtimes: on Windows set npx to the full path of npx.cmd and uvx to uvx.exe; the renderer uses these
+# for stdio tools. mcp_remote is used only where a client cannot send an env-sourced header itself (Zed).
+version: 1
+profiles:
+  build-code: Build and ship code
+  rnd-researcher: Research (papers, models, the web)
+  biz-ops: Business operations
+  plan-triage: Portfolio, tickets, spend
+clients:
+  claude-code:
+    profiles:
+    - build-code
+    - rnd-researcher
+    - plan-triage
+    - biz-ops
+  vscode:
+    profiles:
+    - build-code
+  zed:
+    profiles:
+    - build-code
+    - rnd-researcher
+    - plan-triage
+  opencode:
+    profiles:
+    - build-code
+    - rnd-researcher
+    - plan-triage
+  codex:
+    profiles:
+    - build-code
+    - rnd-researcher
+    - plan-triage
+runtimes:
+  npx: npx
+  uvx: uvx
+  mcp_remote: mcp-remote@0.14.2
+secrets:
+  EXA_API_KEY:
+    status: add
+    for: exa
+  JINA_API_KEY:
+    status: add
+    for: jina
+  CONTEXT7_API_KEY:
+    status: add
+    for: context7
+  FIRECRAWL_API_KEY:
+    status: add
+    for: firecrawl
+  HF_TOKEN:
+    status: add
+    for: huggingface
+    note: use a read-only token
+  GITHUB_MCP_PAT:
+    status: add
+    for: github
+    note: fine-grained, read-only, named repositories, with an expiry
+  TAVILY_API_KEY:
+    status: add
+    for: tavily
+  LINEAR_API_KEY:
+    status: optional
+    for: linear
+    note: only for a header-only client; every rendered client signs in with OAuth
+  SPEND_RO_DSN:
+    status: add
+    for: dbhub
+    note: connection string for a SELECT-only role on the gateway database; never the gateway's own DATABASE_URL
+tools:
+- id: searxng
+  name: SearXNG
+  tier: core
+  profiles:
+  - build-code
+  - rnd-researcher
+  - biz-ops
+  - plan-triage
+  what: Web search through your own SearXNG (free); also reads a page and refuses local-network URLs
+  transport: stdio
+  runner: npx
+  package: mcp-searxng@2.3.0
+  env:
+    SEARXNG_URL: http://localhost:8080
+  note: Runs against your own SearXNG instance (set SEARXNG_URL). Free, and the search that costs nothing per call, so it
+    is first in the order.
+  evidence: https://github.com/ihor-sokoliuk/mcp-searxng
+- id: exa
+  name: Exa
+  tier: core
+  profiles:
+  - build-code
+  - rnd-researcher
+  - biz-ops
+  - plan-triage
+  what: AI web search and page fetch (2 tools on the hosted default)
+  transport: http
+  url: https://mcp.exa.ai/mcp
+  auth:
+    type: header
+    header: x-api-key
+    secret: EXA_API_KEY
+  note: Put the key in the header, never in the URL. The hosted endpoint rejects some default HTTP user agents, so a failed
+    handshake from a script is not a failed key.
+  evidence: https://exa.ai/docs/reference/exa-mcp
+- id: jina
+  name: Jina
+  tier: core
+  profiles:
+  - build-code
+  - rnd-researcher
+  - biz-ops
+  - plan-triage
+  what: Answer-inside-a-page search, read a page with a question, arXiv and SSRN search
+  transport: http
+  url: https://mcp.jina.ai/v1?include_tools=search_web_deep,read_url,parallel_read_url,search_arxiv,search_ssrn
+  auth:
+    type: bearer
+    secret: JINA_API_KEY
+  note: The include_tools filter in the URL trims the server's ~22 tools to the five worth a schema slot. read_url with
+    a question returns only the answering passages.
+  evidence: https://github.com/jina-ai/MCP
+- id: context7
+  name: Context7
+  tier: core
+  profiles:
+  - build-code
+  - rnd-researcher
+  - plan-triage
+  what: Current library and framework documentation (2 tools)
+  transport: http
+  url: https://mcp.context7.com/mcp
+  auth:
+    type: bearer
+    secret: CONTEXT7_API_KEY
+  note: Free plans have a monthly call limit. Returned snippets are untrusted text.
+  evidence: https://github.com/upstash/context7
+- id: microsoft-learn
+  name: Microsoft Learn
+  tier: role
+  profiles:
+  - build-code
+  - biz-ops
+  what: Microsoft 365, Entra, Exchange, Graph, Azure and PowerShell docs; first call for Microsoft questions
+  transport: http
+  url: https://learn.microsoft.com/api/mcp
+  auth:
+    type: none
+  note: Keyless. First call for anything Microsoft, Azure or PowerShell.
+  evidence: https://github.com/MicrosoftDocs/mcp
+- id: deepwiki
+  name: DeepWiki
+  tier: role
+  profiles:
+  - build-code
+  - rnd-researcher
+  what: Explains public GitHub repos; second call for library docs behind Context7
+  transport: http
+  url: https://mcp.deepwiki.com/mcp
+  auth:
+    type: none
+  note: Keyless. Its index can lag a repository; check version-sensitive answers.
+  evidence: https://docs.devin.ai/work-with-devin/deepwiki-mcp
+- id: firecrawl
+  name: Firecrawl
+  tier: role
+  profiles:
+  - rnd-researcher
+  default_enabled: false
+  what: Crawl or map a whole site; second call to read one page
+  transport: http
+  url: https://mcp.firecrawl.dev/v2/mcp
+  auth:
+    type: bearer
+    secret: FIRECRAWL_API_KEY
+  note: With a key it registers ~25 tools and crawling spends credits, so it ships switched off. Turn it on for crawl or
+    map work.
+  evidence: https://docs.firecrawl.dev/mcp-server
+- id: youtube-transcript
+  name: YouTube transcripts
+  tier: role
+  profiles:
+  - rnd-researcher
+  what: Pull a video's transcript into chat (no key)
+  transport: stdio
+  runner: uvx
+  args:
+  - --from
+  - git+https://github.com/jkawamoto/mcp-youtube-transcript@v0.7.1
+  - mcp-youtube-transcript
+  - --response-limit
+  - '15000'
+  note: Installed from the release tag because the package index copy lags. Needs git on PATH.
+  evidence: https://github.com/jkawamoto/mcp-youtube-transcript
+- id: huggingface
+  name: Hugging Face
+  tier: role
+  profiles:
+  - rnd-researcher
+  what: Models, datasets, papers and Spaces for the Unsloth and Kaggle work
+  transport: http
+  url: https://huggingface.co/mcp
+  auth:
+    type: bearer
+    secret: HF_TOKEN
+  note: Choose which tools the hosted server exposes in your Hugging Face MCP settings and keep paid Jobs off; use a read-only
+    token.
+  evidence: https://huggingface.co/docs/hub/hf-mcp-server
+- id: github
+  name: GitHub
+  tier: role
+  profiles:
+  - build-code
+  - plan-triage
+  what: Pull requests, issues and code search on GitHub, read-only with a trimmed tool list
+  transport: http
+  url: https://api.githubcopilot.com/mcp/
+  auth:
+    type: bearer
+    secret: GITHUB_MCP_PAT
+  headers:
+    X-MCP-Readonly: 'true'
+    X-MCP-Toolsets: repos,issues,pull_requests
+  note: The default load is ~52 tools; the two headers cut it to read-only repos/issues/pull_requests. Use a fine-grained,
+    read-only token scoped to named repositories. Add a separate write-enabled entry only for a task that needs it.
+  evidence: https://github.com/github/github-mcp-server/blob/main/docs/remote-server.md
+- id: chrome-devtools
+  name: Chrome DevTools
+  tier: role
+  profiles:
+  - build-code
+  default_enabled: false
+  what: The one browser tool — debug pages (console, network, performance) and light automation
+  transport: stdio
+  runner: npx
+  package: chrome-devtools-mcp@1.9.0
+  args:
+  - --isolated
+  - --no-usage-statistics
+  - --no-performance-crux
+  note: 'The one browser tool: console, network, performance and light automation, always in an isolated profile. Add --slim
+    for plain browsing. Off by default outside clients that defer tool schemas, because ~26 tools is real context cost.'
+  evidence: https://github.com/ChromeDevTools/chrome-devtools-mcp
+- id: markitdown
+  name: Markitdown
+  tier: role
+  profiles:
+  - biz-ops
+  - rnd-researcher
+  what: Turns PDF, Word, Excel, PowerPoint and HTML into Markdown (1 tool)
+  transport: stdio
+  runner: uvx
+  args:
+  - markitdown-mcp==0.0.1a7
+  note: Turns PDF, Word, Excel, PowerPoint and HTML into Markdown with one tool. It reads any file your account can, so
+    keep it out of unattended sessions that also browse the web.
+  evidence: https://github.com/microsoft/markitdown/tree/main/packages/markitdown-mcp
+- id: linear
+  name: Linear
+  tier: role
+  profiles:
+  - plan-triage
+  what: Tickets and projects — read-only endpoint by default
+  transport: http
+  url: https://mcp.linear.app/mcp/readonly
+  auth:
+    type: oauth
+  note: OAuth 2.1 with dynamic client registration; the readonly endpoint only ever exposes read tools. A read-only API
+    key is optional, for a header-only client.
+  evidence: https://linear.app/docs/mcp
+- id: notion
+  name: Notion
+  tier: role
+  profiles:
+  - plan-triage
+  clients_only:
+  - claude-code
+  what: Look up and lightly edit Notion until the move to Obsidian is done
+  transport: http
+  url: https://mcp.notion.com/mcp
+  auth:
+    type: oauth
+  note: Hosted OAuth. One client only, and only until your notes live somewhere you control.
+  evidence: https://developers.notion.com/guides/mcp/get-started-with-mcp
+- id: sentry
+  name: Sentry
+  tier: role
+  profiles:
+  - build-code
+  - plan-triage
+  setup: Replace ORG and PROJECT in the URL with your Sentry organization and project slugs.
+  what: Errors and traces for apps that report to Sentry (inspect + seer skills only)
+  transport: http
+  url: https://mcp.sentry.dev/mcp/ORG/PROJECT
+  auth:
+    type: oauth
+  note: Scoped to one organization and project; leave the triage and project-management skills off.
+  evidence: https://github.com/getsentry/sentry-mcp
+- id: dbhub
+  name: DBHub (spend ledger)
+  tier: role
+  profiles:
+  - plan-triage
+  - biz-ops
+  setup: Create a SELECT-only database role, set SPEND_RO_DSN, and copy dbhub.toml.example to the path below.
+  what: One read-only database tool for the LiteLLM spend ledger (and any local SQLite file later)
+  transport: stdio
+  runner: npx
+  package: '@bytebase/dbhub@1.2.5'
+  secrets_env:
+  - SPEND_RO_DSN
+  args:
+  - --transport
+  - stdio
+  - --config
+  - ~/.config/toolbox/dbhub.toml
+  note: 'One read-only database tool. readonly lives ONLY in the TOML: a launch with just --dsn can write, so always launch
+    with --config.'
+  evidence: https://github.com/bytebase/dbhub
+- id: gitlab
+  name: GitLab
+  tier: role
+  profiles:
+  - build-code
+  - plan-triage
+  what: Projects, issues and merge requests on gitlab.com through GitLab's own MCP server (beta, all tiers)
+  transport: http
+  url: https://gitlab.com/api/v4/mcp
+  auth:
+    type: oauth
+  headers:
+    X-Gitlab-Mcp-Server-Tool-Name-Prefix: gitlab_
+  note: OAuth 2.0 dynamic client registration on first connect; nothing to store. The prefix header keeps its tool names
+    from colliding with GitHub's.
+  evidence: https://docs.gitlab.com/user/gitlab_duo/model_context_protocol/mcp_server/
+- id: pdf-tools
+  name: PDF Tools
+  tier: role
+  profiles:
+  - biz-ops
+  clients_only:
+  - claude-code
+  what: Create PDFs from Markdown, fill forms, merge, split, encrypt (~22 tools)
+  transport: stdio
+  runner: npx
+  package: '@aryanbv/pdf-toolkit-mcp@0.3.1'
+  note: '~22 tools: keep it in one chat client. Markitdown covers reading PDFs everywhere.'
+  evidence: https://www.npmjs.com/package/@aryanbv/pdf-toolkit-mcp
+- id: desktop-commander
+  name: Desktop Commander
+  tier: role
+  profiles:
+  - build-code
+  - biz-ops
+  clients_only:
+  - claude-code
+  what: Terminal, process and file control from a chat client that has no shell of its own
+  transport: stdio
+  runner: npx
+  package: '@wonderwhy-er/desktop-commander@0.2.50'
+  args:
+  - --no-onboarding
+  note: One client only. Its config file is shared by every app that runs it and it can rewrite its own folder limit, so
+    keep allowedDirectories narrow and keep it out of editors that already have a terminal.
+  evidence: https://github.com/wonderwhy-er/DesktopCommanderMCP
+- id: graphify
+  name: graphify (code knowledge graph)
+  tier: role
+  profiles:
+  - build-code
+  clients_only:
+  - claude-code
+  - opencode
+  - codex
+  - zed
+  setup: In the repository run `uv tool install graphifyy==0.9.63` then `graphify extract . --code-only` to build graphify-out/graph.json;
+    enable per repository.
+  what: Query a per-repo knowledge graph (tree-sitter AST, no vector store; 7 tools) instead of grepping; can also emit
+    an Obsidian vault
+  transport: stdio
+  runner: uvx
+  args:
+  - --from
+  - graphifyy==0.9.63
+  - python
+  - -m
+  - graphify.serve
+  - graphify-out/graph.json
+  note: Per-repository code knowledge graph (AST-based, no vector store). Build the graph in the repo first, then enable
+    this tool there. The graph path is relative to the repo.
+  evidence: https://github.com/Graphify-Labs/graphify
+- id: tavily
+  name: Tavily
+  tier: role
+  profiles:
+  - rnd-researcher
+  what: Search, extract, map and crawl (third call after SearXNG and Exa; second crawler after Firecrawl)
+  transport: http
+  url: https://mcp.tavily.com/mcp/
+  auth:
+    type: bearer
+    secret: TAVILY_API_KEY
+  note: Search, extract, map and crawl behind the free tools in the call order. The free tier has a monthly credit allowance;
+    the API returns 433 when credits run out.
+  evidence: https://github.com/tavily-ai/tavily-mcp
+- id: obsidian
+  name: Obsidian vault (mcpvault)
+  tier: role
+  profiles:
+  - biz-ops
+  - plan-triage
+  setup: Set the vault path in args. Keep sensitive notes in a separate vault; this server cannot exclude folders.
+  what: Read notes in praxen-vault from chat apps without the Obsidian CLI (read-only; BM25 search, frontmatter, stats)
+  transport: stdio
+  runner: npx
+  package: '@bitbonsai/mcpvault@0.15.0'
+  args:
+  - <path-to-your-vault>
+  - --read-only
+  note: 'Read-only by flag: mutating tools are hidden. It has no folder-exclude option, so point it at a vault that holds
+    nothing sensitive, or move sensitive notes to a separate vault first.'
+  evidence: https://github.com/bitbonsai/mcpvault
+dropped:
+- name: Brave Search
+  why: Duplicate search coverage
+  instead: SearXNG, then Exa
+- name: Kagi
+  why: Its MCP server exposes search and page extract only (FastGPT and the summarizer were removed) and takes a key, not
+    OAuth
+  instead: SearXNG, then Exa; Jina read_url with a question for long pages
+- name: Fetch
+  why: No slot in the call order, and a generic fetch server can reach services on your own network
+  instead: Jina read_url; SearXNG's reader as the free fallback
+- name: Playwright
+  why: Duplicates Chrome DevTools at higher cost and loads a run-any-code tool by default
+  instead: Chrome DevTools
+- name: Sequential Thinking
+  why: Reasoning models already plan
+  instead: Nothing needed
+- name: Memory server
+  why: Every client keeps its own memory; shared facts belong in notes
+  instead: Client memory plus your notes
+- name: Per-vendor database servers (SQLite, MySQL, SQL Server, Postgres)
+  why: Four servers with write tools for one read-only job
+  instead: DBHub with a read-only TOML
+- name: Redis
+  why: Dozens of tools and no read-only mode, pointed at a cache
+  instead: redis-cli from a shell when debugging
+- name: Vector-store servers (Chroma, Qdrant)
+  why: A second copy of an index another tool owns
+  instead: The tool that owns the index
+- name: A Docker MCP gateway
+  why: Every tool vanishes from every client whenever the container engine is off
+  instead: This list rendered into each client's own config

@@ -277,6 +277,7 @@ the reference build with the operator's specifics removed.
 | `scripts/check-image-updates.py` | Reports which pinned components are behind upstream. It applies nothing. |
 | `scripts/verify-stack.py` | A health gate that checks 14 specific things and stops at the first one that fails. It read 14 of 14 on the reference deployment on the day this was written. |
 | `scripts/leak-gate.py` | Scans the tree, including the insides of spreadsheets and documents, for anything that must not be published. |
+| `toolbox/` | One list of MCP tools rendered into each client's own config format (Claude Code, VS Code, Zed, OpenCode, Codex) with environment-variable references only, plus a handshake script that reports each hosted tool's real tool count. The rendered files never hold a key. |
 | `DEPLOYMENT.md` | The step-by-step guide: first start-up, connecting a client, changing routes, updating components, rolling back. |
 | `.github/` | Automation that opens pull requests and files reports. A human merges. |
 

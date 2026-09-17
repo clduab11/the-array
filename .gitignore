@@ -24,3 +24,6 @@ desktop.ini
 # --- Python bytecode (scripts/ is run in-tree) ----------------------------------
 __pycache__/
 *.pyc
+
+# rendered per-client configs are generated from toolbox/toolbox.yaml
+toolbox/out/
