@@ -422,7 +422,7 @@ services:
   # ===========================================================================
 
   qdrant:
-    image: qdrant/qdrant:v1.15.4
+    image: qdrant/qdrant:v1.19.1
     container_name: praxen-qdrant
     profiles: ["agents", "full", "dev"]
     <<: *default-restart
@@ -447,7 +447,7 @@ services:
           cpus: "1.0"
 
   n8n:
-    image: n8nio/n8n:2.23.3
+    image: n8nio/n8n:2.38.7
     container_name: praxen-n8n
     profiles: ["agents", "full", "dev"]
     <<: *default-restart
