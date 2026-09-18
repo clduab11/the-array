@@ -100,7 +100,8 @@ chmod +x provision-keys.example.sh && ./provision-keys.example.sh
    `budget_duration`; a key without one never resets.
 
 6. Open Grafana on port 3200 (`admin` / the password in `.env`). Confirm the
-   four provisioned datasources exist and open the example dashboard. Saves
+   four provisioned datasources exist and open the example dashboard. The three
+   boards (COMMAND / ROUTING / FORENSICS) are described in `docs/dashboards.md`. Saves
    from the UI are rejected by design: the JSON on disk is the only author
    surface and Grafana re-reads it every 30 seconds.
 

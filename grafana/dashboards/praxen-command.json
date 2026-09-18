@@ -1,0 +1,2500 @@
+{
+  "uid": "praxen-command",
+  "title": "PRAXEN // COMMAND",
+  "description": "Is anything broken, overspending, degraded or off-policy now? Home board (uid praxen-command). Companions: ROUTING (why) and FORENSICS (which request).",
+  "tags": [
+    "praxen",
+    "litellm",
+    "tactical",
+    "command"
+  ],
+  "schemaVersion": 42,
+  "graphTooltip": 1,
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "liveNow": false,
+  "refresh": "30s",
+  "timezone": "America/Chicago",
+  "time": {
+    "from": "now-24h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "annotations": {
+    "list": []
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "key",
+        "label": "KEY",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "afimxbo42ap6oe"
+        },
+        "definition": "label_values(litellm_spend_metric_total, api_key_alias)",
+        "query": {
+          "qryType": 1,
+          "query": "label_values(litellm_spend_metric_total, api_key_alias)",
+          "refId": "var-key"
+        },
+        "refresh": 2,
+        "regex": "",
+        "sort": 1,
+        "includeAll": true,
+        "multi": true,
+        "allValue": ".*",
+        "hide": 0,
+        "current": {
+          "selected": true,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        },
+        "options": []
+      },
+      {
+        "name": "model",
+        "label": "MODEL",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "afimxbo42ap6oe"
+        },
+        "definition": "label_values(litellm_proxy_total_requests_metric_total, requested_model)",
+        "query": {
+          "qryType": 1,
+          "query": "label_values(litellm_proxy_total_requests_metric_total, requested_model)",
+          "refId": "var-model"
+        },
+        "refresh": 2,
+        "regex": "",
+        "sort": 1,
+        "includeAll": true,
+        "multi": true,
+        "allValue": ".*",
+        "hide": 0,
+        "current": {
+          "selected": true,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        },
+        "options": []
+      },
+      {
+        "name": "team",
+        "label": "TEAM",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "afimxbo42ap6oe"
+        },
+        "definition": "label_values(litellm_spend_metric_total, team_alias)",
+        "query": {
+          "qryType": 1,
+          "query": "label_values(litellm_spend_metric_total, team_alias)",
+          "refId": "var-team"
+        },
+        "refresh": 2,
+        "regex": "",
+        "sort": 1,
+        "includeAll": true,
+        "multi": true,
+        "allValue": ".*",
+        "hide": 0,
+        "current": {
+          "selected": true,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        },
+        "options": []
+      },
+      {
+        "auto": true,
+        "auto_count": 30,
+        "auto_min": "30s",
+        "current": {
+          "selected": true,
+          "text": "5m",
+          "value": "5m"
+        },
+        "hide": 0,
+        "label": "INTERVAL",
+        "name": "interval",
+        "options": [
+          {
+            "selected": false,
+            "text": "1m",
+            "value": "1m"
+          },
+          {
+            "selected": true,
+            "text": "5m",
+            "value": "5m"
+          },
+          {
+            "selected": false,
+            "text": "10m",
+            "value": "10m"
+          },
+          {
+            "selected": false,
+            "text": "30m",
+            "value": "30m"
+          },
+          {
+            "selected": false,
+            "text": "1h",
+            "value": "1h"
+          }
+        ],
+        "query": "1m,5m,10m,30m,1h",
+        "refresh": 2,
+        "skipUrlSync": false,
+        "type": "interval"
+      },
+      {
+        "name": "logcontainer",
+        "label": "LOG CONTAINER",
+        "type": "query",
+        "datasource": {
+          "type": "loki",
+          "uid": "praxen-loki"
+        },
+        "query": {
+          "label": "container",
+          "refId": "LokiVariableQueryEditor-VariableQuery",
+          "type": 1
+        },
+        "refresh": 2,
+        "includeAll": true,
+        "allValue": ".+",
+        "multi": true,
+        "current": {
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ],
+          "selected": true
+        },
+        "options": [],
+        "sort": 1
+      },
+      {
+        "name": "logq",
+        "label": "LOG FILTER",
+        "type": "textbox",
+        "query": "",
+        "current": {
+          "text": "",
+          "value": "",
+          "selected": false
+        },
+        "options": [],
+        "description": "regex applied as |~ to the log panels"
+      }
+    ]
+  },
+  "links": [
+    {
+      "title": "ROUTING",
+      "type": "link",
+      "url": "/d/praxen-routing/praxen-routing",
+      "icon": "dashboard",
+      "tooltip": "PRAXEN // ROUTING (keeps time + filters)",
+      "keepTime": true,
+      "includeVars": true,
+      "targetBlank": false,
+      "asDropdown": false,
+      "tags": []
+    },
+    {
+      "title": "FORENSICS",
+      "type": "link",
+      "url": "/d/praxen-forensics/praxen-forensics",
+      "icon": "dashboard",
+      "tooltip": "PRAXEN // FORENSICS (keeps time + filters)",
+      "keepTime": true,
+      "includeVars": true,
+      "targetBlank": false,
+      "asDropdown": false,
+      "tags": []
+    },
+    {
+      "icon": "external link",
+      "targetBlank": true,
+      "title": "View all traces in Tempo (this time range)",
+      "type": "link",
+      "url": "/explore?orgId=1&left=%7B%22datasource%22:%22dfipt8nyznn5sc%22,%22queries%22:%5B%7B%22query%22:%22%7B%20resource.service.name%3D%5C%22praxen-litellm%5C%22%20%7D%22,%22queryType%22:%22traceql%22%7D%5D,%22range%22:%7B%22from%22:%22${__from}%22,%22to%22:%22${__to}%22%7D%7D"
+    }
+  ],
+  "panels": [
+    {
+      "id": 1,
+      "type": "text",
+      "title": "",
+      "description": "",
+      "datasource": null,
+      "targets": [],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "options": {
+        "mode": "html",
+        "content": "<style>\n/* THEME STRATEGY (rewritten 2026-08-05 after a live-mode bug):\n   Do NOT key off Grafana's `body.theme-dark` class. Grafana serves that class hardcoded\n   in the initial HTML and then swaps themes via CSS-in-JS WITHOUT updating it, so a\n   `body.theme-dark` selector matches permanently and the banner rendered dark inside a\n   light dashboard. It looked correct only under /render, because the image renderer\n   bakes ?theme= into the served page.\n   Instead this panel is theme-AGNOSTIC: transparent background and inherited text\n   colour mean it is automatically whatever Grafana is. Hierarchy comes from opacity,\n   not from hardcoded greys. Accents are duotone mid-tones that clear contrast on both\n   #EEF1F4 and #06080A. prefers-color-scheme then lifts the accent for dark, which is\n   what tracks the operating system's light/dark switch when Grafana's theme pref is \"system\". */\n.praxen-hud{--pa:#2E7D9A;--pg:#4A6B8A;--pok:#2F8F72;--pw:#B0862A;--pc:#A8453F;\n  --pline:rgba(127,127,127,.28);--pglow:none}\n@media (prefers-color-scheme: dark){\n  .praxen-hud{--pa:#5AB0CE;--pg:#8DA3BA;--pok:#3F8F7E;--pw:#C9A227;--pc:#B85C5C;\n    --pline:rgba(160,170,180,.22);--pglow:0 0 10px rgba(90,176,206,.30)}\n}\n.praxen-hud{font-family:'JetBrains Mono','SF Mono',Menlo,Consolas,monospace;position:relative;box-sizing:border-box;color:inherit;\n  padding:12px 16px 10px 18px;background:transparent;border:1px solid var(--pline);\n  border-left:3px solid var(--pa);border-radius:3px;overflow:hidden}\n.praxen-hud *{box-sizing:border-box}\n.praxen-hud .ph-tick{position:absolute;width:12px;height:12px;opacity:.55;border-color:var(--pa)}\n.praxen-hud .ph-tl{top:0;left:0;border-top:1px solid;border-left:1px solid}\n.praxen-hud .ph-tr{top:0;right:0;border-top:1px solid;border-right:1px solid}\n.praxen-hud .ph-br{bottom:0;right:0;border-bottom:1px solid;border-right:1px solid}\n.praxen-hud .ph-top{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:8px}\n.praxen-hud .ph-mark{color:var(--pa);font-size:21px;font-weight:700;letter-spacing:3px;text-shadow:var(--pglow)}\n/* inherited colour + opacity => correct in BOTH themes with no detection */\n.praxen-hud .ph-mark2{font-size:21px;font-weight:700;letter-spacing:3px;opacity:.62}\n.praxen-hud .ph-live{color:var(--pok);font-size:10px;font-weight:700;letter-spacing:2px;\n  border:1px solid var(--pok);border-radius:2px;padding:2px 8px}\n.praxen-hud .ph-sub{font-size:10.5px;letter-spacing:1.4px;margin-top:4px;text-transform:uppercase;opacity:.62}\n.praxen-hud .ph-bar{display:flex;align-items:center;flex-wrap:wrap;gap:12px;margin-top:8px;\n  padding-top:7px;border-top:1px solid var(--pline)}\n.praxen-hud .ph-lbl{font-size:9px;letter-spacing:2px;text-transform:uppercase;opacity:.55}\n.praxen-hud .ph-st{display:inline-flex;align-items:center;gap:5px;font-size:10px;letter-spacing:1px}\n.praxen-hud .ph-dot{display:inline-block;width:7px;height:7px;border-radius:50%}\n.praxen-hud .ph-pill{font-size:10px;letter-spacing:1px;border:1px solid;border-radius:2px;padding:2px 7px}\n.praxen-hud .ph-div{width:1px;height:13px;background:var(--pline)}\n.praxen-hud a.ph-pill{text-decoration:none}.praxen-hud a.ph-pill:hover{filter:brightness(1.15)}\n</style>\n<div class=\"praxen-hud\">\n  <div class=\"ph-tick ph-tl\"></div><div class=\"ph-tick ph-tr\"></div><div class=\"ph-tick ph-br\"></div>\n  <div class=\"ph-top\">\n    <div><span class=\"ph-mark\">PRAXEN</span><span class=\"ph-mark2\">&nbsp;//&nbsp;COMMAND</span></div>\n    <span class=\"ph-live\">&#9679;&nbsp;LIVE</span>\n  </div>\n  <div class=\"ph-sub\">is anything broken, overspending, degraded or off-policy right now? &nbsp;//&nbsp; litellm proxy · stack · spend truth (spendlogs) · flow · live model telemetry · request log · verbose logs</div>\n  <div class=\"ph-bar\">\n    <span class=\"ph-lbl\">Status</span><span class=\"ph-st\" style=\"color:var(--pok)\"><span class=\"ph-dot\" style=\"background:var(--pok)\"></span>OK</span><span class=\"ph-st\" style=\"color:var(--pw)\"><span class=\"ph-dot\" style=\"background:var(--pw)\"></span>WATCH</span><span class=\"ph-st\" style=\"color:var(--pc)\"><span class=\"ph-dot\" style=\"background:var(--pc)\"></span>CRIT</span>\n    <span class=\"ph-div\"></span>\n    <span class=\"ph-lbl\">Boards</span>\n    <a class=\"ph-pill\" style=\"color:var(--pa);border-color:var(--pa);font-weight:700\" href=\"/d/praxen-command/praxen-command?${__url_time_range}&var-key=${key:queryparam}&var-model=${model:queryparam}&var-team=${team:queryparam}&var-interval=${interval:queryparam}\">COMMAND</a> <a class=\"ph-pill\" style=\"color:var(--pg);border-color:var(--pg)\" href=\"/d/praxen-routing/praxen-routing?${__url_time_range}&var-key=${key:queryparam}&var-model=${model:queryparam}&var-team=${team:queryparam}&var-interval=${interval:queryparam}\">ROUTING</a> <a class=\"ph-pill\" style=\"color:var(--pg);border-color:var(--pg)\" href=\"/d/praxen-forensics/praxen-forensics?${__url_time_range}&var-key=${key:queryparam}&var-model=${model:queryparam}&var-team=${team:queryparam}&var-interval=${interval:queryparam}\">FORENSICS</a>\n  </div>\n</div>",
+        "code": {
+          "language": "html",
+          "showLineNumbers": false,
+          "showMiniMap": false
+        }
+      },
+      "transparent": true,
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 4
+      }
+    },
+    {
+      "id": 2,
+      "type": "row",
+      "title": "01 ▸ COMMAND STATUS",
+      "collapsed": false,
+      "panels": [],
+      "gridPos": {
+        "x": 0,
+        "y": 4,
+        "w": 24,
+        "h": 1
+      }
+    },
+    {
+      "id": 101,
+      "type": "stat",
+      "title": "ACTIVE WATCHES",
+      "description": "How many spend watches are firing right now, out of all the watch lines Grafana checks (one per API key plus the monthly total). A watch is a warning that a key, or the whole proxy, is past 80% of its share of the monthly plan. A watch never blocks anything.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "afimxbo42ap6oe"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "afimxbo42ap6oe"
+          },
+          "expr": "sum(grafana_alerting_alerts{state=~\"alerting|error|nodata\"}) or vector(0)",
+          "legendFormat": "FIRING",
+          "editorMode": "code",
+          "range": true,
+          "instant": false
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "afimxbo42ap6oe"
+          },
+          "expr": "sum(grafana_alerting_alerts)",
+          "legendFormat": "OF",
+          "editorMode": "code",
+          "range": true,
+          "instant": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#2F8F72",
+                "value": null
+              },
+              {
+                "color": "#B0862A",
+                "value": 1
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "OF"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#6B7681"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "#6B7681",
+                      "value": null
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "textMode": "value_and_name",
+        "wideLayout": true,
+        "showPercentChange": false,
+        "percentChangeColorMode": "standard"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 5,
+        "w": 4,
+        "h": 5
+      }
+    },
+    {
+      "id": 9,
+      "type": "stat",
+      "title": "ROUTE SUCCESS",
+      "description": "Share of model calls the proxy completed successfully in the selected time range, counted at the point where the proxy hands a request to a model. Under 99% deserves a look; under 90% something is failing repeatedly. Respects the KEY, MODEL and TEAM pickers at the top.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "afimxbo42ap6oe"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "afimxbo42ap6oe"
+          },
+          "expr": "sum(increase(litellm_deployment_success_responses_total{api_key_alias=~\"$key\",requested_model=~\"$model\",team_alias=~\"$team\"}[$__range])) / clamp_min(sum(increase(litellm_deployment_total_requests_total{api_key_alias=~\"$key\",requested_model=~\"$model\",team_alias=~\"$team\"}[$__range])), 1)",
+          "legendFormat": "success",
+          "editorMode": "code",
+          "range": true,
+          "instant": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "decimals": 1,
+          "min": 0,
+          "max": 1,
+          "noValue": "no traffic",
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#A8453F",
+                "value": null
+              },
+              {
+                "color": "#B0862A",
+                "value": 0.9
+              },
+              {
+                "color": "#2F8F72",
+                "value": 0.99
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "textMode": "value",
+        "wideLayout": true,
+        "showPercentChange": false,
+        "percentChangeColorMode": "standard"
+      },
+      "gridPos": {
+        "x": 4,
+        "y": 5,
+        "w": 4,
+        "h": 5
+      }
+    },
+    {
+      "id": 102,
+      "type": "stat",
+      "title": "API ERROR RATE",
+      "description": "Percentage of requests where the model provider answered with an error. The big number is the latest reading; the shaded line is the whole time range. Respects KEY and TEAM (the failure counter does not record the requested model, so MODEL does not apply).",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "afimxbo42ap6oe"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "afimxbo42ap6oe"
+          },
+          "expr": "100 * sum(rate(litellm_llm_api_failed_requests_metric_total{api_key_alias=~\"$key\",team_alias=~\"$team\"}[$interval])) / clamp_min(sum(rate(litellm_proxy_total_requests_metric_total{api_key_alias=~\"$key\",team_alias=~\"$team\"}[$interval])), 1)",
+          "legendFormat": "error %",
+          "editorMode": "code",
+          "range": true,
+          "instant": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 1,
+          "noValue": "0",
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#2F8F72",
+                "value": null
+              },
+              {
+                "color": "#B0862A",
+                "value": 1
+              },
+              {
+                "color": "#A8453F",
+                "value": 5
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "center",
+        "textMode": "value",
+        "wideLayout": true,
+        "showPercentChange": false,
+        "percentChangeColorMode": "standard"
+      },
+      "gridPos": {
+        "x": 8,
+        "y": 5,
+        "w": 4,
+        "h": 5
+      }
+    },
+    {
+      "id": 103,
+      "type": "stat",
+      "title": "P95 LATENCY // end-to-end",
+      "description": "How long a request takes from arriving at the proxy to the last byte going back to the client, including any retries and fallbacks. 95 out of 100 requests were faster than this. Amber past 30 seconds, red past 2 minutes — long-reasoning models legitimately take tens of seconds. Respects the KEY, MODEL and TEAM pickers at the top.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "afimxbo42ap6oe"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "afimxbo42ap6oe"
+          },
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(litellm_request_total_latency_metric_bucket{api_key_alias=~\"$key\",requested_model=~\"$model\",team_alias=~\"$team\"}[$interval])))",
+          "legendFormat": "p95",
+          "editorMode": "code",
+          "range": true,
+          "instant": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "decimals": 2,
+          "noValue": "no traffic",
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#2F8F72",
+                "value": null
+              },
+              {
+                "color": "#B0862A",
+                "value": 30
+              },
+              {
+                "color": "#A8453F",
+                "value": 120
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "center",
+        "textMode": "value",
+        "wideLayout": true,
+        "showPercentChange": false,
+        "percentChangeColorMode": "standard"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 5,
+        "w": 4,
+        "h": 5
+      }
+    },
+    {
+      "id": 48,
+      "type": "stat",
+      "title": "FALLBACKS FIRED",
+      "description": "How many times the proxy gave up on the first model and moved to the next one in its chain during the selected range. Green at 0. Refusals caught mid-stream are handled separately and are not counted here. Respects the KEY, MODEL and TEAM pickers at the top.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "afimxbo42ap6oe"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "afimxbo42ap6oe"
+          },
+          "expr": "(sum(increase(litellm_deployment_successful_fallbacks_total{api_key_alias=~\"$key\",requested_model=~\"$model\",team_alias=~\"$team\"}[$__range])) or vector(0)) + (sum(increase(litellm_deployment_failed_fallbacks_total{api_key_alias=~\"$key\",requested_model=~\"$model\",team_alias=~\"$team\"}[$__range])) or vector(0))",
+          "legendFormat": "fallbacks",
+          "editorMode": "code",
+          "range": true,
+          "instant": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#2F8F72",
+                "value": null
+              },
+              {
+                "color": "#B0862A",
+                "value": 1
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "textMode": "value",
+        "wideLayout": true,
+        "showPercentChange": false,
+        "percentChangeColorMode": "standard"
+      },
+      "gridPos": {
+        "x": 16,
+        "y": 5,
+        "w": 4,
+        "h": 5
+      }
+    },
+    {
+      "id": 49,
+      "type": "stat",
+      "title": "OFF-TIER CALLS",
+      "description": "Calls billed at a premium speed tier (priority or fast) that nobody asked for. Choosing a route whose name ends in -priority, or the router picking one on purpose, counts as opt-in and is excluded. Green at 0; anything else means you paid a multiplier you did not choose. Respects the KEY, MODEL and TEAM pickers at the top.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "praxen-litellm-pg"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "praxen-litellm-pg"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "SELECT count(*) AS \"off_tier_calls\" FROM \"LiteLLM_SpendLogs\" WHERE $__timeFilter(\"startTime\") AND metadata->'cost_breakdown'->>'service_tier' IN ('priority','fast') AND NOT (model_group ~ '-priority$' OR COALESCE(metadata->'routing_decision'->>'routed_model','') ~ '-priority$') AND COALESCE(metadata->>'user_api_key_alias','') ~ '^(?:${key:regex})$' AND COALESCE(model_group,'') ~ '^(?:${model:regex})$' AND COALESCE(metadata->>'user_api_key_team_alias','') ~ '^(?:${team:regex})$'"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "noValue": "0",
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#2F8F72",
+                "value": null
+              },
+              {
+                "color": "#B0862A",
+                "value": 1
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "textMode": "value",
+        "wideLayout": true,
+        "showPercentChange": false,
+        "percentChangeColorMode": "standard"
+      },
+      "gridPos": {
+        "x": 20,
+        "y": 5,
+        "w": 4,
+        "h": 5
+      }
+    },
+    {
+      "id": 4,
+      "type": "row",
+      "title": "02 ▸ STACK + BUDGET",
+      "collapsed": false,
+      "panels": [],
+      "gridPos": {
+        "x": 0,
+        "y": 10,
+        "w": 24,
+        "h": 1
+      }
+    },
+    {
+      "id": 5,
+      "type": "stat",
+      "title": "LITELLM",
+      "description": "Whether the metrics collector can reach the LiteLLM proxy (the gateway every client talks to). UP is healthy; DOWN or NO DATA means the service, or the collector's view of it, is broken.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "afimxbo42ap6oe"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "afimxbo42ap6oe"
+          },
+          "expr": "up{job=\"litellm\"}",
+          "legendFormat": "litellm",
+          "editorMode": "code",
+          "range": false,
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "DOWN",
+                  "color": "#A8453F",
+                  "index": 1
+                },
+                "1": {
+                  "text": "UP",
+                  "color": "#2F8F72",
+                  "index": 0
+                }
+              }
+            },
+            {
+              "type": "special",
+              "options": {
+                "match": "null",
+                "result": {
+                  "text": "NO DATA",
+                  "color": "#A8453F",
+                  "index": 2
+                }
+              }
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#A8453F",
+                "value": null
+              },
+              {
+                "color": "#2F8F72",
+                "value": 1
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "textMode": "value",
+        "wideLayout": true,
+        "showPercentChange": false,
+        "percentChangeColorMode": "standard"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 11,
+        "w": 3,
+        "h": 5
+      }
+    },
+    {
+      "id": 6,
+      "type": "stat",
+      "title": "TEMPO",
+      "description": "Whether the metrics collector can reach Tempo (the trace store). UP is healthy; DOWN or NO DATA means the service, or the collector's view of it, is broken.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "afimxbo42ap6oe"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "afimxbo42ap6oe"
+          },
+          "expr": "up{job=\"tempo\"}",
+          "legendFormat": "tempo",
+          "editorMode": "code",
+          "range": false,
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "DOWN",
+                  "color": "#A8453F",
+                  "index": 1
+                },
+                "1": {
+                  "text": "UP",
+                  "color": "#2F8F72",
+                  "index": 0
+                }
+              }
+            },
+            {
+              "type": "special",
+              "options": {
+                "match": "null",
+                "result": {
+                  "text": "NO DATA",
+                  "color": "#A8453F",
+                  "index": 2
+                }
+              }
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#A8453F",
+                "value": null
+              },
+              {
+                "color": "#2F8F72",
+                "value": 1
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "textMode": "value",
+        "wideLayout": true,
+        "showPercentChange": false,
+        "percentChangeColorMode": "standard"
+      },
+      "gridPos": {
+        "x": 3,
+        "y": 11,
+        "w": 3,
+        "h": 5
+      }
+    },
+    {
+      "id": 7,
+      "type": "stat",
+      "title": "GRAFANA",
+      "description": "Whether the metrics collector can reach Grafana itself. UP is healthy; DOWN or NO DATA means the service, or the collector's view of it, is broken.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "afimxbo42ap6oe"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "afimxbo42ap6oe"
+          },
+          "expr": "up{job=\"grafana\"}",
+          "legendFormat": "grafana",
+          "editorMode": "code",
+          "range": false,
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "DOWN",
+                  "color": "#A8453F",
+                  "index": 1
+                },
+                "1": {
+                  "text": "UP",
+                  "color": "#2F8F72",
+                  "index": 0
+                }
+              }
+            },
+            {
+              "type": "special",
+              "options": {
+                "match": "null",
+                "result": {
+                  "text": "NO DATA",
+                  "color": "#A8453F",
+                  "index": 2
+                }
+              }
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#A8453F",
+                "value": null
+              },
+              {
+                "color": "#2F8F72",
+                "value": 1
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "textMode": "value",
+        "wideLayout": true,
+        "showPercentChange": false,
+        "percentChangeColorMode": "standard"
+      },
+      "gridPos": {
+        "x": 6,
+        "y": 11,
+        "w": 3,
+        "h": 5
+      }
+    },
+    {
+      "id": 8,
+      "type": "stat",
+      "title": "PROMETHEUS",
+      "description": "Whether the metrics collector can reach Prometheus (the metrics collector). UP is healthy; DOWN or NO DATA means the service, or the collector's view of it, is broken.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "afimxbo42ap6oe"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "afimxbo42ap6oe"
+          },
+          "expr": "up{job=\"prometheus\"}",
+          "legendFormat": "prometheus",
+          "editorMode": "code",
+          "range": false,
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "DOWN",
+                  "color": "#A8453F",
+                  "index": 1
+                },
+                "1": {
+                  "text": "UP",
+                  "color": "#2F8F72",
+                  "index": 0
+                }
+              }
+            },
+            {
+              "type": "special",
+              "options": {
+                "match": "null",
+                "result": {
+                  "text": "NO DATA",
+                  "color": "#A8453F",
+                  "index": 2
+                }
+              }
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#A8453F",
+                "value": null
+              },
+              {
+                "color": "#2F8F72",
+                "value": 1
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "textMode": "value",
+        "wideLayout": true,
+        "showPercentChange": false,
+        "percentChangeColorMode": "standard"
+      },
+      "gridPos": {
+        "x": 9,
+        "y": 11,
+        "w": 3,
+        "h": 5
+      }
+    },
+    {
+      "id": 30,
+      "type": "stat",
+      "title": "LOKI",
+      "description": "Whether the metrics collector can reach Loki (the log store). UP is healthy; DOWN or NO DATA means the service, or the collector's view of it, is broken.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "afimxbo42ap6oe"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "afimxbo42ap6oe"
+          },
+          "expr": "up{job=\"loki\"}",
+          "legendFormat": "loki",
+          "editorMode": "code",
+          "range": false,
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "DOWN",
+                  "color": "#A8453F",
+                  "index": 1
+                },
+                "1": {
+                  "text": "UP",
+                  "color": "#2F8F72",
+                  "index": 0
+                }
+              }
+            },
+            {
+              "type": "special",
+              "options": {
+                "match": "null",
+                "result": {
+                  "text": "NO DATA",
+                  "color": "#A8453F",
+                  "index": 2
+                }
+              }
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#A8453F",
+                "value": null
+              },
+              {
+                "color": "#2F8F72",
+                "value": 1
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "textMode": "value",
+        "wideLayout": true,
+        "showPercentChange": false,
+        "percentChangeColorMode": "standard"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 11,
+        "w": 3,
+        "h": 5
+      }
+    },
+    {
+      "id": 31,
+      "type": "stat",
+      "title": "ALLOY",
+      "description": "Whether the metrics collector can reach Alloy (the log shipper that reads container logs into Loki). UP is healthy; DOWN or NO DATA means the service, or the collector's view of it, is broken.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "afimxbo42ap6oe"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "afimxbo42ap6oe"
+          },
+          "expr": "up{job=\"alloy\"}",
+          "legendFormat": "alloy",
+          "editorMode": "code",
+          "range": false,
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "DOWN",
+                  "color": "#A8453F",
+                  "index": 1
+                },
+                "1": {
+                  "text": "UP",
+                  "color": "#2F8F72",
+                  "index": 0
+                }
+              }
+            },
+            {
+              "type": "special",
+              "options": {
+                "match": "null",
+                "result": {
+                  "text": "NO DATA",
+                  "color": "#A8453F",
+                  "index": 2
+                }
+              }
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#A8453F",
+                "value": null
+              },
+              {
+                "color": "#2F8F72",
+                "value": 1
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "textMode": "value",
+        "wideLayout": true,
+        "showPercentChange": false,
+        "percentChangeColorMode": "standard"
+      },
+      "gridPos": {
+        "x": 15,
+        "y": 11,
+        "w": 3,
+        "h": 5
+      }
+    },
+    {
+      "id": 10,
+      "type": "stat",
+      "title": "SPEND MTD",
+      "description": "Total dollars the proxy has logged since the first of this month, across every key. Amber at $32 (80% of the $40 plan — the point the spend-watch alert fires) and red at $40.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "praxen-litellm-pg"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "praxen-litellm-pg"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "SELECT COALESCE(SUM(spend),0) AS \"mtd_usd\" FROM \"LiteLLM_SpendLogs\" WHERE \"startTime\" >= date_trunc('month', NOW())"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD",
+          "decimals": 2,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#2F8F72",
+                "value": null
+              },
+              {
+                "color": "#B0862A",
+                "value": 32.0
+              },
+              {
+                "color": "#A8453F",
+                "value": 40.0
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "textMode": "value",
+        "wideLayout": true,
+        "showPercentChange": false,
+        "percentChangeColorMode": "standard"
+      },
+      "gridPos": {
+        "x": 18,
+        "y": 11,
+        "w": 2,
+        "h": 5
+      }
+    },
+    {
+      "id": 104,
+      "type": "bargauge",
+      "title": "vs $40 PLAN · vs TEAM HARD STOPS (live Σ max_budget)",
+      "description": "The same month-to-date spend as two percentages: of the $40 monthly plan (a watch line — nothing is refused) and of the four team hard stops added together, read live from the proxy database (the point where requests WOULD be refused). The separate global cap in litellm_settings is a last-resort backstop only.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "praxen-litellm-pg"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "praxen-litellm-pg"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "WITH m AS (SELECT COALESCE(SUM(spend),0) AS mtd FROM \"LiteLLM_SpendLogs\" WHERE \"startTime\" >= date_trunc('month', NOW())), t AS (SELECT COALESCE(SUM(max_budget),0) AS hard_stop FROM \"LiteLLM_TeamTable\" WHERE max_budget IS NOT NULL AND max_budget > 0) SELECT 'PLAN $40' AS \"limit\", ROUND((100 * m.mtd / 40.0)::numeric, 1) AS \"pct\" FROM m UNION ALL SELECT 'TEAM HARD STOPS $' || ROUND(t.hard_stop)::text || ' (live)', ROUND((100 * m.mtd / NULLIF(t.hard_stop, 0))::numeric, 1) FROM m, t"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "decimals": 1,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#2F8F72",
+                "value": null
+              },
+              {
+                "color": "#B0862A",
+                "value": 80
+              },
+              {
+                "color": "#A8453F",
+                "value": 100
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "displayMode": "basic",
+        "orientation": "horizontal",
+        "showUnfilled": true,
+        "valueMode": "color",
+        "namePlacement": "top",
+        "sizing": "auto",
+        "minVizWidth": 8,
+        "minVizHeight": 16,
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
+        }
+      },
+      "transformations": [
+        {
+          "id": "rowsToFields",
+          "options": {}
+        }
+      ],
+      "gridPos": {
+        "x": 20,
+        "y": 11,
+        "w": 4,
+        "h": 5
+      }
+    },
+    {
+      "id": 12,
+      "type": "row",
+      "title": "03 ▸ ROUTING & THROUGHPUT",
+      "collapsed": false,
+      "panels": [],
+      "gridPos": {
+        "x": 0,
+        "y": 16,
+        "w": 24,
+        "h": 1
+      }
+    },
+    {
+      "id": 13,
+      "type": "volkovlabs-echarts-panel",
+      "title": "Provider → Model // success calls (range)",
+      "transparent": true,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "afimxbo42ap6oe"
+      },
+      "options": {
+        "renderer": "canvas",
+        "map": "none",
+        "getOption": "const PRAXEN_MKT = false;\n// PROVIDER -> MODEL Sankey (the-array LiteLLM). Source classified by api_base so VENICE\n// (private cloud) and LOCAL split out of the openai-compatible api_provider bucket.\n// query: sum by (api_provider, api_base, litellm_model_name) (increase(litellm_deployment_success_responses_total[$__range]))\n// PRAXEN_MKT (injected by the generator) masks venice -> PRIVATE for marketing screenshots.\nconst MKT = (typeof PRAXEN_MKT !== 'undefined') && PRAXEN_MKT;\nconst isDark = !(context.grafana && context.grafana.theme && context.grafana.theme.isDark === false);\nconst T = isDark\n  ? { bg:'transparent', text:'#EEF1F4', sub:'#8A939C', grid:'#2A3038', steel:'#8DA3BA', good:'#3F8F7E', signal:'#5AB0CE', signal2:'#8DA3BA', amber:'#C9A227', red:'#B85C5C', violet:'#A99BD1', phosphor:'#58C0A0', panel:'#0B0D10', border:'#2A3038' }\n  : { bg:'transparent', text:'#0B0D10', sub:'#3A4651', grid:'#D2D7DD', steel:'#1B3A5C', good:'#2A6B5E', signal:'#0F536A', signal2:'#1B3A5C', amber:'#8A6D1F', red:'#8B3A3A', violet:'#5B4B8A', phosphor:'#147D64', panel:'#FFFFFF', border:'#D2D7DD' };\nconst MONO = 'JetBrains Mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace';\nconst GLOW = isDark ? 10 : 0, GLOW_S = isDark ? 6 : 0;\nfunction lastVal(fr) { if (!fr || !fr.fields) return 0; const v = fr.fields.find(f => f.type === 'number'); if (!v || !v.values) return 0; for (let i = v.values.length - 1; i >= 0; i--) { const n = Number(v.values[i]); if (Number.isFinite(n)) return n; } return 0; }\nconst frames = (context.panel && context.panel.data && context.panel.data.series) || [];\n\nfunction sourceOf(prov, base) {\n  const b = String(base || '').toLowerCase();\n  if (b.indexOf('venice') >= 0) return 'private';   // venice ALWAYS masked in the sankeys (live + marketing)\n  if (b.indexOf(':1234') >= 0) return 'local';\n  if (b.indexOf('api.openai.com') >= 0) return 'openai';\n  return String(prov || '?');\n}\nconst SCOLOR = { venice:T.violet, private:T.violet, local:T.good, openai:T.signal2, anthropic:T.amber,\n  gemini:T.signal, xai:T.violet, groq:T.red, mistral:T.signal2, perplexity:T.phosphor, huggingface:'#FFD21E', None:T.sub };\nconst CYCLE = [T.signal, T.amber, T.good, T.violet, T.red, T.signal2, T.phosphor];\nfunction sColor(n, i) { return SCOLOR[n] || CYCLE[i % CYCLE.length]; }\nfunction titleStyle(c) { return { color:c, fontFamily:MONO, fontSize:14, fontWeight:700, textShadowColor:isDark ? c : 'transparent', textShadowBlur:GLOW }; }\n\nconst SEP = ' ';\nconst linkMap = {}, sTot = {}, mTot = {};\nfor (const fr of frames) {\n  const vf = fr.fields.find(f => f.type === 'number'); const labs = (vf && vf.labels) || {};\n  const s = sourceOf(labs.api_provider, labs.api_base);\n  let m = String(labs.litellm_model_name || ''); if (!m || m === '*') continue;\n  if (s === 'private') m = 'private · models';   // venice models always collapsed — sankeys never reveal venice\n  const v = lastVal(fr); if (!(v > 0)) continue;\n  const k = s + SEP + m; linkMap[k] = (linkMap[k] || 0) + v; sTot[s] = (sTot[s] || 0) + v; mTot[m] = (mTot[m] || 0) + v;\n}\nif (!Object.keys(linkMap).length) {\n  return { backgroundColor:T.bg, title:{ text:'PROVIDER → MODEL — NO DATA', subtext:'widen the time range',\n    left:'center', top:'center', textStyle:titleStyle(T.amber), subtextStyle:{ color:T.sub, fontFamily:MONO, fontSize:12 } } };\n}\n\n// declutter: keep top-N models, collapse the tail into one node\nconst TOPN = 14;\nconst modelsSorted = Object.keys(mTot).sort((a, b) => mTot[b] - mTot[a]);\nconst keep = new Set(modelsSorted.slice(0, TOPN));\nconst tailN = modelsSorted.length - keep.size;\nconst TAIL = tailN > 0 ? ('… +' + tailN + ' models') : null;\nconst links2 = {}, mTot2 = {};\nObject.keys(linkMap).forEach(k => {\n  const i = k.indexOf(SEP), s = k.slice(0, i), m = k.slice(i + 1);\n  const mm = keep.has(m) ? m : TAIL; if (!mm) return;\n  const kk = s + SEP + mm; links2[kk] = (links2[kk] || 0) + linkMap[k]; mTot2[mm] = (mTot2[mm] || 0) + linkMap[k];\n});\n\nconst srcSorted = Object.keys(sTot).sort((a, b) => sTot[b] - sTot[a]);\nconst modSorted = Object.keys(mTot2).sort((a, b) => mTot2[b] - mTot2[a]);\nconst nodes = [];\nsrcSorted.forEach((s, i) => { const c = sColor(s, i);\n  nodes.push({ name:s, itemStyle:{ color:c, borderColor:c, borderWidth:1, shadowColor:isDark ? c : 'transparent', shadowBlur:GLOW_S },\n    label:{ color:c, fontFamily:MONO, fontSize:13, fontWeight:700, textShadowColor:isDark ? c : 'transparent', textShadowBlur:GLOW_S,\n      formatter:p => p.name.toUpperCase() + '  ' + Math.round(sTot[p.name] || 0) } }); });\nmodSorted.forEach(m => {\n  nodes.push({ name:m, itemStyle:{ color:T.steel, borderColor:T.border, borderWidth:1 },\n    label:{ color:T.text, fontFamily:MONO, fontSize:12,\n      formatter:p => { let s = p.name; if (s.length > 30) s = s.slice(0, 29) + '…'; return s + '  ' + Math.round(mTot2[p.name] || 0); } } }); });\nfunction grad(c) { try { return new echarts.graphic.LinearGradient(0, 0, 1, 0, [{ offset:0, color:c }, { offset:1, color:T.steel }]); } catch (e) { return c; } }\nconst links = Object.keys(links2).map(k => {\n  const i = k.indexOf(SEP), s = k.slice(0, i), m = k.slice(i + 1);\n  const c = sColor(s, srcSorted.indexOf(s));\n  return { source:s, target:m, value:links2[k],\n    lineStyle:{ color:grad(c), opacity:isDark ? 0.5 : 0.4, curveness:0.5, shadowColor:isDark ? c : 'transparent', shadowBlur:GLOW_S } };\n});\nconst total = Math.round(Object.values(sTot).reduce((a, b) => a + b, 0));\n\nreturn {\n  backgroundColor:T.bg, textStyle:{ fontFamily:MONO, color:T.text },\n  title:{ text:'PROVIDER → MODEL', subtext:'success responses · ' + total + ' calls · top ' + TOPN + ' models · range',\n    left:14, top:10, textStyle:titleStyle(T.signal), subtextStyle:{ color:T.sub, fontFamily:MONO, fontSize:11 } },\n  tooltip:{ trigger:'item', backgroundColor:T.panel, borderColor:T.border, textStyle:{ color:T.text, fontFamily:MONO, fontSize:12 },\n    formatter:p => p.dataType === 'edge'\n      ? (p.data.source.toUpperCase() + '  →  ' + p.data.target + '<br/><b>' + Math.round(p.data.value) + '</b> calls')\n      : ('<b>' + p.name + '</b>') },\n  series:[{ type:'sankey', left:16, right:248, top:62, bottom:24, nodeWidth:16, nodeGap:12, draggable:false, nodeAlign:'left',\n    data:nodes, links:links, label:{ color:T.text, fontFamily:MONO, fontSize:12 }, lineStyle:{ color:'gradient', curveness:0.5 },\n    emphasis:{ focus:'adjacency', lineStyle:{ opacity:0.9 }, label:{ fontWeight:700, textShadowColor:T.signal, textShadowBlur:GLOW } },\n    levels:[{ depth:0, label:{ position:'right' } }, { depth:1, label:{ position:'right' } }] }]\n};\n"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "afimxbo42ap6oe"
+          },
+          "expr": "sum by (api_provider, api_base, litellm_model_name) (increase(litellm_deployment_success_responses_total[$__range]))",
+          "legendFormat": "{{api_provider}}→{{litellm_model_name}}"
+        }
+      ],
+      "description": "How successful calls flowed from each provider (Anthropic, OpenAI, Google, local LM Studio, the private cloud) to the model that actually answered, over the selected range. Thicker ribbons carry more calls. The 14 busiest models are shown; the rest are grouped into one line.",
+      "gridPos": {
+        "x": 0,
+        "y": 17,
+        "w": 12,
+        "h": 14
+      }
+    },
+    {
+      "id": 19,
+      "type": "timeseries",
+      "title": "Token throughput // in vs out (tok/s)",
+      "description": "Tokens per second flowing into the proxy (prompts) and back out (answers), across everything it handles. Respects the KEY, MODEL and TEAM pickers at the top.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "afimxbo42ap6oe"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "afimxbo42ap6oe"
+          },
+          "expr": "sum(rate(litellm_input_tokens_metric_total{api_key_alias=~\"$key\",requested_model=~\"$model\",team_alias=~\"$team\"}[$interval]))",
+          "legendFormat": "input tok/s",
+          "editorMode": "code",
+          "range": true,
+          "instant": false
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "afimxbo42ap6oe"
+          },
+          "expr": "sum(rate(litellm_output_tokens_metric_total{api_key_alias=~\"$key\",requested_model=~\"$model\",team_alias=~\"$team\"}[$interval]))",
+          "legendFormat": "output tok/s",
+          "editorMode": "code",
+          "range": true,
+          "instant": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "fillOpacity": 12,
+            "gradientMode": "opacity",
+            "showPoints": "never",
+            "spanNulls": true,
+            "axisPlacement": "auto",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#2F8F72",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "input tok/s"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#2E7D9A"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "output tok/s"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#2F8F72"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 17,
+        "w": 12,
+        "h": 7
+      }
+    },
+    {
+      "id": 23,
+      "type": "timeseries",
+      "title": "Requests & error rate",
+      "description": "Requests per second (blue), provider failures per second (red) and the resulting error percentage (amber, right-hand axis). Respects the KEY, MODEL and TEAM pickers at the top.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "afimxbo42ap6oe"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "afimxbo42ap6oe"
+          },
+          "expr": "sum(rate(litellm_proxy_total_requests_metric_total{api_key_alias=~\"$key\",requested_model=~\"$model\",team_alias=~\"$team\"}[$interval]))",
+          "legendFormat": "requests/s",
+          "editorMode": "code",
+          "range": true,
+          "instant": false
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "afimxbo42ap6oe"
+          },
+          "expr": "sum(rate(litellm_llm_api_failed_requests_metric_total{api_key_alias=~\"$key\",team_alias=~\"$team\"}[$interval]))",
+          "legendFormat": "failed/s",
+          "editorMode": "code",
+          "range": true,
+          "instant": false
+        },
+        {
+          "refId": "C",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "afimxbo42ap6oe"
+          },
+          "expr": "100 * sum(rate(litellm_llm_api_failed_requests_metric_total{api_key_alias=~\"$key\",team_alias=~\"$team\"}[$interval])) / clamp_min(sum(rate(litellm_proxy_total_requests_metric_total{api_key_alias=~\"$key\",team_alias=~\"$team\"}[$interval])), 1)",
+          "legendFormat": "error %",
+          "editorMode": "code",
+          "range": true,
+          "instant": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "fillOpacity": 12,
+            "gradientMode": "opacity",
+            "showPoints": "never",
+            "spanNulls": true,
+            "axisPlacement": "auto",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#2F8F72",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "requests/s"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#2E7D9A"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "failed/s"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#A8453F"
+                }
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 0
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "error %"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#B0862A"
+                }
+              },
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 0
+              },
+              {
+                "id": "custom.lineStyle",
+                "value": {
+                  "fill": "dash",
+                  "dash": [
+                    6,
+                    4
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 24,
+        "w": 12,
+        "h": 7
+      }
+    },
+    {
+      "id": 15,
+      "type": "row",
+      "title": "04 ▸ LIVE MODEL TELEMETRY",
+      "collapsed": false,
+      "panels": [],
+      "gridPos": {
+        "x": 0,
+        "y": 31,
+        "w": 24,
+        "h": 1
+      }
+    },
+    {
+      "id": 16,
+      "type": "table",
+      "transparent": true,
+      "title": "Live model telemetry // requests · tokens · latency · TTFT · tok/s · cost · success (range)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "afimxbo42ap6oe"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "afimxbo42ap6oe"
+          },
+          "expr": "sum by (requested_model) (increase(litellm_proxy_total_requests_metric_total{api_key_alias=~\"$key\",requested_model=~\"$model\",team_alias=~\"$team\"}[$__range]))",
+          "format": "table",
+          "instant": true,
+          "range": false
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "afimxbo42ap6oe"
+          },
+          "expr": "sum by (requested_model) (increase(litellm_total_tokens_metric_total{api_key_alias=~\"$key\",requested_model=~\"$model\",team_alias=~\"$team\"}[$__range]))",
+          "format": "table",
+          "instant": true,
+          "range": false
+        },
+        {
+          "refId": "C",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "afimxbo42ap6oe"
+          },
+          "expr": "sum by (requested_model) (increase(litellm_output_tokens_metric_total{api_key_alias=~\"$key\",requested_model=~\"$model\",team_alias=~\"$team\"}[$__range]))",
+          "format": "table",
+          "instant": true,
+          "range": false
+        },
+        {
+          "refId": "D",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "afimxbo42ap6oe"
+          },
+          "expr": "sum by (requested_model) (increase(litellm_llm_api_latency_metric_sum{api_key_alias=~\"$key\",requested_model=~\"$model\",team_alias=~\"$team\"}[$__range])) / clamp_min(sum by (requested_model) (increase(litellm_llm_api_latency_metric_count{api_key_alias=~\"$key\",requested_model=~\"$model\",team_alias=~\"$team\"}[$__range])), 1)",
+          "format": "table",
+          "instant": true,
+          "range": false
+        },
+        {
+          "refId": "E",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "afimxbo42ap6oe"
+          },
+          "expr": "sum by (requested_model) (increase(litellm_llm_api_time_to_first_token_metric_sum{api_key_alias=~\"$key\",requested_model=~\"$model\",team_alias=~\"$team\"}[$__range])) / clamp_min(sum by (requested_model) (increase(litellm_llm_api_time_to_first_token_metric_count{api_key_alias=~\"$key\",requested_model=~\"$model\",team_alias=~\"$team\"}[$__range])), 1)",
+          "format": "table",
+          "instant": true,
+          "range": false
+        },
+        {
+          "refId": "F",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "afimxbo42ap6oe"
+          },
+          "expr": "sum by (requested_model) (increase(litellm_output_tokens_metric_total{api_key_alias=~\"$key\",requested_model=~\"$model\",team_alias=~\"$team\"}[$__range])) / clamp_min(sum by (requested_model) (increase(litellm_llm_api_latency_metric_sum{api_key_alias=~\"$key\",requested_model=~\"$model\",team_alias=~\"$team\"}[$__range])), 1)",
+          "format": "table",
+          "instant": true,
+          "range": false
+        },
+        {
+          "refId": "G",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "afimxbo42ap6oe"
+          },
+          "expr": "sum by (requested_model) (increase(litellm_spend_metric_total{api_key_alias=~\"$key\",requested_model=~\"$model\",team_alias=~\"$team\"}[$__range]))",
+          "legendFormat": "",
+          "editorMode": "code",
+          "range": false,
+          "instant": true,
+          "format": "table"
+        },
+        {
+          "refId": "H",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "afimxbo42ap6oe"
+          },
+          "expr": "sum by (requested_model) (increase(litellm_deployment_success_responses_total{api_key_alias=~\"$key\",requested_model=~\"$model\",team_alias=~\"$team\"}[$__range])) / clamp_min(sum by (requested_model) (increase(litellm_deployment_total_requests_total{api_key_alias=~\"$key\",requested_model=~\"$model\",team_alias=~\"$team\"}[$__range])), 1)",
+          "legendFormat": "",
+          "editorMode": "code",
+          "range": false,
+          "instant": true,
+          "format": "table"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "joinByField",
+          "options": {
+            "byField": "requested_model",
+            "mode": "outer"
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "Time A": true,
+              "Time #A": true,
+              "Time B": true,
+              "Time #B": true,
+              "Time C": true,
+              "Time #C": true,
+              "Time D": true,
+              "Time #D": true,
+              "Time E": true,
+              "Time #E": true,
+              "Time F": true,
+              "Time #F": true,
+              "Time G": true,
+              "Time #G": true,
+              "Time H": true,
+              "Time #H": true
+            },
+            "renameByName": {
+              "requested_model": "Model",
+              "Value #A": "Requests",
+              "Value #B": "Total Tok",
+              "Value #C": "Output Tok",
+              "Value #D": "Avg Latency",
+              "Value #E": "Avg TTFT",
+              "Value #F": "Tok/s",
+              "Value #G": "Cost",
+              "Value #H": "Success"
+            },
+            "indexByName": {}
+          }
+        }
+      ],
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        },
+        "sortBy": [
+          {
+            "displayName": "Requests",
+            "desc": true
+          }
+        ]
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "filterable": true,
+            "cellOptions": {
+              "type": "auto"
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Model"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 300
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Requests"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Total Tok"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Output Tok"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Avg Latency"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "s"
+              },
+              {
+                "id": "decimals",
+                "value": 2
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Avg TTFT"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "s"
+              },
+              {
+                "id": "decimals",
+                "value": 2
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Tok/s"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Cost"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "currencyUSD"
+              },
+              {
+                "id": "decimals",
+                "value": 4
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Success"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percentunit"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "#A8453F",
+                      "value": null
+                    },
+                    {
+                      "color": "#B0862A",
+                      "value": 0.9
+                    },
+                    {
+                      "color": "#2F8F72",
+                      "value": 0.99
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Model"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "Open on ROUTING (this model)",
+                    "url": "/d/praxen-routing/praxen-routing?${__url_time_range}&var-key=${key:queryparam}&var-team=${team:queryparam}&var-interval=${interval:queryparam}&var-model=${__data.fields.Model}",
+                    "targetBlank": false
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "description": "One row per model or route name exactly as clients asked for it: requests, tokens in and out, average time to answer and to first token, output speed, dollars, and the share that succeeded. Click a name to open it on ROUTING. Respects the KEY, MODEL and TEAM pickers at the top.",
+      "gridPos": {
+        "x": 0,
+        "y": 32,
+        "w": 24,
+        "h": 8
+      }
+    },
+    {
+      "id": 24,
+      "type": "row",
+      "title": "05 ▸ REQUEST LOG + VERBOSE LOGS",
+      "collapsed": false,
+      "panels": [],
+      "gridPos": {
+        "x": 0,
+        "y": 40,
+        "w": 24,
+        "h": 1
+      }
+    },
+    {
+      "id": 25,
+      "type": "table",
+      "title": "Request log // last 50 in range (click a request_id → FORENSICS)",
+      "description": "The 50 most recent requests in the selected range: which key called, the route it asked for, the model that answered, success or failure, how long it took, tokens, dollars and the billed tier. Click a request id to investigate it on FORENSICS. Respects the KEY, MODEL and TEAM pickers at the top.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "praxen-litellm-pg"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "praxen-litellm-pg"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "SELECT \"startTime\" AS \"time\", COALESCE(NULLIF(metadata->>'user_api_key_alias',''),'-') AS key, COALESCE(NULLIF(model_group,''),'-') AS route, COALESCE(NULLIF(model,''),'-') AS model, COALESCE(NULLIF(status,''),'?') AS status, request_duration_ms AS ms, prompt_tokens AS in_tok, completion_tokens AS out_tok, round(spend::numeric,5) AS usd, COALESCE(metadata->'cost_breakdown'->>'service_tier','-') AS tier, request_id FROM \"LiteLLM_SpendLogs\" WHERE $__timeFilter(\"startTime\") AND COALESCE(metadata->>'user_api_key_alias','') ~ '^(?:${key:regex})$' AND COALESCE(model_group,'') ~ '^(?:${model:regex})$' AND COALESCE(metadata->>'user_api_key_team_alias','') ~ '^(?:${team:regex})$' ORDER BY \"startTime\" DESC LIMIT 50"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false,
+            "filterable": true
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#2F8F72",
+                "value": null
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "status"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "success": {
+                        "color": "#2F8F72",
+                        "index": 0
+                      },
+                      "failure": {
+                        "color": "#A8453F",
+                        "index": 1
+                      },
+                      "?": {
+                        "color": "#6B7681",
+                        "index": 2
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "usd"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "currencyUSD"
+              },
+              {
+                "id": "decimals",
+                "value": 5
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "time"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 165
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "status"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 80
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "ms"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 70
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "request_id"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 130
+              },
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "Open on FORENSICS",
+                    "url": "/d/praxen-forensics/praxen-forensics?${__url_time_range}&var-key=${key:queryparam}&var-model=${model:queryparam}&var-team=${team:queryparam}&var-interval=${interval:queryparam}&var-request_id=${__data.fields.request_id}",
+                    "targetBlank": false
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false,
+          "reducer": [
+            "sum"
+          ],
+          "countRows": false,
+          "fields": ""
+        },
+        "sortBy": []
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 41,
+        "w": 12,
+        "h": 14
+      }
+    },
+    {
+      "id": 32,
+      "type": "logs",
+      "title": "Warn + error // $logcontainer",
+      "datasource": {
+        "type": "loki",
+        "uid": "praxen-loki"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "praxen-loki"
+          },
+          "expr": "{container=~\"$logcontainer\"} |~ \"(?i)(error|warn|exception|fail|traceback)\"",
+          "queryType": "range"
+        }
+      ],
+      "options": {
+        "showTime": true,
+        "wrapLogMessage": true,
+        "sortOrder": "Descending",
+        "dedupStrategy": "signature",
+        "enableLogDetails": true,
+        "showLabels": false
+      },
+      "description": "Only the log lines that look like errors or warnings from the containers picked in LOG CONTAINER. The quickest way to see whether anything is complaining right now.",
+      "gridPos": {
+        "x": 12,
+        "y": 41,
+        "w": 12,
+        "h": 6
+      }
+    },
+    {
+      "id": 33,
+      "type": "logs",
+      "title": "Verbose // $logcontainer ∩ $logq",
+      "datasource": {
+        "type": "loki",
+        "uid": "praxen-loki"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "praxen-loki"
+          },
+          "expr": "{container=~\"$logcontainer\"} |~ \"$logq\"",
+          "queryType": "range"
+        }
+      ],
+      "options": {
+        "showTime": true,
+        "wrapLogMessage": true,
+        "sortOrder": "Descending",
+        "dedupStrategy": "none",
+        "enableLogDetails": true
+      },
+      "description": "Every log line from the containers picked in LOG CONTAINER, narrowed by the LOG FILTER box (a regular expression). Use FORENSICS to tie lines to one specific request.",
+      "gridPos": {
+        "x": 12,
+        "y": 47,
+        "w": 12,
+        "h": 8
+      }
+    }
+  ]
+}
