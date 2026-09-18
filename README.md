@@ -190,6 +190,28 @@ that replaced it share an identifier, and the ledger keeps one row per
 identifier, so one of the two calls goes unrecorded while the vendor bills
 both.
 
+### A referee that costs less than the reply
+
+The fix above only fires when the model says, in the protocol, that it
+declined. Most declines do not arrive that way. They arrive as a polite
+sentence with a normal status, or as filler, and the gateway counts them as
+answers. So the reference build now asks a second, much smaller model to
+referee. TypeSafe's Jev is not a chat model: it takes the request and the reply
+and returns one typed verdict, answered, refused or non-answer, with a
+probability, in about half a second, for a few hundredths of a cent. A
+confident decline is then treated exactly like a protocol-level refusal and the
+gateway moves to the next model on the list. Empty replies are caught without
+asking anyone. The same model can pick the tier on the cost-aware router, with
+a rule in code that long prompts never get the cheapest model; when the referee
+is unreachable the built-in scorer decides, as it did before.
+
+On the reference deployment the referee agreed with a labelled set 15 times out
+of 15, including two replies written to argue for their own grade, and the tier
+picker 16 of 16; the median round trip was 531 ms and the whole test cost a
+tenth of a cent. It is a paid, early-access service with open-ended retention,
+so the private routes are excluded and every use is opt-in per route. Knobs,
+access rules and the caveats are in `docs/jev-decision-layer.md`.
+
 ### Privacy is a routing decision
 
 The private lane is a list, and the list is the whole guarantee. The lane
@@ -270,12 +292,15 @@ the reference build with the operator's specifics removed.
 | `docker-compose.yml` | The whole stack as one file: the gateway (LiteLLM), its database (Postgres) and cache (Redis), metrics (Prometheus), dashboards (Grafana), traces (Tempo), logs (Loki and Alloy), and a private web-search engine (SearXNG). Every component is pinned to an exact version. |
 | `litellm/Dockerfile` | The gateway's image, pinned to one release, with one deliberate change explained in the file. |
 | `litellm/refusal_fallback.py` | A small module that lets a reply delivered word by word move to the next model when the first one declines the request, as described above. |
+| `litellm/jev_gate.py` | The decision layer: a router classifier plugin and a soft-refusal judge backed by TypeSafe Jev, both opt-in, both declining gracefully without a key. Metrics and one log line per decision included. |
+| `docs/jev-decision-layer.md` | What Jev is, how the three uses are wired, how to grant a key access, the measured numbers and the caveats. |
 | `litellm_config.example.yaml` | The routing rules shown as patterns: vendor pass-throughs, a standard-rate route beside an opt-in priority route with its own budget, a privacy-preserving route pinned to its endpoint, local models, a fail-closed private chain, and an embedding route with deliberately no fallback. |
 | `prometheus.yml`, `tempo-config.yaml`, `loki-config.yaml`, `alloy-config.alloy` | The observability configuration, including the liveness pattern for components that ship without a shell. |
 | `grafana/` | Dashboards and data sources provisioned from disk. Edits made in the Grafana web interface are rejected by design, so these files are the single source of truth. The example dashboard includes the billed-tier detector described above. The alert rules that email when spend passes its share of the plan live here too. |
 | `provision-keys.example.sh` | Creates teams and per-tool access keys with budgets that reset monthly. |
 | `scripts/check-image-updates.py` | Reports which pinned components are behind upstream. It applies nothing. |
-| `scripts/verify-stack.py` | A health gate that checks 14 specific things and stops at the first one that fails. It read 14 of 14 on the reference deployment on the day this was written. |
+| `scripts/verify-stack.py` | A health gate that checks 15 specific things and stops at the first one that fails. It read 15 of 15 on the reference deployment on the day the fifteenth probe was added; that probe skips itself when the decision layer's key is absent. |
+| `scripts/probe-typesafe.py`, `scripts/jev-bench.py` | Prove a Jev key directly and through the gateway, and reproduce the referee and tier-picker numbers above on labelled sets and on your own local models' replies. |
 | `scripts/leak-gate.py` | Scans the tree, including the insides of spreadsheets and documents, for anything that must not be published. |
 | `toolbox/` | One list of MCP tools rendered into each client's own config format (Claude Code, VS Code, Zed, OpenCode, Codex) with environment-variable references only, plus a handshake script that reports each hosted tool's real tool count. The rendered files never hold a key. |
 | `DEPLOYMENT.md` | The step-by-step guide: first start-up, connecting a client, changing routes, updating components, rolling back. |

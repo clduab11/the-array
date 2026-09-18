@@ -145,6 +145,10 @@ services:
       # Private lane: the api_base-pinned private-* entries in litellm_config.example.yaml
       # read this one (os.environ/PRIVATE_INFERENCE_API_KEY). Unset = that lane fails auth.
       PRIVATE_INFERENCE_API_KEY: ${PRIVATE_INFERENCE_API_KEY:-}
+      # Optional TypeSafe Jev decision layer (litellm/jev_gate.py, docs/jev-decision-layer.md). Unset = the
+      # judge and classifier decline gracefully and the /typesafe pass-through fails upstream auth.
+      TYPESAFE_API_KEY: ${TYPESAFE_API_KEY:-}
+      JEV_JUDGE_GROUPS: ${JEV_JUDGE_GROUPS:-}     # csv of extra routes the judge may act on; private* never
     volumes:
       - ./litellm_config.yaml:/app/config.yaml:ro
       # Streamed-refusal fallback (litellm/refusal_fallback.py), loaded by `callbacks` in the
@@ -152,6 +156,8 @@ services:
       # mounted beside config.yaml. A new bind mount needs a recreate, not a restart:
       #   docker compose --profile observe up -d litellm-proxy
       - ./litellm/refusal_fallback.py:/app/refusal_fallback.py:ro
+      # Jev decision layer: router classifier plugin + soft-refusal judge (same import rule as above).
+      - ./litellm/jev_gate.py:/app/jev_gate.py:ro
     command:
       - "--config"
       - "/app/config.yaml"

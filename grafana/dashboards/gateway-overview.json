@@ -601,6 +601,256 @@
           "placement": "bottom"
         }
       }
+    },
+    {
+      "id": 9,
+      "type": "row",
+      "title": "JEV DECISION LAYER (optional: litellm/jev_gate.py)",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 22,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "id": 10,
+      "type": "stat",
+      "title": "JEV CALLS // purpose - outcome (range)",
+      "description": "Calls the proxy made to TypeSafe Jev in range: classifier (tier choice on a router) and judge (soft-refusal check on non-streamed replies), by outcome (ok / timeout / http_NNN / circuit_open / no_key). Direct client calls through the /typesafe pass-through are spend-ledger rows, not counted here.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "afimxbo42ap6oe"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 23,
+        "w": 6,
+        "h": 6
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "afimxbo42ap6oe"
+          },
+          "refId": "A",
+          "expr": "sum by (purpose, outcome) (increase(praxen_jev_calls_total[$__range]))",
+          "legendFormat": "{{purpose}} - {{outcome}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 0,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#3A7BD5",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "center"
+      }
+    },
+    {
+      "id": 11,
+      "type": "stat",
+      "title": "SOFT REFUSALS CAUGHT (range)",
+      "description": "Replies the judge marked as declined (refused or non_answer at p >= 0.85, or an empty 200 caught in code) and sent down the route's content_policy_fallbacks chain. Before the judge these reached the client as a polite refusal or an empty answer with no fallback.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "afimxbo42ap6oe"
+      },
+      "gridPos": {
+        "x": 6,
+        "y": 23,
+        "w": 6,
+        "h": 6
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "afimxbo42ap6oe"
+          },
+          "refId": "A",
+          "expr": "sum by (verdict) (increase(praxen_jev_judge_verdict_total{action=\"fallback\"}[$__range]))",
+          "legendFormat": "{{verdict}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 0,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#3FA37A",
+                "value": null
+              },
+              {
+                "color": "#D9822B",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "center"
+      }
+    },
+    {
+      "id": 12,
+      "type": "stat",
+      "title": "JEV EST. SPEND (range)",
+      "description": "Input tokens x $0.042/Mtok (output is free). The classifier and judge call the vendor directly, so this counter - not the spend ledger - is their meter until the native LiteLLM route prices pass-through calls from usage.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "afimxbo42ap6oe"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 23,
+        "w": 4,
+        "h": 6
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "afimxbo42ap6oe"
+          },
+          "refId": "A",
+          "expr": "sum(increase(praxen_jev_estimated_cost_usd_total[$__range]))",
+          "legendFormat": ""
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD",
+          "decimals": 5,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#3A7BD5",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "center"
+      }
+    },
+    {
+      "id": 13,
+      "type": "timeseries",
+      "title": "Classifier tier mix",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "afimxbo42ap6oe"
+      },
+      "description": "Tier Jev chose per request on routers with classifier_type custom -> jev_gate.classifier_instance. Requests decided by the built-in scorer (Jev unreachable) do not appear here.",
+      "gridPos": {
+        "x": 16,
+        "y": 23,
+        "w": 8,
+        "h": 6
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 70,
+            "lineWidth": 1,
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            }
+          },
+          "unit": "short",
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "sum"
+          ],
+          "displayMode": "table",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "afimxbo42ap6oe"
+          },
+          "refId": "A",
+          "expr": "sum by (tier) (increase(praxen_jev_classifier_tier_total[$__rate_interval]))",
+          "legendFormat": "{{tier}}"
+        }
+      ]
     }
   ],
   "description": "Example file-provisioned dashboard: gateway health, spend, and the billed-service-tier detector. Disk is the only author surface (allowUiUpdates: false)."

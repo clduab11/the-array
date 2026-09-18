@@ -262,3 +262,27 @@ cleanup; move candidates to a visible staging directory and purge by hand.
   live and timed out; see "Clients that import the model list" in section 3.
 - **Spend alerts never arrive.** `GRAFANA_SMTP_ENABLED` is still false, or the
   address in `grafana/provisioning/alerting/spend-watch.yaml` was not replaced.
+
+## 8. Optional: the Jev decision layer
+
+`litellm/jev_gate.py` adds two decisions the gateway could not make before and one
+pass-through, all backed by TypeSafe AI's Jev (a typed-decision model, not a chat
+model). Read `docs/jev-decision-layer.md` first; the short version:
+
+1. Put `TYPESAFE_API_KEY` in `.env` and **recreate** the proxy (the module is a new bind
+   mount): `docker compose --profile observe up -d litellm-proxy`. With the key unset
+   nothing changes: the judge and the classifier decline and the scorer decides.
+2. The judge is already loaded by `callbacks` and acts only on routes listed under
+   `content_policy_fallbacks` (plus any in `JEV_JUDGE_GROUPS`); `private*` routes never.
+   It rewrites a confident decline to `finish_reason: content_filter`, so the existing
+   chain walks. Non-streamed calls only.
+3. To let Jev pick tiers on a router, uncomment the four `classifier_*` lines under that
+   router's `complexity_router_config`. Every classified prompt goes to the vendor, so do
+   not do this on a router that must stay local-only. If Jev fails the built-in scorer decides.
+4. To let a script or agent call Jev through the gateway, grant the key:
+   `POST /key/update {"key": "...", "metadata": {"allowed_passthrough_routes": ["/typesafe"]}}`
+   (merge into the key's existing metadata). Then `python scripts/probe-typesafe.py --via-proxy`.
+5. Verify: `python scripts/verify-stack.py` (probe 15), `praxen_jev_*` on `/metrics/`, one
+   `jev_gate {...}` JSON line per decision in the proxy log, the Jev row on the dashboard.
+6. Roll back: remove `jev_gate.judge_instance` from `callbacks` (judge), re-comment the
+   `classifier_*` lines (classifier), or unset the key (everything). Restart the proxy.

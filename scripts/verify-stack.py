@@ -270,6 +270,23 @@ def main():
     gate(f"embed {a.embed_model} = {a.embed_dims} dims", s == 200 and dims == a.embed_dims,
          f"HTTP {s} dims={dims} in {time.time() - t:.1f}s")
 
+    # 7b. TypeSafe Jev pass-through (optional; docs/jev-decision-layer.md). Skips unless the key is configured.
+    ts_key = os.environ.get("TYPESAFE_API_KEY") or ""
+    env_path = root / ".env"
+    if not ts_key and env_path.exists():
+        for raw in env_path.read_text(encoding="utf-8", errors="replace").splitlines():
+            if raw.startswith("TYPESAFE_API_KEY=") and raw.split("=", 1)[1].strip().strip('"') not in ("", "CHANGE_ME"):
+                ts_key = "set"
+    if not ts_key or ts_key == "CHANGE_ME":
+        gate("typesafe pass-through (/typesafe/v1/models)", True, "SKIPPED (TYPESAFE_API_KEY not set)", skipped=True)
+    else:
+        t = time.time()
+        s, b = http(f"{L}/typesafe/v1/models", H, timeout=30)
+        d = jbody(b) or {}
+        names = [x.get("name") or x.get("id") for x in (d.get("models") or d.get("data") or [])]
+        gate("typesafe pass-through (/typesafe/v1/models)", s == 200 and any(str(n).startswith("jev") for n in names),
+             f"HTTP {s} models={names} in {time.time() - t:.1f}s")
+
     # datasource / dashboard inventory from disk
     ds_disk = datasources_on_disk(root)
     by_type = {}

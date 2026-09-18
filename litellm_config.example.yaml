@@ -22,6 +22,23 @@ general_settings:
   # on top of this YAML at every boot - the DB value wins and an edit here never
   # takes effect. YAML is the only authoritative surface (keep STORE_MODEL_IN_DB unset too).
   store_model_in_db: false
+
+  # OPTIONAL: TypeSafe Jev pass-through (docs/jev-decision-layer.md). Clients POST /typesafe/v1/systemone
+  # with a gateway virtual key and the proxy injects TYPESAFE_API_KEY. On LiteLLM 1.100.x this generic
+  # route is opt-in per key/team: put allowed_passthrough_routes: ["/typesafe"] in the key's or team's
+  # metadata (exact or prefix match) or the call gets 403; the master key always passes. cost_per_request
+  # is a flat estimate (~476 input tokens at $0.042/M); LiteLLM >= 1.103 ships a native /typesafe route
+  # priced from the response usage - swap to it then.
+  pass_through_endpoints:
+    - path: "/typesafe"
+      target: "https://api.typesafe.ai"
+      include_subpath: true
+      auth: true
+      headers:
+        Authorization: "Bearer os.environ/TYPESAFE_API_KEY"
+        content-type: application/json
+      cost_per_request: 0.00002
+      timeout: 30
   # Alerting is wired but disabled until a webhook exists (reads SLACK_WEBHOOK_URL).
   # alerting: ["slack"]
   # alerting_threshold: 300
@@ -35,7 +52,11 @@ litellm_settings:
   # Loads litellm/refusal_fallback.py (mounted beside this file by docker-compose), which
   # lets a streamed refusal walk content_policy_fallbacks below. Remove this line if you
   # do not mount the module, or the proxy fails at boot importing it.
-  callbacks: ["refusal_fallback.proxy_handler_instance"]
+  # jev_gate.judge_instance (litellm/jev_gate.py) is the soft-refusal judge: on NON-streamed calls for the
+  # routes listed under content_policy_fallbacks it asks TypeSafe Jev whether the reply actually answered,
+  # and a confident "refused"/"non_answer" verdict walks the same chain. With TYPESAFE_API_KEY unset it does
+  # nothing. Remove it (and the pass-through above) if you do not want that vendor in the path.
+  callbacks: ["refusal_fallback.proxy_handler_instance", "jev_gate.judge_instance"]
   service_callback: ["prometheus_system"]
   turn_off_message_logging: true   # prompts/completions never reach trace or log backends
   # Single-tenant posture: the scrape job runs inside the same private network,
@@ -319,6 +340,15 @@ model_list:
       model: auto_router/complexity_router
       complexity_router_default_model: fast-cloud-example
       complexity_router_config:
+        # OPTIONAL: let TypeSafe Jev pick the tier instead of the regex scorer (docs/jev-decision-layer.md).
+        # One calibrated Choice per request; top probability >= 0.60 wins, else the more capable of the two
+        # leading tiers; prompts >= ~3000 tokens floor at COMPLEX in code. If Jev is unreachable the plugin
+        # declines and classifier_fallback (the built-in scorer) decides. NOTE: every classified prompt is
+        # sent to api.typesafe.ai - do not enable it on a router that must stay local-only.
+        # classifier_type: custom
+        # classifier_plugin: jev_gate.classifier_instance
+        # classifier_plugin_timeout_ms: 4000
+        # classifier_fallback: heuristic
         tiers:
           SIMPLE: local-chat-example
           MEDIUM: fast-cloud-example
