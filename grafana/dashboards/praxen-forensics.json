@@ -1,0 +1,1377 @@
+{
+  "uid": "praxen-forensics",
+  "title": "PRAXEN // FORENSICS",
+  "description": "What caused this specific request failure, slowdown, fallback or Jev decision? Companion to COMMAND (uid praxen-command) and ROUTING.",
+  "tags": [
+    "praxen",
+    "litellm",
+    "tactical",
+    "forensics"
+  ],
+  "schemaVersion": 42,
+  "graphTooltip": 1,
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "liveNow": false,
+  "refresh": "30s",
+  "timezone": "America/Chicago",
+  "time": {
+    "from": "now-24h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "annotations": {
+    "list": []
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "request_id",
+        "label": "REQUEST / CALL ID",
+        "type": "textbox",
+        "query": "",
+        "current": {
+          "selected": false,
+          "text": "",
+          "value": ""
+        },
+        "options": [
+          {
+            "selected": true,
+            "text": "",
+            "value": ""
+          }
+        ],
+        "hide": 0,
+        "description": "SpendLogs request_id (chatcmpl-…/resp_…/uuid) OR litellm_call_id"
+      },
+      {
+        "name": "trace_id",
+        "label": "TRACE ID",
+        "type": "textbox",
+        "query": "",
+        "current": {
+          "selected": false,
+          "text": "",
+          "value": ""
+        },
+        "options": [
+          {
+            "selected": true,
+            "text": "",
+            "value": ""
+          }
+        ],
+        "hide": 0,
+        "description": "Tempo trace id (hex) — loads the waterfall"
+      },
+      {
+        "name": "key",
+        "label": "KEY",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "afimxbo42ap6oe"
+        },
+        "definition": "label_values(litellm_spend_metric_total, api_key_alias)",
+        "query": {
+          "qryType": 1,
+          "query": "label_values(litellm_spend_metric_total, api_key_alias)",
+          "refId": "var-key"
+        },
+        "refresh": 2,
+        "regex": "",
+        "sort": 1,
+        "includeAll": true,
+        "multi": true,
+        "allValue": ".*",
+        "hide": 0,
+        "current": {
+          "selected": true,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        },
+        "options": []
+      },
+      {
+        "name": "model",
+        "label": "MODEL",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "afimxbo42ap6oe"
+        },
+        "definition": "label_values(litellm_proxy_total_requests_metric_total, requested_model)",
+        "query": {
+          "qryType": 1,
+          "query": "label_values(litellm_proxy_total_requests_metric_total, requested_model)",
+          "refId": "var-model"
+        },
+        "refresh": 2,
+        "regex": "",
+        "sort": 1,
+        "includeAll": true,
+        "multi": true,
+        "allValue": ".*",
+        "hide": 0,
+        "current": {
+          "selected": true,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        },
+        "options": []
+      },
+      {
+        "name": "team",
+        "label": "TEAM",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "afimxbo42ap6oe"
+        },
+        "definition": "label_values(litellm_spend_metric_total, team_alias)",
+        "query": {
+          "qryType": 1,
+          "query": "label_values(litellm_spend_metric_total, team_alias)",
+          "refId": "var-team"
+        },
+        "refresh": 2,
+        "regex": "",
+        "sort": 1,
+        "includeAll": true,
+        "multi": true,
+        "allValue": ".*",
+        "hide": 0,
+        "current": {
+          "selected": true,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        },
+        "options": []
+      },
+      {
+        "name": "severity",
+        "label": "SEVERITY",
+        "type": "custom",
+        "query": "All : .*, WARN+ERROR : (?i)(error|warn|exception|traceback|fail), ERROR : (?i)(error|exception|traceback)",
+        "options": [
+          {
+            "selected": true,
+            "text": "All",
+            "value": ".*"
+          },
+          {
+            "selected": false,
+            "text": "WARN+ERROR",
+            "value": "(?i)(error|warn|exception|traceback|fail)"
+          },
+          {
+            "selected": false,
+            "text": "ERROR",
+            "value": "(?i)(error|exception|traceback)"
+          }
+        ],
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": ".*"
+        },
+        "multi": false,
+        "includeAll": false,
+        "hide": 0
+      },
+      {
+        "auto": true,
+        "auto_count": 30,
+        "auto_min": "30s",
+        "current": {
+          "selected": true,
+          "text": "5m",
+          "value": "5m"
+        },
+        "hide": 0,
+        "label": "INTERVAL",
+        "name": "interval",
+        "options": [
+          {
+            "selected": false,
+            "text": "1m",
+            "value": "1m"
+          },
+          {
+            "selected": true,
+            "text": "5m",
+            "value": "5m"
+          },
+          {
+            "selected": false,
+            "text": "10m",
+            "value": "10m"
+          },
+          {
+            "selected": false,
+            "text": "30m",
+            "value": "30m"
+          },
+          {
+            "selected": false,
+            "text": "1h",
+            "value": "1h"
+          }
+        ],
+        "query": "1m,5m,10m,30m,1h",
+        "refresh": 2,
+        "skipUrlSync": false,
+        "type": "interval"
+      },
+      {
+        "name": "logcontainer",
+        "label": "LOG CONTAINER",
+        "type": "query",
+        "datasource": {
+          "type": "loki",
+          "uid": "praxen-loki"
+        },
+        "query": {
+          "label": "container",
+          "refId": "LokiVariableQueryEditor-VariableQuery",
+          "type": 1
+        },
+        "refresh": 2,
+        "includeAll": true,
+        "allValue": ".+",
+        "multi": true,
+        "current": {
+          "selected": true,
+          "text": [
+            "praxen-litellm"
+          ],
+          "value": [
+            "praxen-litellm"
+          ]
+        },
+        "options": [],
+        "sort": 1
+      },
+      {
+        "name": "logq",
+        "label": "LOG FILTER",
+        "type": "textbox",
+        "query": "",
+        "current": {
+          "text": "",
+          "value": "",
+          "selected": false
+        },
+        "options": [],
+        "description": "regex applied as |~ to the log panels"
+      },
+      {
+        "name": "call_id",
+        "label": "CALL ID (derived)",
+        "type": "query",
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "praxen-litellm-pg"
+        },
+        "query": "SELECT COALESCE(metadata->>'litellm_call_id', request_id) AS __value FROM \"LiteLLM_SpendLogs\" WHERE '${request_id}' <> '' AND (request_id = '${request_id}' OR metadata->>'litellm_call_id' = '${request_id}') LIMIT 1",
+        "definition": "SELECT COALESCE(metadata->>'litellm_call_id', request_id) AS __value FROM \"LiteLLM_SpendLogs\" WHERE '${request_id}' <> '' AND (request_id = '${request_id}' OR metadata->>'litellm_call_id' = '${request_id}') LIMIT 1",
+        "refresh": 2,
+        "regex": "",
+        "sort": 0,
+        "includeAll": false,
+        "multi": false,
+        "hide": 2,
+        "current": {
+          "selected": false,
+          "text": "",
+          "value": ""
+        },
+        "options": [],
+        "description": "litellm_call_id resolved from REQUEST / CALL ID — the key Jev judge lines and Tempo spans carry."
+      }
+    ]
+  },
+  "links": [
+    {
+      "title": "COMMAND",
+      "type": "link",
+      "url": "/d/praxen-command/praxen-command",
+      "icon": "dashboard",
+      "tooltip": "PRAXEN // COMMAND (keeps time + filters)",
+      "keepTime": true,
+      "includeVars": true,
+      "targetBlank": false,
+      "asDropdown": false,
+      "tags": []
+    },
+    {
+      "title": "ROUTING",
+      "type": "link",
+      "url": "/d/praxen-routing/praxen-routing",
+      "icon": "dashboard",
+      "tooltip": "PRAXEN // ROUTING (keeps time + filters)",
+      "keepTime": true,
+      "includeVars": true,
+      "targetBlank": false,
+      "asDropdown": false,
+      "tags": []
+    },
+    {
+      "icon": "external link",
+      "targetBlank": true,
+      "title": "View all traces in Tempo (this time range)",
+      "type": "link",
+      "url": "/explore?orgId=1&left=%7B%22datasource%22:%22dfipt8nyznn5sc%22,%22queries%22:%5B%7B%22query%22:%22%7B%20resource.service.name%3D%5C%22praxen-litellm%5C%22%20%7D%22,%22queryType%22:%22traceql%22%7D%5D,%22range%22:%7B%22from%22:%22${__from}%22,%22to%22:%22${__to}%22%7D%7D"
+    }
+  ],
+  "panels": [
+    {
+      "id": 101,
+      "type": "text",
+      "title": "",
+      "description": "",
+      "datasource": null,
+      "targets": [],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "options": {
+        "mode": "html",
+        "content": "<style>\n/* THEME STRATEGY (rewritten 2026-08-05 after a live-mode bug):\n   Do NOT key off Grafana's `body.theme-dark` class. Grafana serves that class hardcoded\n   in the initial HTML and then swaps themes via CSS-in-JS WITHOUT updating it, so a\n   `body.theme-dark` selector matches permanently and the banner rendered dark inside a\n   light dashboard. It looked correct only under /render, because the image renderer\n   bakes ?theme= into the served page.\n   Instead this panel is theme-AGNOSTIC: transparent background and inherited text\n   colour mean it is automatically whatever Grafana is. Hierarchy comes from opacity,\n   not from hardcoded greys. Accents are duotone mid-tones that clear contrast on both\n   #EEF1F4 and #06080A. prefers-color-scheme then lifts the accent for dark, which is\n   what tracks the operating system's light/dark switch when Grafana's theme pref is \"system\". */\n.praxen-hud{--pa:#2E7D9A;--pg:#4A6B8A;--pok:#2F8F72;--pw:#B0862A;--pc:#A8453F;\n  --pline:rgba(127,127,127,.28);--pglow:none}\n@media (prefers-color-scheme: dark){\n  .praxen-hud{--pa:#5AB0CE;--pg:#8DA3BA;--pok:#3F8F7E;--pw:#C9A227;--pc:#B85C5C;\n    --pline:rgba(160,170,180,.22);--pglow:0 0 10px rgba(90,176,206,.30)}\n}\n.praxen-hud{font-family:'JetBrains Mono','SF Mono',Menlo,Consolas,monospace;position:relative;box-sizing:border-box;color:inherit;\n  padding:12px 16px 10px 18px;background:transparent;border:1px solid var(--pline);\n  border-left:3px solid var(--pa);border-radius:3px;overflow:hidden}\n.praxen-hud *{box-sizing:border-box}\n.praxen-hud .ph-tick{position:absolute;width:12px;height:12px;opacity:.55;border-color:var(--pa)}\n.praxen-hud .ph-tl{top:0;left:0;border-top:1px solid;border-left:1px solid}\n.praxen-hud .ph-tr{top:0;right:0;border-top:1px solid;border-right:1px solid}\n.praxen-hud .ph-br{bottom:0;right:0;border-bottom:1px solid;border-right:1px solid}\n.praxen-hud .ph-top{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:8px}\n.praxen-hud .ph-mark{color:var(--pa);font-size:21px;font-weight:700;letter-spacing:3px;text-shadow:var(--pglow)}\n/* inherited colour + opacity => correct in BOTH themes with no detection */\n.praxen-hud .ph-mark2{font-size:21px;font-weight:700;letter-spacing:3px;opacity:.62}\n.praxen-hud .ph-live{color:var(--pok);font-size:10px;font-weight:700;letter-spacing:2px;\n  border:1px solid var(--pok);border-radius:2px;padding:2px 8px}\n.praxen-hud .ph-sub{font-size:10.5px;letter-spacing:1.4px;margin-top:4px;text-transform:uppercase;opacity:.62}\n.praxen-hud .ph-bar{display:flex;align-items:center;flex-wrap:wrap;gap:12px;margin-top:8px;\n  padding-top:7px;border-top:1px solid var(--pline)}\n.praxen-hud .ph-lbl{font-size:9px;letter-spacing:2px;text-transform:uppercase;opacity:.55}\n.praxen-hud .ph-st{display:inline-flex;align-items:center;gap:5px;font-size:10px;letter-spacing:1px}\n.praxen-hud .ph-dot{display:inline-block;width:7px;height:7px;border-radius:50%}\n.praxen-hud .ph-pill{font-size:10px;letter-spacing:1px;border:1px solid;border-radius:2px;padding:2px 7px}\n.praxen-hud .ph-div{width:1px;height:13px;background:var(--pline)}\n.praxen-hud a.ph-pill{text-decoration:none}.praxen-hud a.ph-pill:hover{filter:brightness(1.15)}\n</style>\n<div class=\"praxen-hud\">\n  <div class=\"ph-tick ph-tl\"></div><div class=\"ph-tick ph-tr\"></div><div class=\"ph-tick ph-br\"></div>\n  <div class=\"ph-top\">\n    <div><span class=\"ph-mark\">PRAXEN</span><span class=\"ph-mark2\">&nbsp;//&nbsp;FORENSICS</span></div>\n    <span class=\"ph-live\">&#9679;&nbsp;LIVE</span>\n  </div>\n  <div class=\"ph-sub\">what caused this request failure, slowdown, fallback or jev decision? &nbsp;//&nbsp; request log · correlated logs · trace · jev decision · timeline · query explorer</div>\n  <div class=\"ph-bar\">\n    <span class=\"ph-lbl\">How</span><span class=\"ph-st\" style=\"opacity:.8\">paste a SpendLogs request_id or a litellm_call_id into REQUEST / CALL ID &middot; logs + jev + traces key on the derived call id &middot; a TRACE ID loads the waterfall</span>\n    <span class=\"ph-div\"></span>\n    <span class=\"ph-lbl\">Boards</span>\n    <a class=\"ph-pill\" style=\"color:var(--pg);border-color:var(--pg)\" href=\"/d/praxen-command/praxen-command?${__url_time_range}&var-key=${key:queryparam}&var-model=${model:queryparam}&var-team=${team:queryparam}&var-interval=${interval:queryparam}\">COMMAND</a> <a class=\"ph-pill\" style=\"color:var(--pg);border-color:var(--pg)\" href=\"/d/praxen-routing/praxen-routing?${__url_time_range}&var-key=${key:queryparam}&var-model=${model:queryparam}&var-team=${team:queryparam}&var-interval=${interval:queryparam}\">ROUTING</a> <a class=\"ph-pill\" style=\"color:var(--pa);border-color:var(--pa);font-weight:700\" href=\"/d/praxen-forensics/praxen-forensics?${__url_time_range}&var-key=${key:queryparam}&var-model=${model:queryparam}&var-team=${team:queryparam}&var-interval=${interval:queryparam}\">FORENSICS</a>\n  </div>\n</div>",
+        "code": {
+          "language": "html",
+          "showLineNumbers": false,
+          "showMiniMap": false
+        }
+      },
+      "transparent": true,
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 4
+      }
+    },
+    {
+      "id": 114,
+      "type": "row",
+      "title": "01 ▸ INCIDENT CONTEXT",
+      "collapsed": false,
+      "panels": [],
+      "gridPos": {
+        "x": 0,
+        "y": 4,
+        "w": 24,
+        "h": 1
+      }
+    },
+    {
+      "id": 102,
+      "type": "stat",
+      "title": "MATCHED REQUESTS",
+      "description": "Requests in the range that match the pickers and, if one is set, the selected request.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "praxen-litellm-pg"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "praxen-litellm-pg"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "SELECT count(*) AS \"matched\" FROM \"LiteLLM_SpendLogs\" WHERE $__timeFilter(\"startTime\") AND ('${request_id}' = '' OR request_id = '${request_id}' OR metadata->>'litellm_call_id' = '${request_id}') AND COALESCE(metadata->>'user_api_key_alias','') ~ '^(?:${key:regex})$' AND COALESCE(model_group,'') ~ '^(?:${model:regex})$' AND COALESCE(metadata->>'user_api_key_team_alias','') ~ '^(?:${team:regex})$'"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "noValue": "0",
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#4A6B8A",
+                "value": null
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "textMode": "value",
+        "wideLayout": true,
+        "showPercentChange": false,
+        "percentChangeColorMode": "standard"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 5,
+        "w": 4,
+        "h": 5
+      }
+    },
+    {
+      "id": 103,
+      "type": "stat",
+      "title": "ERRORS",
+      "description": "Matching requests that failed — provider errors, bad requests and permission refusals all count.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "praxen-litellm-pg"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "praxen-litellm-pg"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "SELECT count(*) AS \"errors\" FROM \"LiteLLM_SpendLogs\" WHERE $__timeFilter(\"startTime\") AND status = 'failure' AND ('${request_id}' = '' OR request_id = '${request_id}' OR metadata->>'litellm_call_id' = '${request_id}') AND COALESCE(metadata->>'user_api_key_alias','') ~ '^(?:${key:regex})$' AND COALESCE(model_group,'') ~ '^(?:${model:regex})$' AND COALESCE(metadata->>'user_api_key_team_alias','') ~ '^(?:${team:regex})$'"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "noValue": "0",
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#2F8F72",
+                "value": null
+              },
+              {
+                "color": "#A8453F",
+                "value": 1
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "textMode": "value",
+        "wideLayout": true,
+        "showPercentChange": false,
+        "percentChangeColorMode": "standard"
+      },
+      "gridPos": {
+        "x": 4,
+        "y": 5,
+        "w": 4,
+        "h": 5
+      }
+    },
+    {
+      "id": 104,
+      "type": "stat",
+      "title": "P95 LATENCY",
+      "description": "95 out of 100 matching requests finished faster than this.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "praxen-litellm-pg"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "praxen-litellm-pg"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "SELECT percentile_cont(0.95) WITHIN GROUP (ORDER BY request_duration_ms) AS \"p95_ms\" FROM \"LiteLLM_SpendLogs\" WHERE $__timeFilter(\"startTime\") AND request_duration_ms IS NOT NULL AND ('${request_id}' = '' OR request_id = '${request_id}' OR metadata->>'litellm_call_id' = '${request_id}') AND COALESCE(metadata->>'user_api_key_alias','') ~ '^(?:${key:regex})$' AND COALESCE(model_group,'') ~ '^(?:${model:regex})$' AND COALESCE(metadata->>'user_api_key_team_alias','') ~ '^(?:${team:regex})$'"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "decimals": 0,
+          "noValue": "no rows",
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#2F8F72",
+                "value": null
+              },
+              {
+                "color": "#B0862A",
+                "value": 15000
+              },
+              {
+                "color": "#A8453F",
+                "value": 60000
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "textMode": "value",
+        "wideLayout": true,
+        "showPercentChange": false,
+        "percentChangeColorMode": "standard"
+      },
+      "gridPos": {
+        "x": 8,
+        "y": 5,
+        "w": 4,
+        "h": 5
+      }
+    },
+    {
+      "id": 105,
+      "type": "stat",
+      "title": "FALLBACKS",
+      "description": "Matching requests where the proxy had to try another model.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "praxen-litellm-pg"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "praxen-litellm-pg"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "SELECT count(*) AS \"fallbacks\" FROM \"LiteLLM_SpendLogs\" WHERE $__timeFilter(\"startTime\") AND (COALESCE((metadata->>'attempted_fallbacks')::int, 0) > 0 OR (metadata->>'original_model_group' IS NOT NULL AND metadata->>'original_model_group' <> model_group)) AND ('${request_id}' = '' OR request_id = '${request_id}' OR metadata->>'litellm_call_id' = '${request_id}') AND COALESCE(metadata->>'user_api_key_alias','') ~ '^(?:${key:regex})$' AND COALESCE(model_group,'') ~ '^(?:${model:regex})$' AND COALESCE(metadata->>'user_api_key_team_alias','') ~ '^(?:${team:regex})$'"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "noValue": "0",
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#2F8F72",
+                "value": null
+              },
+              {
+                "color": "#B0862A",
+                "value": 1
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "textMode": "value",
+        "wideLayout": true,
+        "showPercentChange": false,
+        "percentChangeColorMode": "standard"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 5,
+        "w": 4,
+        "h": 5
+      }
+    },
+    {
+      "id": 106,
+      "type": "stat",
+      "title": "JEV EVENTS",
+      "description": "Jev decision events in the range; narrowed to the selected request when one is chosen.",
+      "datasource": {
+        "type": "loki",
+        "uid": "praxen-loki"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "praxen-loki"
+          },
+          "expr": "sum(count_over_time({container=\"praxen-litellm\"} |= \"jev_gate {\" |~ \"$call_id\" [$__range]))",
+          "queryType": "instant",
+          "editorMode": "code"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "noValue": "0",
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#4A6B8A",
+                "value": null
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "textMode": "value",
+        "wideLayout": true,
+        "showPercentChange": false,
+        "percentChangeColorMode": "standard"
+      },
+      "gridPos": {
+        "x": 16,
+        "y": 5,
+        "w": 4,
+        "h": 5
+      }
+    },
+    {
+      "id": 107,
+      "type": "stat",
+      "title": "TRACED LLM CALLS",
+      "description": "Model calls that produced a trace in Tempo during the range (all keys).",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "afimxbo42ap6oe"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "afimxbo42ap6oe"
+          },
+          "expr": "sum(increase(traces_spanmetrics_calls_total{span_name=\"litellm_request\"}[$__range])) or vector(0)",
+          "legendFormat": "spans",
+          "editorMode": "code",
+          "range": true,
+          "instant": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "noValue": "0",
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#4A6B8A",
+                "value": null
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "textMode": "value",
+        "wideLayout": true,
+        "showPercentChange": false,
+        "percentChangeColorMode": "standard"
+      },
+      "gridPos": {
+        "x": 20,
+        "y": 5,
+        "w": 4,
+        "h": 5
+      }
+    },
+    {
+      "id": 115,
+      "type": "row",
+      "title": "02 ▸ REQUEST + TRACE",
+      "collapsed": false,
+      "panels": [],
+      "gridPos": {
+        "x": 0,
+        "y": 10,
+        "w": 24,
+        "h": 1
+      }
+    },
+    {
+      "id": 108,
+      "type": "table",
+      "title": "Request log // verbose (range · filters · selected request)",
+      "description": "Full detail for each matching request: ids, key, team, route asked for, model that answered, provider, success or failure with the error class, timings, tokens, dollars, billed tier, fallbacks, retries and the router's decision. Paste a request id or call id at the top — or click one here — to focus every panel on it.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "praxen-litellm-pg"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "praxen-litellm-pg"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "SELECT \"startTime\" AS \"time\", request_id, metadata->>'litellm_call_id' AS call_id, COALESCE(NULLIF(metadata->>'user_api_key_alias',''),'-') AS key, COALESCE(NULLIF(metadata->>'user_api_key_team_alias',''),'-') AS team, COALESCE(NULLIF(model_group,''),'-') AS route, COALESCE(NULLIF(model,''),'-') AS model, COALESCE(NULLIF(custom_llm_provider,''),'-') AS provider, COALESCE(NULLIF(regexp_replace(api_base, '^(https?://[^/]+).*$', '\\1'),''),'-') AS host, COALESCE(NULLIF(status,''),'?') AS status, NULLIF(TRIM(COALESCE(metadata->'error_information'->>'error_class','') || ' ' || COALESCE(metadata->'error_information'->>'error_code','')),'') AS error, request_duration_ms AS ms, ROUND(EXTRACT(EPOCH FROM (\"completionStartTime\" - \"startTime\")) * 1000)::int AS ttft_ms, prompt_tokens AS in_tok, completion_tokens AS out_tok, COALESCE((metadata->'usage_object'->'prompt_tokens_details'->>'cached_tokens')::bigint, (metadata->'usage_object'->>'cache_read_input_tokens')::bigint, 0) AS cached_tok, round(spend::numeric,5) AS usd, COALESCE(metadata->'cost_breakdown'->>'service_tier','-') AS tier, COALESCE((metadata->>'attempted_fallbacks')::int,0) AS fallbacks, COALESCE((metadata->>'attempted_retries')::int,0) AS retries, NULLIF(TRIM(COALESCE(metadata->'routing_decision'->>'tier','') || ' ' || COALESCE(metadata->'routing_decision'->>'cause','')),'') AS routing, COALESCE(session_id,'') AS session FROM \"LiteLLM_SpendLogs\" WHERE $__timeFilter(\"startTime\") AND ('${request_id}' = '' OR request_id = '${request_id}' OR metadata->>'litellm_call_id' = '${request_id}') AND COALESCE(metadata->>'user_api_key_alias','') ~ '^(?:${key:regex})$' AND COALESCE(model_group,'') ~ '^(?:${model:regex})$' AND COALESCE(metadata->>'user_api_key_team_alias','') ~ '^(?:${team:regex})$' ORDER BY \"startTime\" DESC LIMIT 200"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false,
+            "filterable": true
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#2F8F72",
+                "value": null
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "status"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "success": {
+                        "color": "#2F8F72",
+                        "index": 0
+                      },
+                      "failure": {
+                        "color": "#A8453F",
+                        "index": 1
+                      },
+                      "?": {
+                        "color": "#6B7681",
+                        "index": 2
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "usd"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "currencyUSD"
+              },
+              {
+                "id": "decimals",
+                "value": 5
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "time"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 165
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "status"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 80
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "request_id"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 120
+              },
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "Select this request",
+                    "url": "/d/praxen-forensics/praxen-forensics?${__url_time_range}&var-key=${key:queryparam}&var-model=${model:queryparam}&var-team=${team:queryparam}&var-interval=${interval:queryparam}&var-request_id=${__data.fields.request_id}",
+                    "targetBlank": false
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "call_id"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 120
+              },
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "Select by call id",
+                    "url": "/d/praxen-forensics/praxen-forensics?${__url_time_range}&var-key=${key:queryparam}&var-model=${model:queryparam}&var-team=${team:queryparam}&var-interval=${interval:queryparam}&var-request_id=${__data.fields.call_id}",
+                    "targetBlank": false
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "error"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#A8453F"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false,
+          "reducer": [
+            "sum"
+          ],
+          "countRows": false,
+          "fields": ""
+        },
+        "sortBy": []
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 11,
+        "w": 15,
+        "h": 14
+      }
+    },
+    {
+      "id": 109,
+      "type": "traces",
+      "title": "Trace // waterfall ($trace_id)",
+      "description": "The trace for the TRACE ID at the top: each step the proxy took for that request and how long it spent there. Empty until a trace id is set; pick one from Related traces.",
+      "datasource": {
+        "type": "tempo",
+        "uid": "dfipt8nyznn5sc"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "tempo",
+            "uid": "dfipt8nyznn5sc"
+          },
+          "queryType": "traceql",
+          "query": "$trace_id"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "options": {},
+      "gridPos": {
+        "x": 15,
+        "y": 11,
+        "w": 9,
+        "h": 8
+      }
+    },
+    {
+      "id": 110,
+      "type": "table",
+      "title": "Related traces // litellm_request spans (selected request, else range)",
+      "description": "Traces of model calls: the exact match when a request is selected, otherwise the 20 most recent in range. Click a trace id to load it in the waterfall.",
+      "datasource": {
+        "type": "tempo",
+        "uid": "dfipt8nyznn5sc"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "tempo",
+            "uid": "dfipt8nyznn5sc"
+          },
+          "queryType": "traceql",
+          "query": "{ resource.service.name = \"praxen-litellm\" && name = \"litellm_request\" && span.litellm.call_id =~ \".*$call_id.*\" }",
+          "tableType": "traces",
+          "limit": 20,
+          "filters": []
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false,
+            "filterable": true
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#2F8F72",
+                "value": null
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "traceID"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "Load in waterfall",
+                    "url": "/d/praxen-forensics/praxen-forensics?${__url_time_range}&var-key=${key:queryparam}&var-model=${model:queryparam}&var-team=${team:queryparam}&var-interval=${interval:queryparam}&var-request_id=${request_id}&var-trace_id=${__data.fields.traceID}",
+                    "targetBlank": false
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "traceID"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 250
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false,
+          "reducer": [
+            "sum"
+          ],
+          "countRows": false,
+          "fields": ""
+        },
+        "sortBy": []
+      },
+      "gridPos": {
+        "x": 15,
+        "y": 19,
+        "w": 9,
+        "h": 6
+      }
+    },
+    {
+      "id": 116,
+      "type": "row",
+      "title": "03 ▸ CORRELATED LOGS + DECISION + TIMELINE",
+      "collapsed": false,
+      "panels": [],
+      "gridPos": {
+        "x": 0,
+        "y": 25,
+        "w": 24,
+        "h": 1
+      }
+    },
+    {
+      "id": 111,
+      "type": "logs",
+      "title": "Verbose logs // correlated window ($logcontainer · $severity · $logq · call id)",
+      "description": "Log lines from the containers in LOG CONTAINER, narrowed by SEVERITY and the LOG FILTER box. With a request selected, only lines that mention its call id are shown — mostly the Jev judge event — so widen the time range to see surrounding proxy output.",
+      "datasource": {
+        "type": "loki",
+        "uid": "praxen-loki"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "praxen-loki"
+          },
+          "expr": "{container=~\"$logcontainer\"} |~ \"$severity\" |~ \"$logq\" |~ \"$call_id\"",
+          "queryType": "range",
+          "editorMode": "code"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "options": {
+        "showTime": true,
+        "showLabels": false,
+        "showCommonLabels": false,
+        "wrapLogMessage": true,
+        "prettifyLogMessage": false,
+        "enableLogDetails": true,
+        "enableInfiniteScrolling": false,
+        "dedupStrategy": "none",
+        "sortOrder": "Descending"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 26,
+        "w": 15,
+        "h": 12
+      }
+    },
+    {
+      "id": 112,
+      "type": "logs",
+      "title": "JEV decision // selected request (else all recent)",
+      "description": "What the Jev judge decided for the selected request: verdict, confidence and whether it passed or fell back. Without a selection, the most recent decisions.",
+      "datasource": {
+        "type": "loki",
+        "uid": "praxen-loki"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "praxen-loki"
+          },
+          "expr": "{container=\"praxen-litellm\"} |= \"jev_gate {\" |~ \"$call_id\"",
+          "queryType": "range",
+          "editorMode": "code"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "options": {
+        "showTime": true,
+        "showLabels": false,
+        "showCommonLabels": false,
+        "wrapLogMessage": true,
+        "prettifyLogMessage": false,
+        "enableLogDetails": true,
+        "enableInfiniteScrolling": false,
+        "dedupStrategy": "none",
+        "sortOrder": "Descending"
+      },
+      "gridPos": {
+        "x": 15,
+        "y": 26,
+        "w": 9,
+        "h": 6
+      }
+    },
+    {
+      "id": 113,
+      "type": "table",
+      "title": "Request timeline // selected request",
+      "description": "The selected request's own timestamps — received, first token, completed — with its duration, fallbacks and retries. Empty until a request is selected.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "praxen-litellm-pg"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "praxen-litellm-pg"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "WITH r AS (SELECT * FROM \"LiteLLM_SpendLogs\" WHERE '${request_id}' <> '' AND (request_id = '${request_id}' OR metadata->>'litellm_call_id' = '${request_id}') LIMIT 1) SELECT \"startTime\" AS \"time\", 'request received' AS event, COALESCE(NULLIF(model_group,''), model) || ' · ' || COALESCE(NULLIF(metadata->>'user_api_key_alias',''),'-') AS detail FROM r UNION ALL SELECT \"completionStartTime\", 'first token', 'ttft ' || ROUND(EXTRACT(EPOCH FROM (\"completionStartTime\" - \"startTime\")) * 1000)::text || ' ms · served by ' || COALESCE(model,'-') FROM r UNION ALL SELECT \"endTime\", 'response ' || COALESCE(status,'?'), request_duration_ms::text || ' ms · fallbacks ' || COALESCE(metadata->>'attempted_fallbacks','0') || ' · retries ' || COALESCE(metadata->>'attempted_retries','0') || COALESCE(' · ' || NULLIF(metadata->'error_information'->>'error_class',''), '') FROM r ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false,
+            "filterable": true
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#2F8F72",
+                "value": null
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          },
+          "noValue": "select a request"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "time"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 165
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "event"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 150
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false,
+          "reducer": [
+            "sum"
+          ],
+          "countRows": false,
+          "fields": ""
+        },
+        "sortBy": []
+      },
+      "gridPos": {
+        "x": 15,
+        "y": 32,
+        "w": 9,
+        "h": 6
+      }
+    },
+    {
+      "id": 117,
+      "type": "row",
+      "title": "04 ▸ QUERY EXPLORER",
+      "collapsed": false,
+      "panels": [],
+      "gridPos": {
+        "x": 0,
+        "y": 38,
+        "w": 24,
+        "h": 1
+      }
+    },
+    {
+      "id": 27,
+      "type": "text",
+      "transparent": true,
+      "options": {
+        "mode": "html",
+        "content": "<div style=\"font-family:'JetBrains Mono','SF Mono',Menlo,Consolas,monospace;padding:2px 0 0 0;\"><div style=\"display:flex;align-items:center;gap:8px;border-left:2px solid #22D3EE;padding:4px 0 6px 10px;margin-bottom:6px;\"><span style=\"color:#22D3EE;font-size:11px;letter-spacing:2px;text-transform:uppercase;text-shadow:0 0 8px rgba(34,211,238,0.35);\">&#9656; QUERY EXPLORER</span><span style=\"color:#8B949E;font-size:10px;letter-spacing:1px;\">// ad-hoc PromQL / SQL / TraceQL &middot; org-scoped Explore &middot; no panel save</span></div><iframe src=\"/explore?orgId=1\" style=\"width:100%;height:760px;border:1px solid #13202B;border-radius:8px;background:#0b1220;\"></iframe></div>"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 39,
+        "w": 24,
+        "h": 16
+      }
+    }
+  ]
+}

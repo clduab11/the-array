@@ -1,6 +1,6 @@
 # scripts/
 
-Five stdlib-only Python 3.10+ tools. All are Windows-safe (UTF-8 file I/O, ASCII output)
+Six stdlib-only Python 3.10+ tools. All are Windows-safe (UTF-8 file I/O, ASCII output)
 and take `--help`.
 
 | Script | Job | Exit code |
@@ -10,6 +10,7 @@ and take `--help`.
 | `leak-gate.py` | Blocking leak scan for the public tree against `leak-denylist.txt` (substrings and `re:` regexes). Scans every text file line by line and **every member of every zip-based archive** (xlsx/docx/pptx/...), recursing into nested archives, because references hide in comment and property parts that cell-value scans never see. Also flags `.env*`, `.virtual-keys.env`, `*.pem`, `*.key`, `id_rsa*` by name. Prints `path:line pattern`, never the matching text. `--allow FILE` for reviewed `path:pattern` exceptions, `--self-test` for the seeded-leak regression. | 1 on any hit |
 
 | `probe-typesafe.py` | Proves a TypeSafe Jev key and, with `--via-proxy`, the gateway's `/typesafe` pass-through: lists models, runs one three-question evaluate, asserts on the served model and the answer shape (never the status code), prints latency, tokens and cost. | 1 on any FAIL |
+| `verify-praxen-boards.py` | Gate for the three example boards (`grafana/dashboards/praxen-{command,routing,forensics}.json`): JSON parses, uids and file names match, no top-level id, unique panel ids, datasource uids exist on the live Grafana, links keep time + variables, every PromQL / SQL / LogQL / TraceQL target is executed through `/api/ds/query` at variable defaults and reported as frames/rows, all three are `provisioned=true`, alert rules still load. `--dir` validates a staged copy, `--trace <id>` feeds the FORENSICS waterfall probe. | 1 on any FAIL |
 | `jev-bench.py` | Evidence for the Jev decision layer using the exact questions `litellm/jev_gate.py` ships: tier-classifier agreement on 16 labelled prompts (2 adversarial), judge agreement on 15 labelled pairs (2 adversarial), optional `--local <route>` to judge real local-model replies fetched through the gateway. Writes `evidence/jev/jev-bench.{json,md}`. Imports `litellm`, so run it inside the proxy image (`docker cp` + `docker exec`) rather than installing LiteLLM from PyPI on the host. | 0 |
 
 Typical loop: `python scripts/leak-gate.py` before every push; `python scripts/verify-stack.py`

@@ -1,0 +1,2744 @@
+{
+  "uid": "praxen-routing",
+  "title": "PRAXEN // ROUTING",
+  "description": "Why are traffic, model choice, cost and policy behaving this way? Companion to COMMAND (uid praxen-command) and FORENSICS.",
+  "tags": [
+    "praxen",
+    "litellm",
+    "tactical",
+    "routing"
+  ],
+  "schemaVersion": 42,
+  "graphTooltip": 1,
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "liveNow": false,
+  "refresh": "30s",
+  "timezone": "America/Chicago",
+  "time": {
+    "from": "now-24h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "annotations": {
+    "list": []
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "key",
+        "label": "KEY",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "afimxbo42ap6oe"
+        },
+        "definition": "label_values(litellm_spend_metric_total, api_key_alias)",
+        "query": {
+          "qryType": 1,
+          "query": "label_values(litellm_spend_metric_total, api_key_alias)",
+          "refId": "var-key"
+        },
+        "refresh": 2,
+        "regex": "",
+        "sort": 1,
+        "includeAll": true,
+        "multi": true,
+        "allValue": ".*",
+        "hide": 0,
+        "current": {
+          "selected": true,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        },
+        "options": []
+      },
+      {
+        "name": "model",
+        "label": "MODEL",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "afimxbo42ap6oe"
+        },
+        "definition": "label_values(litellm_proxy_total_requests_metric_total, requested_model)",
+        "query": {
+          "qryType": 1,
+          "query": "label_values(litellm_proxy_total_requests_metric_total, requested_model)",
+          "refId": "var-model"
+        },
+        "refresh": 2,
+        "regex": "",
+        "sort": 1,
+        "includeAll": true,
+        "multi": true,
+        "allValue": ".*",
+        "hide": 0,
+        "current": {
+          "selected": true,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        },
+        "options": []
+      },
+      {
+        "name": "team",
+        "label": "TEAM",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "afimxbo42ap6oe"
+        },
+        "definition": "label_values(litellm_spend_metric_total, team_alias)",
+        "query": {
+          "qryType": 1,
+          "query": "label_values(litellm_spend_metric_total, team_alias)",
+          "refId": "var-team"
+        },
+        "refresh": 2,
+        "regex": "",
+        "sort": 1,
+        "includeAll": true,
+        "multi": true,
+        "allValue": ".*",
+        "hide": 0,
+        "current": {
+          "selected": true,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        },
+        "options": []
+      },
+      {
+        "auto": true,
+        "auto_count": 30,
+        "auto_min": "30s",
+        "current": {
+          "selected": true,
+          "text": "5m",
+          "value": "5m"
+        },
+        "hide": 0,
+        "label": "INTERVAL",
+        "name": "interval",
+        "options": [
+          {
+            "selected": false,
+            "text": "1m",
+            "value": "1m"
+          },
+          {
+            "selected": true,
+            "text": "5m",
+            "value": "5m"
+          },
+          {
+            "selected": false,
+            "text": "10m",
+            "value": "10m"
+          },
+          {
+            "selected": false,
+            "text": "30m",
+            "value": "30m"
+          },
+          {
+            "selected": false,
+            "text": "1h",
+            "value": "1h"
+          }
+        ],
+        "query": "1m,5m,10m,30m,1h",
+        "refresh": 2,
+        "skipUrlSync": false,
+        "type": "interval"
+      },
+      {
+        "name": "logcontainer",
+        "label": "LOG CONTAINER",
+        "type": "query",
+        "datasource": {
+          "type": "loki",
+          "uid": "praxen-loki"
+        },
+        "query": {
+          "label": "container",
+          "refId": "LokiVariableQueryEditor-VariableQuery",
+          "type": 1
+        },
+        "refresh": 2,
+        "includeAll": true,
+        "allValue": ".+",
+        "multi": true,
+        "current": {
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ],
+          "selected": true
+        },
+        "options": [],
+        "sort": 1
+      },
+      {
+        "name": "logq",
+        "label": "LOG FILTER",
+        "type": "textbox",
+        "query": "",
+        "current": {
+          "text": "",
+          "value": "",
+          "selected": false
+        },
+        "options": [],
+        "description": "regex applied as |~ to the log panels"
+      }
+    ]
+  },
+  "links": [
+    {
+      "title": "COMMAND",
+      "type": "link",
+      "url": "/d/praxen-command/praxen-command",
+      "icon": "dashboard",
+      "tooltip": "PRAXEN // COMMAND (keeps time + filters)",
+      "keepTime": true,
+      "includeVars": true,
+      "targetBlank": false,
+      "asDropdown": false,
+      "tags": []
+    },
+    {
+      "title": "FORENSICS",
+      "type": "link",
+      "url": "/d/praxen-forensics/praxen-forensics",
+      "icon": "dashboard",
+      "tooltip": "PRAXEN // FORENSICS (keeps time + filters)",
+      "keepTime": true,
+      "includeVars": true,
+      "targetBlank": false,
+      "asDropdown": false,
+      "tags": []
+    },
+    {
+      "icon": "external link",
+      "targetBlank": true,
+      "title": "View all traces in Tempo (this time range)",
+      "type": "link",
+      "url": "/explore?orgId=1&left=%7B%22datasource%22:%22dfipt8nyznn5sc%22,%22queries%22:%5B%7B%22query%22:%22%7B%20resource.service.name%3D%5C%22praxen-litellm%5C%22%20%7D%22,%22queryType%22:%22traceql%22%7D%5D,%22range%22:%7B%22from%22:%22${__from}%22,%22to%22:%22${__to}%22%7D%7D"
+    }
+  ],
+  "panels": [
+    {
+      "id": 101,
+      "type": "text",
+      "title": "",
+      "description": "",
+      "datasource": null,
+      "targets": [],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "options": {
+        "mode": "html",
+        "content": "<style>\n/* THEME STRATEGY (rewritten 2026-08-05 after a live-mode bug):\n   Do NOT key off Grafana's `body.theme-dark` class. Grafana serves that class hardcoded\n   in the initial HTML and then swaps themes via CSS-in-JS WITHOUT updating it, so a\n   `body.theme-dark` selector matches permanently and the banner rendered dark inside a\n   light dashboard. It looked correct only under /render, because the image renderer\n   bakes ?theme= into the served page.\n   Instead this panel is theme-AGNOSTIC: transparent background and inherited text\n   colour mean it is automatically whatever Grafana is. Hierarchy comes from opacity,\n   not from hardcoded greys. Accents are duotone mid-tones that clear contrast on both\n   #EEF1F4 and #06080A. prefers-color-scheme then lifts the accent for dark, which is\n   what tracks the operating system's light/dark switch when Grafana's theme pref is \"system\". */\n.praxen-hud{--pa:#2E7D9A;--pg:#4A6B8A;--pok:#2F8F72;--pw:#B0862A;--pc:#A8453F;\n  --pline:rgba(127,127,127,.28);--pglow:none}\n@media (prefers-color-scheme: dark){\n  .praxen-hud{--pa:#5AB0CE;--pg:#8DA3BA;--pok:#3F8F7E;--pw:#C9A227;--pc:#B85C5C;\n    --pline:rgba(160,170,180,.22);--pglow:0 0 10px rgba(90,176,206,.30)}\n}\n.praxen-hud{font-family:'JetBrains Mono','SF Mono',Menlo,Consolas,monospace;position:relative;box-sizing:border-box;color:inherit;\n  padding:12px 16px 10px 18px;background:transparent;border:1px solid var(--pline);\n  border-left:3px solid var(--pa);border-radius:3px;overflow:hidden}\n.praxen-hud *{box-sizing:border-box}\n.praxen-hud .ph-tick{position:absolute;width:12px;height:12px;opacity:.55;border-color:var(--pa)}\n.praxen-hud .ph-tl{top:0;left:0;border-top:1px solid;border-left:1px solid}\n.praxen-hud .ph-tr{top:0;right:0;border-top:1px solid;border-right:1px solid}\n.praxen-hud .ph-br{bottom:0;right:0;border-bottom:1px solid;border-right:1px solid}\n.praxen-hud .ph-top{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:8px}\n.praxen-hud .ph-mark{color:var(--pa);font-size:21px;font-weight:700;letter-spacing:3px;text-shadow:var(--pglow)}\n/* inherited colour + opacity => correct in BOTH themes with no detection */\n.praxen-hud .ph-mark2{font-size:21px;font-weight:700;letter-spacing:3px;opacity:.62}\n.praxen-hud .ph-live{color:var(--pok);font-size:10px;font-weight:700;letter-spacing:2px;\n  border:1px solid var(--pok);border-radius:2px;padding:2px 8px}\n.praxen-hud .ph-sub{font-size:10.5px;letter-spacing:1.4px;margin-top:4px;text-transform:uppercase;opacity:.62}\n.praxen-hud .ph-bar{display:flex;align-items:center;flex-wrap:wrap;gap:12px;margin-top:8px;\n  padding-top:7px;border-top:1px solid var(--pline)}\n.praxen-hud .ph-lbl{font-size:9px;letter-spacing:2px;text-transform:uppercase;opacity:.55}\n.praxen-hud .ph-st{display:inline-flex;align-items:center;gap:5px;font-size:10px;letter-spacing:1px}\n.praxen-hud .ph-dot{display:inline-block;width:7px;height:7px;border-radius:50%}\n.praxen-hud .ph-pill{font-size:10px;letter-spacing:1px;border:1px solid;border-radius:2px;padding:2px 7px}\n.praxen-hud .ph-div{width:1px;height:13px;background:var(--pline)}\n.praxen-hud a.ph-pill{text-decoration:none}.praxen-hud a.ph-pill:hover{filter:brightness(1.15)}\n</style>\n<div class=\"praxen-hud\">\n  <div class=\"ph-tick ph-tl\"></div><div class=\"ph-tick ph-tr\"></div><div class=\"ph-tick ph-br\"></div>\n  <div class=\"ph-top\">\n    <div><span class=\"ph-mark\">PRAXEN</span><span class=\"ph-mark2\">&nbsp;//&nbsp;ROUTING</span></div>\n    <span class=\"ph-live\">&#9679;&nbsp;LIVE</span>\n  </div>\n  <div class=\"ph-sub\">why are traffic, model choice, cost and policy behaving this way? &nbsp;//&nbsp; posture · provider→model · local↔cloud · per-model · service tier · cost · prompt cache · jev gate · local watchdog · envelopes</div>\n  <div class=\"ph-bar\">\n    <span class=\"ph-lbl\">Status</span><span class=\"ph-st\" style=\"color:var(--pok)\"><span class=\"ph-dot\" style=\"background:var(--pok)\"></span>OK</span><span class=\"ph-st\" style=\"color:var(--pw)\"><span class=\"ph-dot\" style=\"background:var(--pw)\"></span>WATCH</span><span class=\"ph-st\" style=\"color:var(--pc)\"><span class=\"ph-dot\" style=\"background:var(--pc)\"></span>CRIT</span>\n    <span class=\"ph-div\"></span>\n    <span class=\"ph-lbl\">Boards</span>\n    <a class=\"ph-pill\" style=\"color:var(--pg);border-color:var(--pg)\" href=\"/d/praxen-command/praxen-command?${__url_time_range}&var-key=${key:queryparam}&var-model=${model:queryparam}&var-team=${team:queryparam}&var-interval=${interval:queryparam}\">COMMAND</a> <a class=\"ph-pill\" style=\"color:var(--pa);border-color:var(--pa);font-weight:700\" href=\"/d/praxen-routing/praxen-routing?${__url_time_range}&var-key=${key:queryparam}&var-model=${model:queryparam}&var-team=${team:queryparam}&var-interval=${interval:queryparam}\">ROUTING</a> <a class=\"ph-pill\" style=\"color:var(--pg);border-color:var(--pg)\" href=\"/d/praxen-forensics/praxen-forensics?${__url_time_range}&var-key=${key:queryparam}&var-model=${model:queryparam}&var-team=${team:queryparam}&var-interval=${interval:queryparam}\">FORENSICS</a>\n  </div>\n</div>",
+        "code": {
+          "language": "html",
+          "showLineNumbers": false,
+          "showMiniMap": false
+        }
+      },
+      "transparent": true,
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 4
+      }
+    },
+    {
+      "id": 115,
+      "type": "row",
+      "title": "01 ▸ ROUTING POSTURE",
+      "collapsed": false,
+      "panels": [],
+      "gridPos": {
+        "x": 0,
+        "y": 4,
+        "w": 24,
+        "h": 1
+      }
+    },
+    {
+      "id": 9,
+      "type": "stat",
+      "title": "ROUTE SUCCESS",
+      "description": "Share of model calls the proxy completed successfully in the selected time range. Under 99% deserves a look; under 90% something is failing repeatedly. Respects the KEY, MODEL and TEAM pickers at the top.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "afimxbo42ap6oe"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "afimxbo42ap6oe"
+          },
+          "expr": "sum(increase(litellm_deployment_success_responses_total{api_key_alias=~\"$key\",requested_model=~\"$model\",team_alias=~\"$team\"}[$__range])) / clamp_min(sum(increase(litellm_deployment_total_requests_total{api_key_alias=~\"$key\",requested_model=~\"$model\",team_alias=~\"$team\"}[$__range])), 1)",
+          "legendFormat": "success",
+          "editorMode": "code",
+          "range": true,
+          "instant": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "decimals": 1,
+          "min": 0,
+          "max": 1,
+          "noValue": "no traffic",
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#A8453F",
+                "value": null
+              },
+              {
+                "color": "#B0862A",
+                "value": 0.9
+              },
+              {
+                "color": "#2F8F72",
+                "value": 0.99
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "textMode": "value",
+        "wideLayout": true,
+        "showPercentChange": false,
+        "percentChangeColorMode": "standard"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 5,
+        "w": 4,
+        "h": 5
+      }
+    },
+    {
+      "id": 102,
+      "type": "stat",
+      "title": "FALLBACK SHARE",
+      "description": "Fallbacks as a percentage of all model calls in the range — how often the first choice did not work out. Amber past 2%, red past 10%. Respects the KEY, MODEL and TEAM pickers at the top.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "afimxbo42ap6oe"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "afimxbo42ap6oe"
+          },
+          "expr": "100 * ((sum(increase(litellm_deployment_successful_fallbacks_total{api_key_alias=~\"$key\",requested_model=~\"$model\",team_alias=~\"$team\"}[$__range])) or vector(0)) + (sum(increase(litellm_deployment_failed_fallbacks_total{api_key_alias=~\"$key\",requested_model=~\"$model\",team_alias=~\"$team\"}[$__range])) or vector(0))) / clamp_min(sum(increase(litellm_deployment_total_requests_total{api_key_alias=~\"$key\",requested_model=~\"$model\",team_alias=~\"$team\"}[$__range])), 1)",
+          "legendFormat": "fallback %",
+          "editorMode": "code",
+          "range": true,
+          "instant": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 1,
+          "noValue": "0",
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#2F8F72",
+                "value": null
+              },
+              {
+                "color": "#B0862A",
+                "value": 2
+              },
+              {
+                "color": "#A8453F",
+                "value": 10
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "textMode": "value",
+        "wideLayout": true,
+        "showPercentChange": false,
+        "percentChangeColorMode": "standard"
+      },
+      "gridPos": {
+        "x": 4,
+        "y": 5,
+        "w": 4,
+        "h": 5
+      }
+    },
+    {
+      "id": 103,
+      "type": "stat",
+      "title": "OFF-TIER SHARE",
+      "description": "Percentage of successful calls that were billed at a premium speed tier without being asked for (same rule as the COMMAND tile: named -priority routes and router-chosen premium lanes count as opt-in). Respects the KEY, MODEL and TEAM pickers at the top.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "praxen-litellm-pg"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "praxen-litellm-pg"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "SELECT round((100.0 * count(*) FILTER (WHERE metadata->'cost_breakdown'->>'service_tier' IN ('priority','fast') AND NOT (model_group ~ '-priority$' OR COALESCE(metadata->'routing_decision'->>'routed_model','') ~ '-priority$')) / NULLIF(count(*), 0))::numeric, 1) AS \"off_tier_pct\" FROM \"LiteLLM_SpendLogs\" WHERE $__timeFilter(\"startTime\") AND status = 'success' AND COALESCE(metadata->>'user_api_key_alias','') ~ '^(?:${key:regex})$' AND COALESCE(model_group,'') ~ '^(?:${model:regex})$' AND COALESCE(metadata->>'user_api_key_team_alias','') ~ '^(?:${team:regex})$'"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 1,
+          "noValue": "0",
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#2F8F72",
+                "value": null
+              },
+              {
+                "color": "#B0862A",
+                "value": 0.1
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "textMode": "value",
+        "wideLayout": true,
+        "showPercentChange": false,
+        "percentChangeColorMode": "standard"
+      },
+      "gridPos": {
+        "x": 8,
+        "y": 5,
+        "w": 4,
+        "h": 5
+      }
+    },
+    {
+      "id": 104,
+      "type": "stat",
+      "title": "LOCAL SHARE",
+      "description": "Share of successful calls answered by LM Studio on your own machines instead of a cloud provider. Respects the KEY, MODEL and TEAM pickers at the top.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "afimxbo42ap6oe"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "afimxbo42ap6oe"
+          },
+          "expr": "100 * sum(increase(litellm_deployment_success_responses_total{api_key_alias=~\"$key\",requested_model=~\"$model\",team_alias=~\"$team\",api_base=~\".*:1234.*\"}[$__range])) / clamp_min(sum(increase(litellm_deployment_success_responses_total{api_key_alias=~\"$key\",requested_model=~\"$model\",team_alias=~\"$team\"}[$__range])), 1)",
+          "legendFormat": "local %",
+          "editorMode": "code",
+          "range": true,
+          "instant": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 1,
+          "noValue": "0",
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#4A6B8A",
+                "value": null
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "textMode": "value",
+        "wideLayout": true,
+        "showPercentChange": false,
+        "percentChangeColorMode": "standard"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 5,
+        "w": 4,
+        "h": 5
+      }
+    },
+    {
+      "id": 105,
+      "type": "stat",
+      "title": "CACHE READ RATIO",
+      "description": "How much of the prompt text the providers served from their prompt caches instead of re-processing it, as a share of all prompt tokens. Higher is cheaper. Respects the KEY, MODEL and TEAM pickers at the top.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "praxen-litellm-pg"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "praxen-litellm-pg"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "SELECT round((100.0 * sum(COALESCE((metadata->'usage_object'->'prompt_tokens_details'->>'cached_tokens')::bigint, (metadata->'usage_object'->>'cache_read_input_tokens')::bigint, 0)) / NULLIF(sum(prompt_tokens), 0))::numeric, 1) AS \"cache_read_pct\" FROM \"LiteLLM_SpendLogs\" WHERE $__timeFilter(\"startTime\") AND status = 'success' AND COALESCE(metadata->>'user_api_key_alias','') ~ '^(?:${key:regex})$' AND COALESCE(model_group,'') ~ '^(?:${model:regex})$' AND COALESCE(metadata->>'user_api_key_team_alias','') ~ '^(?:${team:regex})$'"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 1,
+          "noValue": "0",
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#4A6B8A",
+                "value": null
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "textMode": "value",
+        "wideLayout": true,
+        "showPercentChange": false,
+        "percentChangeColorMode": "standard"
+      },
+      "gridPos": {
+        "x": 16,
+        "y": 5,
+        "w": 4,
+        "h": 5
+      }
+    },
+    {
+      "id": 106,
+      "type": "stat",
+      "title": "JEV REFUSALS CAUGHT",
+      "description": "Share of judged answers that the Jev judge flagged as a refusal or an empty non-answer and sent on to the next model in the chain.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "afimxbo42ap6oe"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "afimxbo42ap6oe"
+          },
+          "expr": "sum(increase(praxen_jev_judge_verdict_total{action=\"fallback\"}[$__range])) / clamp_min(sum(increase(praxen_jev_judge_verdict_total[$__range])), 1)",
+          "legendFormat": "caught",
+          "editorMode": "code",
+          "range": true,
+          "instant": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "decimals": 1,
+          "noValue": "no judge traffic",
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#4A6B8A",
+                "value": null
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "textMode": "value",
+        "wideLayout": true,
+        "showPercentChange": false,
+        "percentChangeColorMode": "standard"
+      },
+      "gridPos": {
+        "x": 20,
+        "y": 5,
+        "w": 4,
+        "h": 5
+      }
+    },
+    {
+      "id": 116,
+      "type": "row",
+      "title": "02 ▸ FLOW // provider → model · local ↔ cloud",
+      "collapsed": false,
+      "panels": [],
+      "gridPos": {
+        "x": 0,
+        "y": 10,
+        "w": 24,
+        "h": 1
+      }
+    },
+    {
+      "id": 13,
+      "type": "volkovlabs-echarts-panel",
+      "title": "Provider → Model // success calls (range)",
+      "transparent": true,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "afimxbo42ap6oe"
+      },
+      "options": {
+        "renderer": "canvas",
+        "map": "none",
+        "getOption": "const PRAXEN_MKT = false;\n// PROVIDER -> MODEL Sankey (the-array LiteLLM). Source classified by api_base so VENICE\n// (private cloud) and LOCAL split out of the openai-compatible api_provider bucket.\n// query: sum by (api_provider, api_base, litellm_model_name) (increase(litellm_deployment_success_responses_total[$__range]))\n// PRAXEN_MKT (injected by the generator) masks venice -> PRIVATE for marketing screenshots.\nconst MKT = (typeof PRAXEN_MKT !== 'undefined') && PRAXEN_MKT;\nconst isDark = !(context.grafana && context.grafana.theme && context.grafana.theme.isDark === false);\nconst T = isDark\n  ? { bg:'transparent', text:'#EEF1F4', sub:'#8A939C', grid:'#2A3038', steel:'#8DA3BA', good:'#3F8F7E', signal:'#5AB0CE', signal2:'#8DA3BA', amber:'#C9A227', red:'#B85C5C', violet:'#A99BD1', phosphor:'#58C0A0', panel:'#0B0D10', border:'#2A3038' }\n  : { bg:'transparent', text:'#0B0D10', sub:'#3A4651', grid:'#D2D7DD', steel:'#1B3A5C', good:'#2A6B5E', signal:'#0F536A', signal2:'#1B3A5C', amber:'#8A6D1F', red:'#8B3A3A', violet:'#5B4B8A', phosphor:'#147D64', panel:'#FFFFFF', border:'#D2D7DD' };\nconst MONO = 'JetBrains Mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace';\nconst GLOW = isDark ? 10 : 0, GLOW_S = isDark ? 6 : 0;\nfunction lastVal(fr) { if (!fr || !fr.fields) return 0; const v = fr.fields.find(f => f.type === 'number'); if (!v || !v.values) return 0; for (let i = v.values.length - 1; i >= 0; i--) { const n = Number(v.values[i]); if (Number.isFinite(n)) return n; } return 0; }\nconst frames = (context.panel && context.panel.data && context.panel.data.series) || [];\n\nfunction sourceOf(prov, base) {\n  const b = String(base || '').toLowerCase();\n  if (b.indexOf('venice') >= 0) return 'private';   // venice ALWAYS masked in the sankeys (live + marketing)\n  if (b.indexOf(':1234') >= 0) return 'local';\n  if (b.indexOf('api.openai.com') >= 0) return 'openai';\n  return String(prov || '?');\n}\nconst SCOLOR = { venice:T.violet, private:T.violet, local:T.good, openai:T.signal2, anthropic:T.amber,\n  gemini:T.signal, xai:T.violet, groq:T.red, mistral:T.signal2, perplexity:T.phosphor, huggingface:'#FFD21E', None:T.sub };\nconst CYCLE = [T.signal, T.amber, T.good, T.violet, T.red, T.signal2, T.phosphor];\nfunction sColor(n, i) { return SCOLOR[n] || CYCLE[i % CYCLE.length]; }\nfunction titleStyle(c) { return { color:c, fontFamily:MONO, fontSize:14, fontWeight:700, textShadowColor:isDark ? c : 'transparent', textShadowBlur:GLOW }; }\n\nconst SEP = ' ';\nconst linkMap = {}, sTot = {}, mTot = {};\nfor (const fr of frames) {\n  const vf = fr.fields.find(f => f.type === 'number'); const labs = (vf && vf.labels) || {};\n  const s = sourceOf(labs.api_provider, labs.api_base);\n  let m = String(labs.litellm_model_name || ''); if (!m || m === '*') continue;\n  if (s === 'private') m = 'private · models';   // venice models always collapsed — sankeys never reveal venice\n  const v = lastVal(fr); if (!(v > 0)) continue;\n  const k = s + SEP + m; linkMap[k] = (linkMap[k] || 0) + v; sTot[s] = (sTot[s] || 0) + v; mTot[m] = (mTot[m] || 0) + v;\n}\nif (!Object.keys(linkMap).length) {\n  return { backgroundColor:T.bg, title:{ text:'PROVIDER → MODEL — NO DATA', subtext:'widen the time range',\n    left:'center', top:'center', textStyle:titleStyle(T.amber), subtextStyle:{ color:T.sub, fontFamily:MONO, fontSize:12 } } };\n}\n\n// declutter: keep top-N models, collapse the tail into one node\nconst TOPN = 14;\nconst modelsSorted = Object.keys(mTot).sort((a, b) => mTot[b] - mTot[a]);\nconst keep = new Set(modelsSorted.slice(0, TOPN));\nconst tailN = modelsSorted.length - keep.size;\nconst TAIL = tailN > 0 ? ('… +' + tailN + ' models') : null;\nconst links2 = {}, mTot2 = {};\nObject.keys(linkMap).forEach(k => {\n  const i = k.indexOf(SEP), s = k.slice(0, i), m = k.slice(i + 1);\n  const mm = keep.has(m) ? m : TAIL; if (!mm) return;\n  const kk = s + SEP + mm; links2[kk] = (links2[kk] || 0) + linkMap[k]; mTot2[mm] = (mTot2[mm] || 0) + linkMap[k];\n});\n\nconst srcSorted = Object.keys(sTot).sort((a, b) => sTot[b] - sTot[a]);\nconst modSorted = Object.keys(mTot2).sort((a, b) => mTot2[b] - mTot2[a]);\nconst nodes = [];\nsrcSorted.forEach((s, i) => { const c = sColor(s, i);\n  nodes.push({ name:s, itemStyle:{ color:c, borderColor:c, borderWidth:1, shadowColor:isDark ? c : 'transparent', shadowBlur:GLOW_S },\n    label:{ color:c, fontFamily:MONO, fontSize:13, fontWeight:700, textShadowColor:isDark ? c : 'transparent', textShadowBlur:GLOW_S,\n      formatter:p => p.name.toUpperCase() + '  ' + Math.round(sTot[p.name] || 0) } }); });\nmodSorted.forEach(m => {\n  nodes.push({ name:m, itemStyle:{ color:T.steel, borderColor:T.border, borderWidth:1 },\n    label:{ color:T.text, fontFamily:MONO, fontSize:12,\n      formatter:p => { let s = p.name; if (s.length > 30) s = s.slice(0, 29) + '…'; return s + '  ' + Math.round(mTot2[p.name] || 0); } } }); });\nfunction grad(c) { try { return new echarts.graphic.LinearGradient(0, 0, 1, 0, [{ offset:0, color:c }, { offset:1, color:T.steel }]); } catch (e) { return c; } }\nconst links = Object.keys(links2).map(k => {\n  const i = k.indexOf(SEP), s = k.slice(0, i), m = k.slice(i + 1);\n  const c = sColor(s, srcSorted.indexOf(s));\n  return { source:s, target:m, value:links2[k],\n    lineStyle:{ color:grad(c), opacity:isDark ? 0.5 : 0.4, curveness:0.5, shadowColor:isDark ? c : 'transparent', shadowBlur:GLOW_S } };\n});\nconst total = Math.round(Object.values(sTot).reduce((a, b) => a + b, 0));\n\nreturn {\n  backgroundColor:T.bg, textStyle:{ fontFamily:MONO, color:T.text },\n  title:{ text:'PROVIDER → MODEL', subtext:'success responses · ' + total + ' calls · top ' + TOPN + ' models · range',\n    left:14, top:10, textStyle:titleStyle(T.signal), subtextStyle:{ color:T.sub, fontFamily:MONO, fontSize:11 } },\n  tooltip:{ trigger:'item', backgroundColor:T.panel, borderColor:T.border, textStyle:{ color:T.text, fontFamily:MONO, fontSize:12 },\n    formatter:p => p.dataType === 'edge'\n      ? (p.data.source.toUpperCase() + '  →  ' + p.data.target + '<br/><b>' + Math.round(p.data.value) + '</b> calls')\n      : ('<b>' + p.name + '</b>') },\n  series:[{ type:'sankey', left:16, right:248, top:62, bottom:24, nodeWidth:16, nodeGap:12, draggable:false, nodeAlign:'left',\n    data:nodes, links:links, label:{ color:T.text, fontFamily:MONO, fontSize:12 }, lineStyle:{ color:'gradient', curveness:0.5 },\n    emphasis:{ focus:'adjacency', lineStyle:{ opacity:0.9 }, label:{ fontWeight:700, textShadowColor:T.signal, textShadowBlur:GLOW } },\n    levels:[{ depth:0, label:{ position:'right' } }, { depth:1, label:{ position:'right' } }] }]\n};\n"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "afimxbo42ap6oe"
+          },
+          "expr": "sum by (api_provider, api_base, litellm_model_name) (increase(litellm_deployment_success_responses_total[$__range]))",
+          "legendFormat": "{{api_provider}}→{{litellm_model_name}}"
+        }
+      ],
+      "description": "How successful calls flowed from each provider (Anthropic, OpenAI, Google, local LM Studio, the private cloud) to the model that actually answered, over the selected range. Thicker ribbons carry more calls. The 14 busiest models are shown; the rest are grouped into one line.",
+      "gridPos": {
+        "x": 0,
+        "y": 11,
+        "w": 12,
+        "h": 14
+      }
+    },
+    {
+      "id": 14,
+      "type": "volkovlabs-echarts-panel",
+      "title": "Local ↔ Cloud // token flow (range)",
+      "transparent": true,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "afimxbo42ap6oe"
+      },
+      "options": {
+        "renderer": "canvas",
+        "map": "none",
+        "getOption": "const PRAXEN_MKT = false;\n\nconst frames = context.panel.data.series || [];\nconst isDark = !(context.grafana && context.grafana.theme && context.grafana.theme.isDark === false);\nconst PMKT = (typeof PRAXEN_MKT!=='undefined') && PRAXEN_MKT;\nconst T = isDark\n  ? { bg:'transparent', text:'#EEF1F4', sub:'#8A939C', grid:'#2A3038', steel:'#8DA3BA', good:'#3F8F7E', signal:'#5AB0CE', signal2:'#8DA3BA', amber:'#C9A227', red:'#B85C5C', violet:'#A99BD1', phosphor:'#58C0A0', panel:'#0B0D10', border:'#2A3038' }\n  : { bg:'transparent', text:'#0B0D10', sub:'#3A4651', grid:'#D2D7DD', steel:'#1B3A5C', good:'#2A6B5E', signal:'#0F536A', signal2:'#1B3A5C', amber:'#8A6D1F', red:'#8B3A3A', violet:'#5B4B8A', phosphor:'#147D64', panel:'#FFFFFF', border:'#D2D7DD' };\nconst GLOW = isDark ? 18 : 0, GLOW_S = isDark ? 12 : 0, MONO = 'monospace';\nconst lastVal = (f) => { if(!f) return 0; const v=f.fields.find((x)=>x.type==='number'); const a=v?v.values:[]; return a.length?+a[a.length-1]:0; };\nconst money = (v) => '$' + (Math.abs(v) < 1 ? v.toFixed(4) : v.toFixed(2));\nconst titleStyle = (c) => ({ color:c, fontSize:13, fontFamily:MONO, fontWeight:'bold' });\nconst xy = (f) => { if(!f) return []; const t=f.fields.find((x)=>x.type==='time'); const v=f.fields.find((x)=>x.type==='number'); if(!t||!v) return []; const tv=t.values, vv=v.values, out=[]; for(let i=0;i<tv.length;i++){ out.push([tv[i], vv[i]==null?0:+(+vv[i]).toFixed(2)]); } return out; };\nconst compact = (v) => { const n=Math.abs(v); if(n>=1e9) return (v/1e9).toFixed(1)+'B'; if(n>=1e6) return (v/1e6).toFixed(1)+'M'; if(n>=1e3) return (v/1e3).toFixed(1)+'k'; return ''+Math.round(v); };\nconst aggByLabel = (label) => { const a={}; frames.forEach((f)=>{ const v=f.fields.find((x)=>x.type==='number'); if(!v) return; let n=(v.labels&&v.labels[label]); n=(n===undefined||n===null||n==='')?'to-be-categorized':n; if(typeof n==='string' && n.indexOf('venice/')===0) n='private · provider'; a[n]=(a[n]||0)+Math.max(lastVal(f),0); }); return a; };\n\nconst isLocal=(m)=> m.indexOf('local-')===0 || m.indexOf('localwin-')===0;  // localwin-* = pre-Juliet local alias\nconst tierOf=(m)=> isLocal(m) ? 'LOCAL' : 'CLOUD';   // venice = private CLOUD (off-box), NOT its own tier\nconst tcolor={ LOCAL:T.good, CLOUD:T.signal };\nconst agg = aggByLabel('requested_model');   // venice already collapsed to 'private · provider' when PMKT\nconst TOPN=18;\nconst ms=Object.keys(agg).filter((m)=>agg[m]>0).sort((a,b)=>agg[b]-agg[a]);\nconst keep=new Set(ms.slice(0,TOPN));\nconst tail={};\nconst links=[]; const nset={};\nms.forEach((m)=>{ const val=agg[m]; const t=tierOf(m); const a='T · '+t;\n  if(!keep.has(m)){ tail[t]=(tail[t]||0)+val; return; }\n  nset[a]=1; nset[m]=1; links.push({source:a, target:m, value:+val.toFixed(0)}); });\nObject.keys(tail).forEach((t)=>{ const a='T · '+t; const tgt='⋯ more '+t.toLowerCase(); nset[a]=1; nset[tgt]=1;\n  links.push({source:a, target:tgt, value:+tail[t].toFixed(0)}); });\nconst empty=links.length===0;\nconst colorFor=(n)=>{ if(n.indexOf('T · ')===0) return tcolor[n.slice(4)]||T.sub;\n  if(n.indexOf('⋯ more')===0) return T.sub;\n  if(isLocal(n)) return T.good; if(n==='private · provider'||n.indexOf('venice/')===0) return T.violet; return T.signal2; };\nconst nodes=Object.keys(nset).map((n)=>({ name:n, itemStyle:{ color:colorFor(n), borderColor:T.bg } }));\nreturn {\n  backgroundColor:T.bg,\n  title:{ text:'LOCAL ↔ CLOUD // token flow (range)', left:14, top:10, textStyle:titleStyle(T.violet),\n    subtext:'on-box (local · $0) vs off-box (cloud · incl. private)', subtextStyle:{ color:T.sub, fontFamily:MONO, fontSize:11 } },\n  graphic: empty ? [{ type:'text', left:'center', top:'middle',\n    style:{ text:'NO TOKENS IN RANGE', fill:T.sub, font:'bold 14px monospace' } }] : [],\n  tooltip:{ trigger:'item', backgroundColor:T.panel, borderColor:T.border,\n    textStyle:{ color:T.text, fontFamily:MONO },\n    formatter:(p)=> p.dataType==='edge'\n      ? (String(p.data.source).replace('T · ','')+' → '+p.data.target+': '+p.data.value.toLocaleString()+' tok')\n      : String(p.name).replace('T · ','') },\n  series:[{ type:'sankey', left:16, right:208, top:58, bottom:20, nodeWidth:16, nodeGap:16, draggable:false,\n    emphasis:{ focus:'adjacency' }, data:nodes, links:links,\n    label:{ color:T.text, fontFamily:MONO, fontSize:12,\n      formatter:(p)=>{ const s=String(p.name).replace(/^T · /,''); return s.length>26?s.slice(0,25)+'…':s; } },\n    lineStyle:{ color:'gradient', opacity:isDark?0.5:0.45, curveness:0.5 },\n    itemStyle:{ borderColor:T.bg, borderWidth:1 } }],\n};\n"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "afimxbo42ap6oe"
+          },
+          "expr": "sum by (requested_model) (increase(litellm_total_tokens_metric_total{api_key_alias=~\"$key\",requested_model=~\"$model\",team_alias=~\"$team\"}[$__range]))",
+          "legendFormat": "{{requested_model}}"
+        }
+      ],
+      "description": "Tokens split between what stayed on this machine (local, costs nothing) and what went to the cloud, then by the route that was asked for. Respects the KEY, MODEL and TEAM pickers at the top.",
+      "gridPos": {
+        "x": 12,
+        "y": 11,
+        "w": 12,
+        "h": 14
+      }
+    },
+    {
+      "id": 117,
+      "type": "row",
+      "title": "03 ▸ PER-MODEL TELEMETRY",
+      "collapsed": false,
+      "panels": [],
+      "gridPos": {
+        "x": 0,
+        "y": 25,
+        "w": 24,
+        "h": 1
+      }
+    },
+    {
+      "id": 16,
+      "type": "table",
+      "transparent": true,
+      "title": "Per-model telemetry // requests · tokens · latency · TTFT · tok/s · cost · success (range)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "afimxbo42ap6oe"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "afimxbo42ap6oe"
+          },
+          "expr": "sum by (requested_model) (increase(litellm_proxy_total_requests_metric_total{api_key_alias=~\"$key\",requested_model=~\"$model\",team_alias=~\"$team\"}[$__range]))",
+          "format": "table",
+          "instant": true,
+          "range": false
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "afimxbo42ap6oe"
+          },
+          "expr": "sum by (requested_model) (increase(litellm_total_tokens_metric_total{api_key_alias=~\"$key\",requested_model=~\"$model\",team_alias=~\"$team\"}[$__range]))",
+          "format": "table",
+          "instant": true,
+          "range": false
+        },
+        {
+          "refId": "C",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "afimxbo42ap6oe"
+          },
+          "expr": "sum by (requested_model) (increase(litellm_output_tokens_metric_total{api_key_alias=~\"$key\",requested_model=~\"$model\",team_alias=~\"$team\"}[$__range]))",
+          "format": "table",
+          "instant": true,
+          "range": false
+        },
+        {
+          "refId": "D",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "afimxbo42ap6oe"
+          },
+          "expr": "sum by (requested_model) (increase(litellm_llm_api_latency_metric_sum{api_key_alias=~\"$key\",requested_model=~\"$model\",team_alias=~\"$team\"}[$__range])) / clamp_min(sum by (requested_model) (increase(litellm_llm_api_latency_metric_count{api_key_alias=~\"$key\",requested_model=~\"$model\",team_alias=~\"$team\"}[$__range])), 1)",
+          "format": "table",
+          "instant": true,
+          "range": false
+        },
+        {
+          "refId": "E",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "afimxbo42ap6oe"
+          },
+          "expr": "sum by (requested_model) (increase(litellm_llm_api_time_to_first_token_metric_sum{api_key_alias=~\"$key\",requested_model=~\"$model\",team_alias=~\"$team\"}[$__range])) / clamp_min(sum by (requested_model) (increase(litellm_llm_api_time_to_first_token_metric_count{api_key_alias=~\"$key\",requested_model=~\"$model\",team_alias=~\"$team\"}[$__range])), 1)",
+          "format": "table",
+          "instant": true,
+          "range": false
+        },
+        {
+          "refId": "F",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "afimxbo42ap6oe"
+          },
+          "expr": "sum by (requested_model) (increase(litellm_output_tokens_metric_total{api_key_alias=~\"$key\",requested_model=~\"$model\",team_alias=~\"$team\"}[$__range])) / clamp_min(sum by (requested_model) (increase(litellm_llm_api_latency_metric_sum{api_key_alias=~\"$key\",requested_model=~\"$model\",team_alias=~\"$team\"}[$__range])), 1)",
+          "format": "table",
+          "instant": true,
+          "range": false
+        },
+        {
+          "refId": "G",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "afimxbo42ap6oe"
+          },
+          "expr": "sum by (requested_model) (increase(litellm_spend_metric_total{api_key_alias=~\"$key\",requested_model=~\"$model\",team_alias=~\"$team\"}[$__range]))",
+          "legendFormat": "",
+          "editorMode": "code",
+          "range": false,
+          "instant": true,
+          "format": "table"
+        },
+        {
+          "refId": "H",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "afimxbo42ap6oe"
+          },
+          "expr": "sum by (requested_model) (increase(litellm_deployment_success_responses_total{api_key_alias=~\"$key\",requested_model=~\"$model\",team_alias=~\"$team\"}[$__range])) / clamp_min(sum by (requested_model) (increase(litellm_deployment_total_requests_total{api_key_alias=~\"$key\",requested_model=~\"$model\",team_alias=~\"$team\"}[$__range])), 1)",
+          "legendFormat": "",
+          "editorMode": "code",
+          "range": false,
+          "instant": true,
+          "format": "table"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "joinByField",
+          "options": {
+            "byField": "requested_model",
+            "mode": "outer"
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "Time A": true,
+              "Time #A": true,
+              "Time B": true,
+              "Time #B": true,
+              "Time C": true,
+              "Time #C": true,
+              "Time D": true,
+              "Time #D": true,
+              "Time E": true,
+              "Time #E": true,
+              "Time F": true,
+              "Time #F": true,
+              "Time G": true,
+              "Time #G": true,
+              "Time H": true,
+              "Time #H": true
+            },
+            "renameByName": {
+              "requested_model": "Model",
+              "Value #A": "Requests",
+              "Value #B": "Total Tok",
+              "Value #C": "Output Tok",
+              "Value #D": "Avg Latency",
+              "Value #E": "Avg TTFT",
+              "Value #F": "Tok/s",
+              "Value #G": "Cost",
+              "Value #H": "Success"
+            },
+            "indexByName": {}
+          }
+        }
+      ],
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        },
+        "sortBy": [
+          {
+            "displayName": "Requests",
+            "desc": true
+          }
+        ]
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "filterable": true,
+            "cellOptions": {
+              "type": "auto"
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Model"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 300
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Requests"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Total Tok"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Output Tok"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Avg Latency"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "s"
+              },
+              {
+                "id": "decimals",
+                "value": 2
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Avg TTFT"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "s"
+              },
+              {
+                "id": "decimals",
+                "value": 2
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Tok/s"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Cost"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "currencyUSD"
+              },
+              {
+                "id": "decimals",
+                "value": 4
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Success"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percentunit"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "#A8453F",
+                      "value": null
+                    },
+                    {
+                      "color": "#B0862A",
+                      "value": 0.9
+                    },
+                    {
+                      "color": "#2F8F72",
+                      "value": 0.99
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Model"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "Open on ROUTING (this model)",
+                    "url": "/d/praxen-routing/praxen-routing?${__url_time_range}&var-key=${key:queryparam}&var-team=${team:queryparam}&var-interval=${interval:queryparam}&var-model=${__data.fields.Model}",
+                    "targetBlank": false
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "description": "One row per model or route name exactly as clients asked for it: requests, tokens in and out, average time to answer and to first token, output speed, dollars, and the share that succeeded. Respects the KEY, MODEL and TEAM pickers at the top.",
+      "gridPos": {
+        "x": 0,
+        "y": 26,
+        "w": 24,
+        "h": 9
+      }
+    },
+    {
+      "id": 21,
+      "type": "heatmap",
+      "title": "Time to First Token (heatmap)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "afimxbo42ap6oe"
+      },
+      "transparent": true,
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "scaleDistribution": {
+              "type": "linear"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "calculate": false,
+        "cellGap": 1,
+        "color": {
+          "exponent": 0.5,
+          "fill": "dark-orange",
+          "min": 0,
+          "mode": "scheme",
+          "scheme": "Turbo",
+          "steps": 64
+        },
+        "tooltip": {
+          "show": true,
+          "yHistogram": false
+        },
+        "yAxis": {
+          "axisPlacement": "left",
+          "unit": "s"
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum by (le) (rate(litellm_llm_api_time_to_first_token_metric_bucket{api_key_alias=~\"$key\",requested_model=~\"$model\",team_alias=~\"$team\"}[$interval]))",
+          "format": "heatmap",
+          "legendFormat": "{{le}}",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "x": 0,
+        "y": 35,
+        "w": 12,
+        "h": 8
+      },
+      "description": "How long streamed answers took to produce their first token, over time. Darker cells mean more requests landed at that delay. Respects the KEY, MODEL and TEAM pickers at the top."
+    },
+    {
+      "id": 22,
+      "type": "timeseries",
+      "title": "Upstream latency P95 by model group",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "afimxbo42ap6oe"
+      },
+      "transparent": true,
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "lineWidth": 2,
+            "showPoints": "never",
+            "gradientMode": "opacity"
+          },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum by (le, model_group) (rate(litellm_llm_api_latency_metric_bucket{api_key_alias=~\"$key\",requested_model=~\"$model\",team_alias=~\"$team\"}[$interval])))",
+          "refId": "A",
+          "legendFormat": "p95: {{model_group}}"
+        }
+      ],
+      "links": [
+        {
+          "targetBlank": true,
+          "title": "View traces in Tempo (panel range)",
+          "url": "/explore?orgId=1&left=%7B%22datasource%22:%22dfipt8nyznn5sc%22,%22queries%22:%5B%7B%22query%22:%22%7B%20resource.service.name%3D%5C%22praxen-litellm%5C%22%20%7D%22,%22queryType%22:%22traceql%22%7D%5D,%22range%22:%7B%22from%22:%22${__from}%22,%22to%22:%22${__to}%22%7D%7D"
+        }
+      ],
+      "gridPos": {
+        "x": 12,
+        "y": 35,
+        "w": 12,
+        "h": 8
+      },
+      "description": "How long the provider itself took to answer, per route; 95 out of 100 requests were faster than the line. The proxy's own overhead is not included here — COMMAND's P95 is the end-to-end number. Respects the KEY, MODEL and TEAM pickers at the top."
+    },
+    {
+      "id": 118,
+      "type": "row",
+      "title": "04 ▸ COST & SERVICE TIER",
+      "collapsed": false,
+      "panels": [],
+      "gridPos": {
+        "x": 0,
+        "y": 43,
+        "w": 24,
+        "h": 1
+      }
+    },
+    {
+      "id": 50,
+      "type": "table",
+      "title": "Service tier truth // route · billed tier · x vs standard rate (range)",
+      "description": "Which speed tier each route was actually billed at, and what that cost compared with the standard rate for the same tokens. 'opt-in lane' means the premium was chosen on purpose (a -priority route, or the router choosing one); 'OFF-TIER' means it was not. A 'priority' row at 1.00x means the vendor was asked for priority but did not apply it. Respects the KEY, MODEL and TEAM pickers at the top.",
+      "datasource": {
+        "type": "postgres",
+        "uid": "praxen-litellm-pg"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "praxen-litellm-pg"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "refId": "A",
+          "rawSql": "WITH r AS (\n  SELECT\n    model_group,\n    custom_llm_provider AS provider,\n    COALESCE(metadata->'routing_decision'->>'routed_model','') AS routed_model,\n    metadata->'cost_breakdown'->>'service_tier' AS tier,\n    spend,\n    prompt_tokens,\n    completion_tokens,\n    COALESCE((metadata->'usage_object'->'prompt_tokens_details'->>'cached_tokens')::bigint, 0) AS cached_tok,\n    COALESCE((metadata->'usage_object'->'prompt_tokens_details'->>'cache_creation_tokens')::bigint, 0) AS cache_write_tok,\n    (metadata->'model_map_information'->'model_map_value'->>'input_cost_per_token')::float AS in_rate,\n    (metadata->'model_map_information'->'model_map_value'->>'output_cost_per_token')::float AS out_rate,\n    (metadata->'model_map_information'->'model_map_value'->>'cache_read_input_token_cost')::float AS cr_rate,\n    (metadata->'model_map_information'->'model_map_value'->>'cache_creation_input_token_cost')::float AS cw_rate,\n    \"startTime\"\n  FROM \"LiteLLM_SpendLogs\"\n  WHERE $__timeFilter(\"startTime\")\n    AND COALESCE(metadata->>'user_api_key_alias','') ~ '^(?:${key:regex})$' AND COALESCE(model_group,'') ~ '^(?:${model:regex})$' AND COALESCE(metadata->>'user_api_key_team_alias','') ~ '^(?:${team:regex})$'\n    AND metadata->'cost_breakdown'->>'service_tier' IS NOT NULL\n),\nx AS (\n  SELECT *,\n    CASE WHEN in_rate IS NOT NULL AND out_rate IS NOT NULL THEN\n      GREATEST(prompt_tokens - cached_tok - cache_write_tok, 0) * in_rate\n      + cached_tok * COALESCE(cr_rate, in_rate)\n      + cache_write_tok * COALESCE(cw_rate, in_rate)\n      + completion_tokens * out_rate\n    END AS std_usd\n  FROM r\n)\nSELECT\n  model_group AS \"route\",\n  provider,\n  tier,\n  CASE WHEN tier IN ('priority','fast') AND NOT (model_group ~ '-priority$' OR bool_or(routed_model ~ '-priority$')) THEN 'OFF-TIER ⚠'\n       WHEN tier IN ('priority','fast') THEN 'opt-in lane'\n       WHEN tier = 'flex' THEN 'discount'\n       ELSE 'standard' END AS \"verdict\",\n  count(*) AS \"calls\",\n  sum(prompt_tokens) AS \"in_tok\",\n  sum(completion_tokens) AS \"out_tok\",\n  round(sum(spend)::numeric, 5) AS \"billed_usd\",\n  round(sum(std_usd)::numeric, 5) AS \"std_rate_usd\",\n  round((sum(spend) / NULLIF(sum(std_usd), 0))::numeric, 2) AS \"x_vs_standard\",\n  max(\"startTime\") AS \"last_seen\"\nFROM x\nGROUP BY model_group, provider, tier\nORDER BY (tier IN ('priority','fast') AND NOT (model_group ~ '-priority$' OR bool_or(routed_model ~ '-priority$'))) DESC, \"x_vs_standard\" DESC NULLS LAST, sum(spend) DESC"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "filterable": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "billed_usd"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "currencyUSD"
+              },
+              {
+                "id": "decimals",
+                "value": 5
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "std_rate_usd"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "currencyUSD"
+              },
+              {
+                "id": "decimals",
+                "value": 5
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "x_vs_standard"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background",
+                  "mode": "basic"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "#3F7FA3",
+                      "value": null
+                    },
+                    {
+                      "color": "#3FA37A",
+                      "value": 0.95
+                    },
+                    {
+                      "color": "#D9822B",
+                      "value": 1.15
+                    },
+                    {
+                      "color": "#C8464A",
+                      "value": 1.6
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "decimals",
+                "value": 2
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "verdict"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "OFF-TIER ⚠": {
+                        "color": "#C8464A",
+                        "index": 0
+                      },
+                      "opt-in lane": {
+                        "color": "#3F7FA3",
+                        "index": 1
+                      },
+                      "discount": {
+                        "color": "#3FA37A",
+                        "index": 2
+                      },
+                      "standard": {
+                        "color": "#6B7A88",
+                        "index": 3
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "last_seen"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "dateTimeAsIso"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false,
+          "reducer": [
+            "sum"
+          ],
+          "countRows": false
+        },
+        "sortBy": []
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 44,
+        "w": 12,
+        "h": 9
+      }
+    },
+    {
+      "id": 18,
+      "type": "bargauge",
+      "title": "Cost by model // spend (range)",
+      "description": "Dollars spent per model over the range, largest first, from the proxy's live counters (these restart with the proxy; the request log on FORENSICS is the ledger). Respects the KEY, MODEL and TEAM pickers at the top.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "afimxbo42ap6oe"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "afimxbo42ap6oe"
+          },
+          "expr": "sort_desc(sum by (model) (increase(litellm_spend_metric_total{api_key_alias=~\"$key\",requested_model=~\"$model\",team_alias=~\"$team\"}[$__range])))",
+          "legendFormat": "{{model}}",
+          "editorMode": "code",
+          "range": false,
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD",
+          "min": 0,
+          "decimals": 4,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#2E7D9A",
+                "value": null
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "displayMode": "gradient",
+        "orientation": "horizontal",
+        "showUnfilled": true,
+        "valueMode": "color",
+        "namePlacement": "left",
+        "sizing": "auto",
+        "minVizWidth": 8,
+        "minVizHeight": 16,
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
+        }
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 44,
+        "w": 12,
+        "h": 9
+      }
+    },
+    {
+      "id": 28,
+      "type": "table",
+      "title": "Prompt cache // reads · writes · read ratio · est. $ saved (range)",
+      "description": "Per model: how many calls hit the prompt cache, tokens read from and written to it, the read share, and an estimated dollar saving worked out from the price the proxy recorded on each call. Models with no cache activity are hidden. Respects the KEY, MODEL and TEAM pickers at the top.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "praxen-litellm-pg"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "praxen-litellm-pg"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "WITH r AS (SELECT model, prompt_tokens, COALESCE((metadata->'usage_object'->'prompt_tokens_details'->>'cached_tokens')::bigint, (metadata->'usage_object'->>'cache_read_input_tokens')::bigint, 0) AS read_tok, COALESCE((metadata->'usage_object'->'prompt_tokens_details'->>'cache_creation_tokens')::bigint, (metadata->'usage_object'->>'cache_creation_input_tokens')::bigint, 0) AS write_tok, (metadata->'model_map_information'->'model_map_value'->>'input_cost_per_token')::float AS in_rate, (metadata->'model_map_information'->'model_map_value'->>'cache_read_input_token_cost')::float AS cr_rate FROM \"LiteLLM_SpendLogs\" WHERE $__timeFilter(\"startTime\") AND COALESCE(metadata->>'user_api_key_alias','') ~ '^(?:${key:regex})$' AND COALESCE(model_group,'') ~ '^(?:${model:regex})$' AND COALESCE(metadata->>'user_api_key_team_alias','') ~ '^(?:${team:regex})$') SELECT model, count(*) AS calls, count(*) FILTER (WHERE read_tok > 0) AS cache_hits, sum(read_tok) AS read_tok, sum(write_tok) AS write_tok, round((100.0 * sum(read_tok) / NULLIF(sum(prompt_tokens), 0))::numeric, 1) AS read_ratio_pct, round(sum(read_tok * (in_rate - COALESCE(cr_rate, in_rate)))::numeric, 4) AS est_usd_saved FROM r GROUP BY model HAVING sum(read_tok) > 0 OR sum(write_tok) > 0 ORDER BY sum(read_tok) DESC"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false,
+            "filterable": true
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#2F8F72",
+                "value": null
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "est_usd_saved"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "currencyUSD"
+              },
+              {
+                "id": "decimals",
+                "value": 4
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "read_ratio_pct"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false,
+          "reducer": [
+            "sum"
+          ],
+          "countRows": false,
+          "fields": ""
+        },
+        "sortBy": []
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 53,
+        "w": 12,
+        "h": 8
+      }
+    },
+    {
+      "id": 35,
+      "type": "table",
+      "title": "Advised routes // spend by route · logged at executor rate (⚠ advisor premium under-counted)",
+      "description": "Spend on the advised routes (where a second, stronger model advises the answering model). The proxy logs the advisor's tokens at the cheaper answering model's rate, so the real bill is higher than shown. Respects the KEY, MODEL and TEAM pickers at the top.",
+      "datasource": {
+        "type": "postgres",
+        "uid": "praxen-litellm-pg"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "praxen-litellm-pg"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "refId": "A",
+          "rawSql": "SELECT\n  model_group AS \"route\",\n  count(*) AS \"calls\",\n  sum(prompt_tokens) AS \"in_tok\",\n  sum(completion_tokens) AS \"out_tok\",\n  round(sum(spend)::numeric, 4) AS \"logged_usd_exec_rate\",\n  round((sum(spend) / NULLIF(count(*),0))::numeric, 5) AS \"avg_usd_call\"\nFROM \"LiteLLM_SpendLogs\"\nWHERE $__timeFilter(\"startTime\") AND COALESCE(metadata->>'user_api_key_alias','') ~ '^(?:${key:regex})$' AND COALESCE(model_group,'') ~ '^(?:${model:regex})$' AND COALESCE(metadata->>'user_api_key_team_alias','') ~ '^(?:${team:regex})$' AND model_group ~ '-advised'\nGROUP BY model_group\nORDER BY sum(spend) DESC"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "filterable": false
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "logged_usd_exec_rate"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "currencyUSD"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "avg_usd_call"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "currencyUSD"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "sortBy": [
+          {
+            "displayName": "logged_usd_exec_rate",
+            "desc": true
+          }
+        ]
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 53,
+        "w": 12,
+        "h": 8
+      }
+    },
+    {
+      "id": 119,
+      "type": "row",
+      "title": "05 ▸ JEV GATE // TypeSafe decision layer",
+      "collapsed": false,
+      "panels": [],
+      "gridPos": {
+        "x": 0,
+        "y": 61,
+        "w": 24,
+        "h": 1
+      }
+    },
+    {
+      "id": 107,
+      "type": "stat",
+      "title": "JEV CALLS // classifier · judge · errors (range)",
+      "description": "How many times the Jev decision service was asked to classify a prompt or judge an answer, and how many of those calls failed (time-outs, key or circuit-breaker problems). When Jev fails, routing falls back to the built-in scorer and answers pass through unjudged.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "afimxbo42ap6oe"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "afimxbo42ap6oe"
+          },
+          "expr": "sum(increase(praxen_jev_calls_total{purpose=\"classifier\"}[$__range])) or vector(0)",
+          "legendFormat": "CLASSIFIER",
+          "editorMode": "code",
+          "range": true,
+          "instant": false
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "afimxbo42ap6oe"
+          },
+          "expr": "sum(increase(praxen_jev_calls_total{purpose=\"judge\"}[$__range])) or vector(0)",
+          "legendFormat": "JUDGE",
+          "editorMode": "code",
+          "range": true,
+          "instant": false
+        },
+        {
+          "refId": "C",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "afimxbo42ap6oe"
+          },
+          "expr": "sum(increase(praxen_jev_calls_total{outcome!=\"ok\"}[$__range])) or vector(0)",
+          "legendFormat": "ERRORS",
+          "editorMode": "code",
+          "range": true,
+          "instant": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#2F8F72",
+                "value": null
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "ERRORS"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#B0862A"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "#2F8F72",
+                      "value": null
+                    },
+                    {
+                      "color": "#B0862A",
+                      "value": 1
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "textMode": "value_and_name",
+        "wideLayout": true,
+        "showPercentChange": false,
+        "percentChangeColorMode": "standard"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 62,
+        "w": 6,
+        "h": 6
+      }
+    },
+    {
+      "id": 108,
+      "type": "stat",
+      "title": "SOFT REFUSALS CAUGHT (range)",
+      "description": "Answers the Jev judge flagged as a refusal or as an empty non-answer, which then fell back to the next model.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "afimxbo42ap6oe"
+      },
+      "transparent": true,
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "afimxbo42ap6oe"
+          },
+          "expr": "sum by (verdict) (increase(praxen_jev_judge_verdict_total{action=\"fallback\"}[$__range]))",
+          "refId": "A",
+          "legendFormat": "{{verdict}}",
+          "instant": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 0,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#3FA37A",
+                "value": null
+              },
+              {
+                "color": "#D9822B",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "center",
+        "wideLayout": true,
+        "text": {
+          "titleSize": 12
+        }
+      },
+      "gridPos": {
+        "x": 6,
+        "y": 62,
+        "w": 4,
+        "h": 6
+      }
+    },
+    {
+      "id": 109,
+      "type": "stat",
+      "title": "JEV EST. SPEND (range)",
+      "description": "Estimated dollars spent on Jev calls in the range.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "afimxbo42ap6oe"
+      },
+      "transparent": true,
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "afimxbo42ap6oe"
+          },
+          "expr": "sum(increase(praxen_jev_estimated_cost_usd_total[$__range]))",
+          "refId": "A",
+          "legendFormat": "usd",
+          "instant": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD",
+          "decimals": 5,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#3A7BD5",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "value",
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "center",
+        "wideLayout": true,
+        "text": {
+          "titleSize": 12
+        }
+      },
+      "gridPos": {
+        "x": 10,
+        "y": 62,
+        "w": 3,
+        "h": 6
+      }
+    },
+    {
+      "id": 110,
+      "type": "timeseries",
+      "title": "Jev latency p50 / p95 by purpose",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "afimxbo42ap6oe"
+      },
+      "transparent": true,
+      "description": "How long Jev takes to decide — the typical case (p50) and the slow end (p95) — for classifying prompts and for judging answers.",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "lineWidth": 2,
+            "showPoints": "never"
+          },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "afimxbo42ap6oe"
+          },
+          "expr": "histogram_quantile(0.50, sum by (le, purpose) (rate(praxen_jev_latency_seconds_bucket[$interval])))",
+          "refId": "A",
+          "legendFormat": "p50 {{purpose}}"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "afimxbo42ap6oe"
+          },
+          "expr": "histogram_quantile(0.95, sum by (le, purpose) (rate(praxen_jev_latency_seconds_bucket[$interval])))",
+          "refId": "B",
+          "legendFormat": "p95 {{purpose}}"
+        }
+      ],
+      "gridPos": {
+        "x": 13,
+        "y": 62,
+        "w": 5,
+        "h": 6
+      }
+    },
+    {
+      "id": 111,
+      "type": "timeseries",
+      "title": "Classifier tier mix // praxen/openai-router",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "afimxbo42ap6oe"
+      },
+      "transparent": true,
+      "description": "Which complexity tier the classifier assigned to prompts on the OpenAI router, over time. SIMPLE and MEDIUM go to the cheaper standard-tier models; COMPLEX and REASONING to the premium lanes.",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 70,
+            "lineWidth": 1,
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            }
+          },
+          "unit": "short",
+          "decimals": 0
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "SIMPLE"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#3FA37A"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "MEDIUM"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#3A7BD5"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "COMPLEX"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#D9822B"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "REASONING"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#C8464A"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "sum"
+          ],
+          "displayMode": "table",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "afimxbo42ap6oe"
+          },
+          "expr": "sum by (tier) (increase(praxen_jev_classifier_tier_total[$interval]))",
+          "refId": "A",
+          "legendFormat": "{{tier}}"
+        }
+      ],
+      "gridPos": {
+        "x": 18,
+        "y": 62,
+        "w": 6,
+        "h": 6
+      }
+    },
+    {
+      "id": 112,
+      "type": "table",
+      "title": "Judge verdicts // group · verdict · action (range)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "afimxbo42ap6oe"
+      },
+      "transparent": true,
+      "description": "Every judge verdict by route: answered, refused or non-answer, and whether the answer passed through or triggered a fallback.",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "afimxbo42ap6oe"
+          },
+          "expr": "sum by (model_group, verdict, action) (increase(praxen_jev_judge_verdict_total[$__range]))",
+          "refId": "A",
+          "format": "table",
+          "instant": true
+        }
+      ],
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true
+            },
+            "renameByName": {
+              "Value": "count"
+            }
+          }
+        },
+        {
+          "id": "sortBy",
+          "options": {
+            "sort": [
+              {
+                "field": "count",
+                "desc": true
+              }
+            ]
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 0,
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 68,
+        "w": 9,
+        "h": 8
+      }
+    },
+    {
+      "id": 113,
+      "type": "logs",
+      "title": "Jev decisions // JSON events (classifier · judge · errors)",
+      "datasource": {
+        "type": "loki",
+        "uid": "praxen-loki"
+      },
+      "description": "The raw Jev decision events from the proxy log, newest first, one JSON line each.",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "praxen-loki"
+          },
+          "expr": "{container=\"praxen-litellm\"} |= \"jev_gate {\"",
+          "queryType": "range"
+        }
+      ],
+      "options": {
+        "showTime": true,
+        "wrapLogMessage": true,
+        "sortOrder": "Descending",
+        "dedupStrategy": "none",
+        "enableLogDetails": true
+      },
+      "gridPos": {
+        "x": 9,
+        "y": 68,
+        "w": 15,
+        "h": 8
+      }
+    },
+    {
+      "id": 120,
+      "type": "row",
+      "title": "06 ▸ LOCAL WATCHDOG + MSTY GO LANE",
+      "collapsed": false,
+      "panels": [],
+      "gridPos": {
+        "x": 0,
+        "y": 76,
+        "w": 24,
+        "h": 1
+      }
+    },
+    {
+      "id": 37,
+      "type": "stat",
+      "title": "LM STUDIO LANE // success calls (range)",
+      "description": "Successful calls answered by LM Studio (any machine you point a local route at) in the range. Respects the KEY, MODEL and TEAM pickers at the top.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "afimxbo42ap6oe"
+      },
+      "transparent": true,
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "afimxbo42ap6oe"
+          },
+          "expr": "sum(increase(litellm_deployment_success_responses_total{api_key_alias=~\"$key\",requested_model=~\"$model\",team_alias=~\"$team\",api_base=~\".*:1234.*\"}[$__range]))",
+          "instant": true,
+          "legendFormat": "LM STUDIO LANE"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "text": {
+          "titleSize": 12,
+          "valueSize": 34
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "noValue": "0",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#A8453F",
+                "value": null
+              },
+              {
+                "color": "#2F8F72",
+                "value": 1
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 77,
+        "w": 4,
+        "h": 8
+      }
+    },
+    {
+      "id": 41,
+      "type": "table",
+      "title": "Local tier // served-id activity + last_seen",
+      "description": "Which local models actually answered, how often, how long they took on average, and when each was last used. Respects the KEY, MODEL and TEAM pickers at the top.",
+      "datasource": {
+        "type": "postgres",
+        "uid": "praxen-litellm-pg"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "postgres",
+            "uid": "praxen-litellm-pg"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  model AS \"served_id\",\n  count(*) AS \"calls\",\n  sum(prompt_tokens) AS \"in_tok\",\n  sum(completion_tokens) AS \"out_tok\",\n  round(avg(request_duration_ms)::numeric, 0) AS \"avg_ms\",\n  max(\"startTime\") AS \"last_seen\"\nFROM \"LiteLLM_SpendLogs\"\nWHERE $__timeFilter(\"startTime\") AND api_base LIKE '%1234%' AND COALESCE(metadata->>'user_api_key_alias','') ~ '^(?:${key:regex})$' AND COALESCE(model_group,'') ~ '^(?:${model:regex})$' AND COALESCE(metadata->>'user_api_key_team_alias','') ~ '^(?:${team:regex})$'\nGROUP BY model\nORDER BY max(\"startTime\") DESC"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "filterable": false
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "in_tok"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "out_tok"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "sortBy": [
+          {
+            "displayName": "last_seen",
+            "desc": true
+          }
+        ]
+      },
+      "gridPos": {
+        "x": 4,
+        "y": 77,
+        "w": 20,
+        "h": 8
+      }
+    },
+    {
+      "id": 121,
+      "type": "row",
+      "title": "07 ▸ ENVELOPES // teams · keys",
+      "collapsed": false,
+      "panels": [],
+      "gridPos": {
+        "x": 0,
+        "y": 85,
+        "w": 24,
+        "h": 1
+      }
+    },
+    {
+      "id": 43,
+      "type": "bargauge",
+      "title": "Team envelope consumed // % of max_budget (live from LiteLLM Postgres)",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "praxen-litellm-pg"
+      },
+      "description": "How much of each team's monthly hard stop has been used, from the proxy's own counters. At 100% the team's keys are refused until the monthly reset.",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "praxen-litellm-pg"
+          },
+          "format": "table",
+          "rawSql": "SELECT team_alias AS \"team\",\n       ROUND((100 * spend / NULLIF(max_budget,0))::numeric, 1) AS \"pct_consumed\"\nFROM \"LiteLLM_TeamTable\"\nWHERE max_budget IS NOT NULL AND max_budget > 0\nORDER BY max_budget DESC",
+          "editorMode": "code"
+        }
+      ],
+      "options": {
+        "displayMode": "gradient",
+        "orientation": "horizontal",
+        "showUnfilled": true,
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "minVizWidth": 8,
+        "minVizHeight": 16,
+        "valueMode": "color"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "decimals": 1,
+          "noValue": "no teams configured",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#2F8F72",
+                "value": null
+              },
+              {
+                "color": "#B0862A",
+                "value": 75
+              },
+              {
+                "color": "#A8453F",
+                "value": 90
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "transformations": [
+        {
+          "id": "rowsToFields",
+          "options": {}
+        }
+      ],
+      "gridPos": {
+        "x": 0,
+        "y": 86,
+        "w": 10,
+        "h": 8
+      }
+    },
+    {
+      "id": 114,
+      "type": "table",
+      "title": "Key lanes // last seen · calls (range) · MTD $ · watch line · hard cap",
+      "description": "One row per API key: when it was last used, calls in the range, dollars this month, its share of the $40 plan (the watch line) and how far along it is, and its hard cap. Watch lines warn; hard caps refuse.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "praxen-litellm-pg"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "praxen-litellm-pg"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "WITH watch(alias, line) AS (VALUES ('research-agent', 24.0), ('apps-frontend', 8.0), ('apps-private-lane', 5.0), ('sandbox-probe', 3.0)) SELECT v.key_alias AS \"key\", COALESCE(v.team_id,'-') AS team, MAX(s.\"startTime\") AS last_seen, COUNT(s.request_id) FILTER (WHERE $__timeFilter(s.\"startTime\")) AS calls_range, ROUND(COALESCE(SUM(s.spend) FILTER (WHERE s.\"startTime\" >= date_trunc('month', NOW())), 0)::numeric, 4) AS mtd_usd, w.line AS watch_line_usd, ROUND((100 * COALESCE(SUM(s.spend) FILTER (WHERE s.\"startTime\" >= date_trunc('month', NOW())), 0) / NULLIF(w.line, 0))::numeric, 1) AS watch_pct, v.max_budget AS hard_cap_usd, ROUND((100 * COALESCE(v.spend, 0) / NULLIF(v.max_budget, 0))::numeric, 1) AS cap_pct FROM \"LiteLLM_VerificationToken\" v LEFT JOIN watch w ON w.alias = v.key_alias LEFT JOIN \"LiteLLM_SpendLogs\" s ON s.api_key = v.token WHERE COALESCE(v.key_alias,'') <> '' GROUP BY v.key_alias, v.team_id, w.line, v.max_budget, v.spend ORDER BY mtd_usd DESC, v.key_alias"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false,
+            "filterable": true
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#2F8F72",
+                "value": null
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "mtd_usd"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "currencyUSD"
+              },
+              {
+                "id": "decimals",
+                "value": 4
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "watch_line_usd"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "currencyUSD"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "hard_cap_usd"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "currencyUSD"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "watch_pct"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "#2F8F72",
+                      "value": null
+                    },
+                    {
+                      "color": "#B0862A",
+                      "value": 80
+                    },
+                    {
+                      "color": "#A8453F",
+                      "value": 100
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "cap_pct"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "#2F8F72",
+                      "value": null
+                    },
+                    {
+                      "color": "#B0862A",
+                      "value": 80
+                    },
+                    {
+                      "color": "#A8453F",
+                      "value": 100
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "last_seen"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 165
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false,
+          "reducer": [
+            "sum"
+          ],
+          "countRows": false,
+          "fields": ""
+        },
+        "sortBy": []
+      },
+      "gridPos": {
+        "x": 10,
+        "y": 86,
+        "w": 14,
+        "h": 8
+      }
+    }
+  ]
+}
