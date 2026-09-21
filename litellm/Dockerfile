@@ -13,7 +13,7 @@
 # 1G container. No schema or migration change against v1.100.0, so for THIS step a
 # tag revert is a complete rollback; the pg_dump rule above still governs every
 # other bump.
-FROM ghcr.io/berriai/litellm:v1.100.1
+FROM ghcr.io/berriai/litellm:v1.102.0
 
 # hiredis 3.4.0 (still bundled in this tag) has an open segfault after Redis read
 # timeouts, fixed in 3.4.1 which the tag does not ship; removing it makes
