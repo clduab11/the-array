@@ -102,6 +102,7 @@ litellm_settings:
     # Per-entry catch chains for curated cloud entries.
     - gpt-standard-example: [claude-cached-example, local-chat-example]
     - claude-cached-example: [gpt-standard-example, local-chat-example]
+    - grok-coding-example: [claude-cached-example, local-chat-example]
     # NO chain for local-embed-example - see that entry for the reason.
   # A refusal is not an error. When a model declines a request (Anthropic's stop_reason
   # "refusal" arrives as finish_reason "content_filter"), the proxy returns HTTP 200 with an
@@ -173,7 +174,6 @@ model_list:
   - model_name: "perplexity/*"
     litellm_params:
       model: "perplexity/*"
-      api_key: os.environ/PERPLEXITY_API_KEY
   - model_name: "openrouter/*"
     litellm_params:
       model: "openrouter/*"
@@ -258,6 +258,17 @@ model_list:
       model: gemini/gemini-3.5-flash
       api_key: os.environ/GEMINI_API_KEY
       max_budget: 12.0
+      budget_duration: 1mo
+
+  # Grok 4.7 (2026-09-21). Same list price as Grok 4.6 ($2/$6 per 1M; 200k $4/$12).
+  # LiteLLM day-0 support: xai/grok-4.7. Prefer direct xAI over openrouter/x-ai/grok-4.7
+  # while OpenRouter ZDR is enforced on openrouter/*. Do not inject cost overrides unless
+  # the bundled map is wrong. Budget figure is illustrative.
+  - model_name: grok-coding-example
+    litellm_params:
+      model: xai/grok-4.7
+      api_key: os.environ/XAI_API_KEY
+      max_budget: 40.0
       budget_duration: 1mo
 
   # ---------------------------------------------------------------------------
