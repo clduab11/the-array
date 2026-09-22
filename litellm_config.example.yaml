@@ -174,6 +174,7 @@ model_list:
   - model_name: "perplexity/*"
     litellm_params:
       model: "perplexity/*"
+      api_key: os.environ/PERPLEXITY_API_KEY
   - model_name: "openrouter/*"
     litellm_params:
       model: "openrouter/*"
@@ -260,7 +261,7 @@ model_list:
       max_budget: 12.0
       budget_duration: 1mo
 
-  # Grok 4.7 (2026-09-21). Same list price as Grok 4.6 ($2/$6 per 1M; 200k $4/$12).
+  # Grok 4.7 (2026-09-21). Same list price as Grok 4.6 ($2/$6 per 1M; ≥200k $4/$12).
   # LiteLLM day-0 support: xai/grok-4.7. Prefer direct xAI over openrouter/x-ai/grok-4.7
   # while OpenRouter ZDR is enforced on openrouter/*. Do not inject cost overrides unless
   # the bundled map is wrong. Budget figure is illustrative.
