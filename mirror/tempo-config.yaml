@@ -23,15 +23,15 @@ metrics_generator:
   storage:
     path: /var/tempo/generator/wal
     remote_write:
-    - url: http://prometheus:9090/api/v1/write
-      send_exemplars: true
+      - url: http://prometheus:9090/api/v1/write
+        send_exemplars: true
   traces_storage:
     path: /var/tempo/generator/traces
   processor:
     span_metrics:
       dimensions:
-      - gen_ai.request.model
-      - gen_ai.system
+        - gen_ai.request.model
+        - gen_ai.system
     local_blocks:
       filter_server_spans: false
       flush_to_storage: true
@@ -39,9 +39,9 @@ overrides:
   defaults:
     metrics_generator:
       processors:
-      - service-graphs
-      - span-metrics
-      - local-blocks
+        - service-graphs
+        - span-metrics
+        - local-blocks
 storage:
   trace:
     backend: local
