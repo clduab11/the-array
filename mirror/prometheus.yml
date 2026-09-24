@@ -1,0 +1,61 @@
+# Sanitized structural mirror of the-array/prometheus.yml (2026-09-23). Comments and identity values
+# removed or replaced; budgets are placeholders. See mirror/README.md before restoring from it.
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+scrape_configs:
+- job_name: litellm
+  metrics_path: /metrics/
+  scheme: http
+  static_configs:
+  - targets:
+    - litellm-proxy:4000
+    labels:
+      environment: production
+      service: litellm
+  metric_relabel_configs:
+  - regex: (user_agent|client_ip|hashed_api_key)
+    action: labeldrop
+- job_name: tempo
+  metrics_path: /metrics
+  scheme: http
+  static_configs:
+  - targets:
+    - tempo:3200
+    labels:
+      environment: production
+      service: tempo
+- job_name: grafana
+  metrics_path: /metrics
+  scheme: http
+  static_configs:
+  - targets:
+    - grafana:3200
+    labels:
+      environment: production
+      service: grafana
+- job_name: loki
+  metrics_path: /metrics
+  scheme: http
+  static_configs:
+  - targets:
+    - loki:3100
+    labels:
+      environment: production
+      service: loki
+- job_name: alloy
+  metrics_path: /metrics
+  scheme: http
+  static_configs:
+  - targets:
+    - alloy:12345
+    labels:
+      environment: production
+      service: alloy
+- job_name: prometheus
+  static_configs:
+  - targets:
+    - localhost:9090
+    labels:
+      environment: production
+      service: prometheus

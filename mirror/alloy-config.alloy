@@ -1,0 +1,31 @@
+// Sanitized structural mirror of the-array/alloy-config.alloy (2026-09-23). Comments and identity values
+// removed or replaced; budgets are placeholders. See mirror/README.md before restoring from it.
+
+discovery.docker "containers" {
+  host             = "unix:///var/run/docker.sock"
+  refresh_interval = "5s"
+}
+
+discovery.relabel "containers" {
+  targets = discovery.docker.containers.targets
+
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    regex         = "/(.*)"
+    target_label  = "container"
+  }
+}
+
+loki.source.docker "containers" {
+  host          = "unix:///var/run/docker.sock"
+  targets       = discovery.relabel.containers.output
+  labels        = {"job" = "docker"}
+  relabel_rules = discovery.relabel.containers.rules
+  forward_to    = [loki.write.default.receiver]
+}
+
+loki.write "default" {
+  endpoint {
+    url = "http://loki:3100/loki/api/v1/push"
+  }
+}
