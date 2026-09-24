@@ -1,0 +1,571 @@
+# Sanitized structural mirror of the-array/docker-compose.yml (2026-09-23). Comments and identity values
+# removed or replaced; budgets are placeholders. See mirror/README.md before restoring from it.
+x-logging:
+  driver: json-file
+  options:
+    max-size: 10m
+    max-file: '3'
+x-restart:
+  restart: unless-stopped
+services:
+  tailscale-litellm:
+    restart: unless-stopped
+    image: tailscale/tailscale:v1.96.5
+    container_name: praxen-tailscale-litellm
+    profiles:
+      - retired
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+    hostname: praxen-litellm
+    environment:
+      TS_AUTHKEY: ${TS_AUTHKEY}
+      TS_HOSTNAME: praxen-litellm
+      TS_STATE_DIR: /var/lib/tailscale
+      TS_USERSPACE: 'false'
+      TS_SERVE_CONFIG: /config/serve.json
+    volumes:
+      - tsdata:/var/lib/tailscale
+      - ./tailscale-serve.json:/config/serve.json:ro
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    networks:
+      - praxen-network
+    healthcheck:
+      test:
+        - CMD
+        - tailscale
+        - status
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.25'
+  postgres:
+    restart: unless-stopped
+    image: postgres:16.15-alpine
+    container_name: praxen-postgres
+    profiles:
+      - core
+      - observe
+      - agents
+      - full
+      - dev
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-pc-host}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-litellm}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - 127.0.0.1:5432:5432
+    networks:
+      - praxen-network
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U ${POSTGRES_USER:-pc-host} -d ${POSTGRES_DB:-litellm}
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '1.0'
+  redis:
+    restart: unless-stopped
+    image: redis:7.4.11-alpine
+    container_name: praxen-redis
+    profiles:
+      - core
+      - observe
+      - agents
+      - full
+      - dev
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+    command: redis-server --maxmemory 200mb --maxmemory-policy allkeys-lru --appendonly yes
+    volumes:
+      - redisdata:/data
+    ports:
+      - 127.0.0.1:6379:6379
+    networks:
+      - praxen-network
+    healthcheck:
+      test:
+        - CMD
+        - redis-cli
+        - ping
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+  litellm-proxy:
+    restart: unless-stopped
+    build:
+      context: ./litellm
+      dockerfile: Dockerfile
+    container_name: praxen-litellm
+    profiles:
+      - core
+      - observe
+      - agents
+      - full
+      - dev
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+    ports:
+      - 4000:4000
+    networks:
+      - praxen-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-pc-host}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-litellm}
+      STORE_MODEL_IN_DB: 'True'
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY}
+      UI_USERNAME: ${UI_USERNAME}
+      UI_PASSWORD: ${UI_PASSWORD}
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo:4318
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+      OTEL_SERVICE_NAME: praxen-litellm
+      WINDOWS_LM_STUDIO_URL: ${WINDOWS_LM_STUDIO_URL}
+      SECOND_LM_STUDIO_URL: ${SECOND_LM_STUDIO_URL}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      MISTRAL_API_KEY: ${MISTRAL_API_KEY}
+      PERPLEXITY_API_KEY: ${PERPLEXITY_API_KEY:-}
+      COHERE_API_KEY: ${COHERE_API_KEY}
+      XAI_API_KEY: ${XAI_API_KEY}
+      VENICE_API_KEY: ${VENICE_API_KEY}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
+      GROQ_API_KEY: ${GROQ_API_KEY}
+      HUGGINGFACE_API_KEY: ${HUGGINGFACE_API_KEY}
+      MERCURY_API_KEY: ${MERCURY_API_KEY}
+      TYPESAFE_API_KEY: ${TYPESAFE_API_KEY:-}
+      JEV_JUDGE_GROUPS: ${JEV_JUDGE_GROUPS:-}
+      JEV_SHADOW_GROUPS: ${JEV_SHADOW_GROUPS:-}
+      JEV_SHADOW_RPM: ${JEV_SHADOW_RPM:-}
+      JEV_STREAM_OBSERVE: ${JEV_STREAM_OBSERVE:-}
+      JEV_ROUTER_POLICY_JSON: ${JEV_ROUTER_POLICY_JSON:-}
+      JEV_CIRCUIT_TRIP_FAILURES: ${JEV_CIRCUIT_TRIP_FAILURES:-}
+      JEV_CIRCUIT_MAX_COOLDOWN_S: ${JEV_CIRCUIT_MAX_COOLDOWN_S:-}
+      JEV_NON_ENGLISH_MIN_TOP: ${JEV_NON_ENGLISH_MIN_TOP:-}
+      JEV_INJECTION_THRESHOLD: ${JEV_INJECTION_THRESHOLD:-}
+      JEV_CAPABILITY_THRESHOLD: ${JEV_CAPABILITY_THRESHOLD:-}
+      JEV_SELF_GRADING_THRESHOLD: ${JEV_SELF_GRADING_THRESHOLD:-}
+    volumes:
+      - ./litellm_config.yaml:/app/config.yaml:ro
+      - ./litellm/refusal_fallback.py:/app/refusal_fallback.py:ro
+      - ./litellm/jev_gate.py:/app/jev_gate.py:ro
+    command:
+      - --config
+      - /app/config.yaml
+      - --port
+      - '4000'
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - import urllib.request; urllib.request.urlopen('http://localhost:4000/health/liveliness', timeout=5)
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.5'
+  tempo:
+    restart: unless-stopped
+    image: grafana/tempo:2.10.8
+    container_name: praxen-tempo
+    profiles:
+      - observe
+      - full
+      - dev
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+    volumes:
+      - ./tempo-config.yaml:/etc/tempo.yaml:ro
+      - tempodata:/var/tempo
+    command:
+      - -config.file=/etc/tempo.yaml
+    ports:
+      - 127.0.0.1:3210:3200
+    networks:
+      - praxen-network
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+  loki:
+    restart: unless-stopped
+    image: grafana/loki:3.7.7
+    container_name: praxen-loki
+    profiles:
+      - observe
+      - full
+      - dev
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+    volumes:
+      - ./loki-config.yaml:/etc/loki/loki-config.yaml:ro
+      - lokidata:/loki
+    command:
+      - -config.file=/etc/loki/loki-config.yaml
+    networks:
+      - praxen-network
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+  alloy:
+    restart: unless-stopped
+    image: grafana/alloy:v1.19.2
+    container_name: praxen-alloy
+    profiles:
+      - observe
+      - full
+      - dev
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./alloy-config.alloy:/etc/alloy/config.alloy:ro
+      - alloydata:/var/lib/alloy/data
+    command:
+      - run
+      - /etc/alloy/config.alloy
+      - --storage.path=/var/lib/alloy/data
+      - --server.http.listen-addr=0.0.0.0:12345
+    networks:
+      - praxen-network
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+  prometheus:
+    restart: unless-stopped
+    image: prom/prometheus:v3.14.0
+    container_name: praxen-prometheus
+    profiles:
+      - observe
+      - full
+      - dev
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - promdata:/prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.retention.time=30d
+      - --storage.tsdb.retention.size=2GB
+      - --web.enable-remote-write-receiver
+      - --enable-feature=exemplar-storage
+    ports:
+      - 127.0.0.1:9090:9090
+    networks:
+      - praxen-network
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - wget -q --spider http://localhost:9090/-/healthy || exit 1
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+  grafana:
+    restart: unless-stopped
+    image: grafana/grafana:13.1.5
+    container_name: praxen-grafana
+    profiles:
+      - observe
+      - full
+      - dev
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+    depends_on:
+      prometheus:
+        condition: service_healthy
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD}
+      GF_SERVER_HTTP_PORT: 3200
+      GF_RENDERING_SERVER_URL: http://grafana-image-renderer:8081/render
+      GF_RENDERING_CALLBACK_URL: http://grafana:3200/
+      GF_RENDERING_RENDERER_TOKEN: ${RENDERER_AUTH_TOKEN}
+      GF_PANELS_DISABLE_SANITIZE_HTML: 'true'
+      GF_SECURITY_ALLOW_EMBEDDING: 'true'
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /etc/grafana/dashboards/praxen-msty.json
+      GF_PLUGINS_PREINSTALL_SYNC: yesoreyeram-infinity-datasource@4.0.0,volkovlabs-echarts-panel@7.2.5
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_USER: ${POSTGRES_USER:-pc-host}
+      POSTGRES_DB: ${POSTGRES_DB:-litellm}
+      GF_SMTP_ENABLED: ${GRAFANA_SMTP_ENABLED:-false}
+      GF_SMTP_HOST: ${GRAFANA_SMTP_HOST:-host.docker.internal:1025}
+      GF_SMTP_USER: ${GRAFANA_SMTP_USER:-}
+      GF_SMTP_PASSWORD: ${GRAFANA_SMTP_PASSWORD:-}
+      GF_SMTP_FROM_ADDRESS: ${GRAFANA_SMTP_FROM:-}
+      GF_SMTP_FROM_NAME: praxen the-array
+      GF_SMTP_SKIP_VERIFY: 'true'
+      GF_SMTP_STARTTLS_POLICY: OpportunisticStartTLS
+    volumes:
+      - grafanadata:/var/lib/grafana
+      - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./grafana/provisioning/alerting:/etc/grafana/provisioning/alerting:ro
+      - ./grafana/dashboards:/etc/grafana/dashboards:ro
+    ports:
+      - 3200:3200
+    extra_hosts:
+      - api.example.dev:host-gateway
+    networks:
+      - praxen-network
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - wget -q --spider http://localhost:3200/api/health || exit 1
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+  grafana-image-renderer:
+    restart: unless-stopped
+    image: grafana/grafana-image-renderer:v5.12.3
+    container_name: praxen-renderer
+    profiles:
+      - observe
+      - full
+      - dev
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+    environment:
+      AUTH_TOKEN: ${RENDERER_AUTH_TOKEN}
+    networks:
+      - praxen-network
+    healthcheck:
+      test:
+        - CMD
+        - bash
+        - -c
+        - exec 3<>/dev/tcp/127.0.0.1/8081 && printf 'GET /healthz HTTP/1.0\r\n\r\n' >&3 && grep -q '200' <&3
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '1.0'
+  searxng:
+    restart: unless-stopped
+    image: searxng/searxng:2026.9.8-3fdc6d753
+    container_name: praxen-searxng
+    profiles:
+      - observe
+      - full
+      - dev
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+    environment:
+      SEARXNG_BASE_URL: http://localhost:8080/
+      SEARXNG_SECRET: ${SEARXNG_SECRET:?set SEARXNG_SECRET in .env}
+      UWSGI_WORKERS: 2
+      UWSGI_THREADS: 2
+    volumes:
+      - searxngdata:/etc/searxng
+      - ./searxng_settings.yml:/etc/searxng/settings.yml:rw
+    ports:
+      - 8080:8080
+    networks:
+      - praxen-network
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - wget -q --spider http://localhost:8080/healthz || exit 1
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+  qdrant:
+    restart: unless-stopped
+    image: qdrant/qdrant:v1.15.4
+    container_name: praxen-qdrant
+    profiles:
+      - agents
+      - full
+      - dev
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+    volumes:
+      - qdrantdata:/qdrant/storage
+    ports:
+      - 127.0.0.1:6433:6333
+    networks:
+      - praxen-network
+      - agent-network
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - wget -q --spider http://localhost:6333/healthz || exit 1
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+  n8n:
+    restart: unless-stopped
+    image: n8nio/n8n:2.23.3
+    container_name: praxen-n8n
+    profiles:
+      - agents
+      - full
+      - dev
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+    environment:
+      N8N_HOST: localhost
+      N8N_PORT: 5678
+      N8N_PROTOCOL: http
+      WEBHOOK_URL: http://localhost:5678/
+      N8N_BASIC_AUTH_ACTIVE: 'true'
+      N8N_BASIC_AUTH_USER: ${N8N_USER:-admin}
+      N8N_BASIC_AUTH_PASSWORD: ${N8N_PASSWORD}
+    volumes:
+      - n8ndata:/home/node/.n8n
+    ports:
+      - 127.0.0.1:5678:5678
+    networks:
+      - praxen-network
+      - agent-network
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - wget -q --spider http://localhost:5678/healthz || exit 1
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '1.0'
+networks:
+  praxen-network:
+    name: praxen-network
+    driver: bridge
+  agent-network:
+    name: agent-network
+    driver: bridge
+    internal: true
+volumes:
+  pgdata:
+    name: praxen-pgdata
+  redisdata:
+    name: praxen-redisdata
+  promdata:
+    name: praxen-promdata
+  grafanadata:
+    name: praxen-grafanadata
+  searxngdata:
+    name: praxen-searxngdata
+  qdrantdata:
+    name: praxen-qdrantdata
+  n8ndata:
+    name: praxen-n8ndata
+  tsdata:
+    name: praxen-tsdata
+  tempodata:
+    name: praxen-tempodata
+  lokidata:
+    name: praxen-lokidata
+  alloydata:
+    name: praxen-alloydata

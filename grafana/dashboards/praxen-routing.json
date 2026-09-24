@@ -2067,13 +2067,13 @@
     {
       "id": 111,
       "type": "timeseries",
-      "title": "Classifier tier mix // praxen/openai-router",
+      "title": "Classifier tier mix // by router",
       "datasource": {
         "type": "prometheus",
         "uid": "afimxbo42ap6oe"
       },
       "transparent": true,
-      "description": "Which complexity tier the classifier assigned to prompts on the OpenAI router, over time. SIMPLE and MEDIUM go to the cheaper standard-tier models; COMPLEX and REASONING to the premium lanes.",
+      "description": "Which complexity tier the classifier assigned to prompts, over time, one series per router and tier. On the OpenAI router SIMPLE and MEDIUM go to the cheaper standard-tier models and COMPLEX and REASONING to the premium lanes; on a local router the tiers are the local models.",
       "fieldConfig": {
         "defaults": {
           "custom": {
@@ -2170,9 +2170,9 @@
             "type": "prometheus",
             "uid": "afimxbo42ap6oe"
           },
-          "expr": "sum by (tier) (increase(praxen_jev_classifier_tier_total[$interval]))",
+          "expr": "sum by (router, tier) (increase(praxen_jev_classifier_tier_total[$interval]))",
           "refId": "A",
-          "legendFormat": "{{tier}}"
+          "legendFormat": "{{router}} · {{tier}}"
         }
       ],
       "gridPos": {
@@ -2286,6 +2286,430 @@
       }
     },
     {
+      "id": 190,
+      "type": "timeseries",
+      "title": "Shadow classifier // tier Jev WOULD pick on static alias lanes (record only)",
+      "description": "For prompts sent to the fixed alias lanes (reasoning, fast, coding, vision and the Go lanes), the tier Jev would have chosen. Nothing is re-routed; this shows whether a lane is getting the kind of prompts it was built for.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "afimxbo42ap6oe"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "afimxbo42ap6oe"
+          },
+          "expr": "sum by (model_group, tier) (increase(praxen_jev_shadow_tier_total[$__interval]))",
+          "legendFormat": "{{model_group}} · {{tier}}",
+          "editorMode": "code",
+          "range": true,
+          "instant": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "fillOpacity": 12,
+            "gradientMode": "opacity",
+            "showPoints": "never",
+            "spanNulls": true,
+            "axisPlacement": "auto",
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#2F8F72",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 76,
+        "w": 10,
+        "h": 8
+      }
+    },
+    {
+      "id": 191,
+      "type": "stat",
+      "title": "SHADOW MISMATCH // over-paying · under-powered (range)",
+      "description": "How often a fixed lane got the wrong kind of prompt in the range: OVER-PAYING means a reasoning or coding lane received an easy prompt, UNDER-POWERED means a fast lane received a hard one. Recorded only, never acted on.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "afimxbo42ap6oe"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "afimxbo42ap6oe"
+          },
+          "expr": "sum(increase(praxen_jev_shadow_mismatch_total{kind=\"over_paying\"}[$__range])) or vector(0)",
+          "legendFormat": "OVER-PAYING",
+          "editorMode": "code",
+          "range": true,
+          "instant": false
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "afimxbo42ap6oe"
+          },
+          "expr": "sum(increase(praxen_jev_shadow_mismatch_total{kind=\"under_powered\"}[$__range])) or vector(0)",
+          "legendFormat": "UNDER-POWERED",
+          "editorMode": "code",
+          "range": true,
+          "instant": false
+        },
+        {
+          "refId": "C",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "afimxbo42ap6oe"
+          },
+          "expr": "sum(increase(praxen_jev_shadow_tier_total[$__range])) or vector(0)",
+          "legendFormat": "SHADOWED",
+          "editorMode": "code",
+          "range": true,
+          "instant": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#2F8F72",
+                "value": null
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "OVER-PAYING"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#B0862A"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "#2F8F72",
+                      "value": null
+                    },
+                    {
+                      "color": "#B0862A",
+                      "value": 1
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "UNDER-POWERED"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#A8453F"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "#2F8F72",
+                      "value": null
+                    },
+                    {
+                      "color": "#A8453F",
+                      "value": 1
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "SHADOWED"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#6B7681"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "#6B7681",
+                      "value": null
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "textMode": "value_and_name",
+        "wideLayout": true,
+        "showPercentChange": false,
+        "percentChangeColorMode": "standard"
+      },
+      "gridPos": {
+        "x": 10,
+        "y": 76,
+        "w": 7,
+        "h": 8
+      }
+    },
+    {
+      "id": 192,
+      "type": "stat",
+      "title": "JEV POLICY // drift · injection · capability · policy edits (range)",
+      "description": "Housekeeping counters for the Jev gate: answers from a Jev version other than the pinned one (DRIFT), prompts flagged as trying to steer the router (INJECTION), refusals that were really a missing tool rather than a policy (CAPABILITY), and verdicts the router policy adjusted (POLICY).",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "afimxbo42ap6oe"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "afimxbo42ap6oe"
+          },
+          "expr": "sum(increase(praxen_jev_model_drift_total[$__range])) or vector(0)",
+          "legendFormat": "DRIFT",
+          "editorMode": "code",
+          "range": true,
+          "instant": false
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "afimxbo42ap6oe"
+          },
+          "expr": "sum(increase(praxen_jev_flag_total{flag=\"injection\"}[$__range])) or vector(0)",
+          "legendFormat": "INJECTION",
+          "editorMode": "code",
+          "range": true,
+          "instant": false
+        },
+        {
+          "refId": "C",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "afimxbo42ap6oe"
+          },
+          "expr": "sum(increase(praxen_jev_flag_total{flag=\"capability_refusal\"}[$__range])) or vector(0)",
+          "legendFormat": "CAPABILITY",
+          "editorMode": "code",
+          "range": true,
+          "instant": false
+        },
+        {
+          "refId": "D",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "afimxbo42ap6oe"
+          },
+          "expr": "sum(increase(praxen_jev_classifier_decision_total{decision=~\"uncertain.*|injection_guard|size_floor\"}[$__range])) or vector(0)",
+          "legendFormat": "POLICY",
+          "editorMode": "code",
+          "range": true,
+          "instant": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#2F8F72",
+                "value": null
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "DRIFT"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#B0862A"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "#2F8F72",
+                      "value": null
+                    },
+                    {
+                      "color": "#B0862A",
+                      "value": 1
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "INJECTION"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#B0862A"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "#2F8F72",
+                      "value": null
+                    },
+                    {
+                      "color": "#B0862A",
+                      "value": 1
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "textMode": "value_and_name",
+        "wideLayout": true,
+        "showPercentChange": false,
+        "percentChangeColorMode": "standard"
+      },
+      "gridPos": {
+        "x": 17,
+        "y": 76,
+        "w": 7,
+        "h": 8
+      }
+    },
+    {
       "id": 120,
       "type": "row",
       "title": "06 ▸ LOCAL WATCHDOG + MSTY GO LANE",
@@ -2293,7 +2717,7 @@
       "panels": [],
       "gridPos": {
         "x": 0,
-        "y": 76,
+        "y": 84,
         "w": 24,
         "h": 1
       }
@@ -2364,7 +2788,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 77,
+        "y": 85,
         "w": 4,
         "h": 8
       }
@@ -2438,7 +2862,7 @@
       },
       "gridPos": {
         "x": 4,
-        "y": 77,
+        "y": 85,
         "w": 20,
         "h": 8
       }
@@ -2451,7 +2875,7 @@
       "panels": [],
       "gridPos": {
         "x": 0,
-        "y": 85,
+        "y": 93,
         "w": 24,
         "h": 1
       }
@@ -2530,7 +2954,7 @@
       ],
       "gridPos": {
         "x": 0,
-        "y": 86,
+        "y": 94,
         "w": 10,
         "h": 8
       }
@@ -2735,7 +3159,7 @@
       },
       "gridPos": {
         "x": 10,
-        "y": 86,
+        "y": 94,
         "w": 14,
         "h": 8
       }
