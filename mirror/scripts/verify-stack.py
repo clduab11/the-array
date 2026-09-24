@@ -7,7 +7,7 @@ WHY THIS EXISTS (2026-09-09 currency sweep): every prior op re-derived the same 
 by hand (readiness, routable count, a chain 200, an allowlist 403, embedder dims,
 6/6 prometheus targets, provisioned dashboards/datasources, searxng json). Hand-derived
 gates drift and get skipped under time pressure; a script does not. Reads secrets from
-.env / the virtual-key token file and NEVER prints them.
+.env / .virtual-keys.env and NEVER prints them.
 
 USAGE
   python scripts/verify-stack.py            # full gate
@@ -57,7 +57,7 @@ def main():
 
     master = env(".env", "LITELLM_MASTER_KEY")
     gpw = env(".env", "GRAFANA_ADMIN_PASSWORD")
-    go_key = env("the virtual-key token file", "VKEY_MSTY_GO_WINPC") if (ROOT / "the virtual-key token file").exists() else None
+    go_key = env(".virtual-keys.env", "VKEY_MSTY_GO_WINPC") if (ROOT / ".virtual-keys.env").exists() else None
     H = {"Authorization": f"Bearer {master}", "Content-Type": "application/json"}
     G = {"Authorization": "Basic " + b64encode(f"admin:{gpw}".encode()).decode()}
 
@@ -108,7 +108,7 @@ def main():
         s, b = http(f"{LITELLM}/v1/chat/completions", {"Authorization": f"Bearer {go_key}", "Content-Type": "application/json"}, body, timeout=30)
         gate("allowlist 403 (front-go-winpc)", s in (401, 403), f"HTTP {s}")
     else:
-        gate("allowlist 403 (front-go-winpc)", False, "the virtual-key token file / VKEY_MSTY_GO_WINPC not found")
+        gate("allowlist 403 (front-go-winpc)", False, ".virtual-keys.env / VKEY_MSTY_GO_WINPC not found")
 
     # 6. embedder dimension (verify by DIMENSION, never by echoed name)
     body = json.dumps({"model": "legacy/embed", "input": "dimension probe"}).encode()

@@ -15,7 +15,7 @@ How this was built:
 - **Keep "Switch model by request" ON** (the operator's setting). Saved rows only apply to loads that Unsloth starts itself, and LiteLLM will need the switch later. One cost: a keyed request that names a different model replaces the resident one.
 - **Keyless access** (ruling: ON) works for local processes that call `127.0.0.1` or `localhost` without an Origin header. Browser and Electron clients, possibly Msty, are refused (7.2, 8.3). It also works for any Docker container that sets `Host: localhost` **(ALPHA p27)**. Keyless callers get inference only: no tools, no model switching. LiteLLM must use an `sk-unsloth(-)` key, because only keyed callers auto-switch.
 - **Keep ≥1 GiB of VRAM free.** After Unsloth's default auto-fit loads, ALPHA measured only 661–689 MiB free, with ~0.7 GiB spilled to shared memory, and qwen decode swung between ~7 and 55 tok/s (medians 12.7–21.7). A pinned per-model context avoids that.
-- **Hugging Face:** UI-session downloads use your user `HF_TOKEN`. The account is `clduab11` (checked with `hf auth whoami` after ALPHA), and the running Unsloth backend has the variable. Gated downloads are untested. API-key and keyless callers never use it. **Pushing to the Hub needs a write token saved in Unsloth's Settings**; Export never falls back to `HF_TOKEN`.
+- **Hugging Face:** UI-session downloads use your user `HF_TOKEN`. The account is `your-account` (checked with `hf auth whoami` after ALPHA), and the running Unsloth backend has the variable. Gated downloads are untested. API-key and keyless callers never use it. **Pushing to the Hub needs a write token saved in Unsloth's Settings**; Export never falls back to `HF_TOKEN`.
 - **Kaggle** has **no** integration in Unsloth. Kaggle notebooks → HF Hub → Unsloth is the path.
 - **In-app fine-tuning** covers the SFT family (QLoRA, LoRA, full, continued pretraining) for text, vision, audio and embeddings, plus diffusion LoRA. There is no GRPO or DPO; those run on Kaggle. On 8 GB, QLoRA up to about 4B is comfortable and 7–9B is borderline.
 - **Security items:**
@@ -106,7 +106,7 @@ How this was built:
 | Load exports back | `~/.unsloth/studio/exports` and `outputs` appear in Chat > Fine-tuned tab. | `GET /api/models/loras` | Serve GGUF exports through llama.cpp, the light path here. Open issue #9286 (vision GGUF mmproj detection) may affect vision exports. |
 | HF token in Settings | One installation-wide token, AES-GCM encrypted in `studio.db`. It pre-fills the Export token field. | Settings > General > Account > Hugging Face token; `GET/PUT/DELETE /api/settings/hugging-face-token` | Any UI session can read it back in plaintext. It is not written to the hf CLI token file. |
 | Token validation | Checks the token with whoami: missing, valid, invalid, rate_limited or unavailable. At most 3 network checks per hour. | Automatic; `POST /api/hub/token/validate` | Checks identity, not write scope. |
-| Ambient HF credential | UI sessions with no saved token fall back to the `HF_TOKEN` environment variable, then the `hf auth login` token file. API-key and keyless callers never do, and Export push never does. | — | `HF_TOKEN` **is** set as a Windows user environment variable here, and it outranks the login file. The account is `clduab11` (`hf auth whoami`, checked after ALPHA). Confirm its scopes. No token file exists today. |
+| Ambient HF credential | UI sessions with no saved token fall back to the `HF_TOKEN` environment variable, then the `hf auth login` token file. API-key and keyless callers never do, and Export push never does. | — | `HF_TOKEN` **is** set as a Windows user environment variable here, and it outranks the login file. The account is `your-account` (`hf auth whoami`, checked after ALPHA). Confirm its scopes. No token file exists today. |
 | Gated or private downloads | Accept the model's license on huggingface.co first. The token travels with each request. | Hub page | A /v1 auto-download never uses the server's HF identity, so download gated models from the UI. |
 | HF cache location | Moves the hub and xet caches to another folder. Earlier locations stay in the scan list. | Settings (owner only); `PUT /api/settings/hugging-face-cache` | Editable here because `HF_HOME` and `HF_HUB_CACHE` are unset. Existing files are not moved. Restart the app afterwards, because in-process reads keep the old path. |
 | Download transport | auto, xet or http. Auto picks Xet unless RAM is under pressure, and a stalled Xet download falls back to HTTP. | Settings, Download transport; `/api/settings/download-transport` | On this Windows install an interrupted HTTPS download does **not** resume the file in flight; the UI hint is wrong. Files that already finished are kept. |
@@ -124,7 +124,7 @@ How this was built:
 | Core on Kaggle | Detects Kaggle (`KAGGLE_KERNEL_RUN_TYPE` plus `/kaggle/working`), stages pushes in `/tmp`, and deletes the base model to save disk. | Automatic | Side effect on this PC: any `KAGGLE_*` environment variable changes Core's statistics label. Keep Kaggle credentials in a file. |
 | Kaggle Secrets to Hub | Secrets are defined only on the website and read with `UserSecretsClient().get_secret()`. `push_to_hub_gguf(..., token=, private=True)`. | Notebook Add-ons > Secrets | The notebooks' save cells ship wrapped in `if False:` with placeholders. |
 | Headless Kaggle | `kaggle kernels init`, `push`, `output`. | kaggle CLI | `kernel-metadata.json` defaults to enable_gpu false, enable_internet false, is_private true. Set GPU and internet on and `machine_shape: NvidiaTeslaT4`. |
-| Kaggle as a host | `kagglehub.model_upload` and `dataset_upload`; kaggle CLI Models commands. | kagglehub | An optional mirror of the clduab11 repos. |
+| Kaggle as a host | `kagglehub.model_upload` and `dataset_upload`; kaggle CLI Models commands. | kagglehub | An optional mirror of the your-account repos. |
 | Kaggle Jupyter Server | Experimental: VS Code or Colab connect to Kaggle hardware. | kaggle.com/docs/notebooks | — |
 | Unsloth app on Kaggle | No user notebook exists, and issue #4944 is still open. Unsloth's own CI runs the current app on a Kaggle T4 (PR #8489). The legacy `Kaggle-Unsloth_Studio.ipynb` clones the 2024 app. | — | On Kaggle, train with Core notebooks rather than the app. |
 | Colab | `Unsloth_Studio_Colab.ipynb` runs the whole app, including the training UI, on Colab behind a Cloudflare link. On a free T4, the docs say "most models up to 22B". The VS Code Colab extension runs Core notebooks on Colab GPUs. | colab.research.google.com link | The tunnel URL is public and protected only by the admin password. |
@@ -313,11 +313,11 @@ Points to remember:
 
 Claude never enters tokens. the operator does each step.
 
-1. **Current ambient identity (checked after ALPHA, not in the evidence folder).** `hf auth whoami` returns `user=clduab11`, from the `HF_TOKEN` Windows user environment variable (there is no token file). The Unsloth backend inherits `HF_TOKEN`, so UI-session downloads and model loads use it (gated downloads untested). Its scopes are unknown; if it is read-only, pushes need step 2.
-2. **Create a fine-grained token** at https://huggingface.co/settings/tokens with read access and write access to repos under `clduab11`. Add repo-settings write if Unsloth should be able to switch an existing public repo to private.
+1. **Current ambient identity (checked after ALPHA, not in the evidence folder).** `hf auth whoami` returns `user=your-account`, from the `HF_TOKEN` Windows user environment variable (there is no token file). The Unsloth backend inherits `HF_TOKEN`, so UI-session downloads and model loads use it (gated downloads untested). Its scopes are unknown; if it is read-only, pushes need step 2.
+2. **Create a fine-grained token** at https://huggingface.co/settings/tokens with read access and write access to repos under `your-account`. Add repo-settings write if Unsloth should be able to switch an existing public repo to private.
 3. **Paste it in Unsloth:** Settings > General > Account > Hugging Face token. Wait for "Token validated". That check confirms identity only, not write access.
 4. **Test a read.** Accept a gated model's license on huggingface.co, then download it from the Hub page.
-5. **Test a write.** Export a small LoRA to a new private repo `clduab11/<test>`. The token field is pre-filled from Settings. Confirm the repo on huggingface.co. The token must be in place **before** Start, because the check runs only after the local export finishes.
+5. **Test a write.** Export a small LoRA to a new private repo `your-account/<test>`. The token field is pre-filled from Settings. Confirm the repo on huggingface.co. The token must be in place **before** Start, because the check runs only after the local export finishes.
 6. **Optional:** move the HF cache to a larger drive (Settings, owner only), then restart the app. Existing files are not moved.
 7. **Optional:** run `hf auth login` for CLI use, remembering that `HF_TOKEN` still wins.
 
@@ -345,7 +345,7 @@ Keep in mind:
    ```python
    from kaggle_secrets import UserSecretsClient
    tok = UserSecretsClient().get_secret("HF_TOKEN")
-   model.push_to_hub_gguf("clduab11/<name>-GGUF", tokenizer,
+   model.push_to_hub_gguf("your-account/<name>-GGUF", tokenizer,
                           quantization_method=["q4_k_m", "q8_0"],
                           token=tok, private=True)
    ```
@@ -353,12 +353,12 @@ Keep in mind:
 8. Sessions stop after 12 h. For long runs, push the adapter or save checkpoints partway through.
 
 **Back on pc-host:**
-9. In Unsloth, go to the Hub page, search `clduab11/<name>-GGUF`, download Q4_K_M, and load it with a saved config (3.3).
-   - **LoRA variant:** Export > load checkpoint `clduab11/<adapter>` (a Hub id is accepted) > GGUF > Chat > Fine-tuned tab. Unload the chat model first.
+9. In Unsloth, go to the Hub page, search `your-account/<name>-GGUF`, download Q4_K_M, and load it with a saved config (3.3).
+   - **LoRA variant:** Export > load checkpoint `your-account/<adapter>` (a Hub id is accepted) > GGUF > Chat > Fine-tuned tab. Unload the chat model first.
 
-**Headless variant.** Copy the notebook into a folder and run `kaggle kernels init -p <dir>`. Edit `kernel-metadata.json`: `id` = `clduab11/<slug>`, `enable_gpu` true, `enable_internet` true, `machine_shape` `NvidiaTeslaT4`. Then run `kaggle kernels push -p <dir>`, and later `kaggle kernels output clduab11/<slug> -p <local dir>`. The CLI cannot define secrets, so the HF_TOKEN secret must already be attached on the website.
+**Headless variant.** Copy the notebook into a folder and run `kaggle kernels init -p <dir>`. Edit `kernel-metadata.json`: `id` = `your-account/<slug>`, `enable_gpu` true, `enable_internet` true, `machine_shape` `NvidiaTeslaT4`. Then run `kaggle kernels push -p <dir>`, and later `kaggle kernels output your-account/<slug> -p <local dir>`. The CLI cannot define secrets, so the HF_TOKEN secret must already be attached on the website.
 
-**Kaggle data for a local run.** Either `kagglehub.dataset_download("owner/slug", output_dir="...")` and upload the CSV, JSONL or Parquet on the Train page, or load it with `KaggleDatasetAdapter.HUGGING_FACE`, `.push_to_hub("clduab11/<x>", private=True)`, and train on `clduab11/<x>`.
+**Kaggle data for a local run.** Either `kagglehub.dataset_download("owner/slug", output_dir="...")` and upload the CSV, JSONL or Parquet on the Train page, or load it with `KaggleDatasetAdapter.HUGGING_FACE`, `.push_to_hub("your-account/<x>", private=True)`, and train on `your-account/<x>`.
 
 ---
 
@@ -393,7 +393,7 @@ A QLoRA SFT run on `unsloth/Qwen3-4B-Instruct-2507`. It has a bundled preset (ba
 ### 6.3 How results get back into Unsloth Desktop
 
 - **Quick look:** Chat > Fine-tuned tab > load the LoRA. This reloads the base model, so compare it with the base in Model Arena.
-- **Deliverable:** Export > training run checkpoint > GGUF (Q4_K_M, optionally Q8_0 in the same load). Save locally to `~/.unsloth/studio/exports`; it appears in the Fine-tuned tab. Load it with a saved config (3.3). Optionally push it to a private `clduab11` repo with the Settings token.
+- **Deliverable:** Export > training run checkpoint > GGUF (Q4_K_M, optionally Q8_0 in the same load). Save locally to `~/.unsloth/studio/exports`; it appears in the Fine-tuned tab. Load it with a saved config (3.3). Optionally push it to a private `your-account` repo with the Settings token.
 - **Cleanup:** delete any leftover `_tmp_model_*` folder in the save directory.
 
 ### 6.4 After that
@@ -416,7 +416,7 @@ A QLoRA SFT run on `unsloth/Qwen3-4B-Instruct-2507`. It has a bundled preset (ba
 | **Tools forced off for keyless callers** ("Allow tools" OFF) | A middleware forces server-side tools (python, terminal, web search) off for keyless requests, even under a CLI `--enable-tools`. | Keyed callers, including an `sk-unsloth` key given to LiteLLM, **can** opt into tools per request with `enable_tools: true`. A non-streaming request with no explicit permission mode cannot prompt, so it just runs the tools (ALPHA p12: python ran). LiteLLM forwards 28 of 29 Unsloth tool, permission and `provider_*` fields in `extra_body` (ALPHA p17). Before any route moves (plan §6.7 item 1, §6.8a), a LiteLLM pre-call hook must: keep only standard chat params plus `chat_template_kwargs`; delete every other key at the top level and inside `extra_body`; drop `X-Unsloth-*` headers; inject `enable_tools: false`. Verify through the proxy: no `execute_tool` line in tauri.log. |
 | **Keep model resident ON, unload by hand** | Idle unload is vetoed, and CPU-resident parts are mlocked unless "Don't reserve system RAM" is on. | Training, image and video generation, and a switch request all still evict the model. Unload before Docker pulls or builds. |
 | **No admin password** | The LAN listener and the Cloudflare tunnel stay blocked, which is good. | The seeded password sits in plaintext in `auth/.bootstrap_password`. `auth/.desktop_secret` is an admin-equivalent credential that any local process can read. Setting a password later through `unsloth studio reset-password` revokes every API key, which would break a LiteLLM binding. |
-| **LAN auto-start armed — NOT ruled (open, 8.17)** | Nothing happens today: the boot log skips it only with `admin_password_change_required` (`tauri_log_excerpts.txt`, 17:23Z and 17:59Z). The next time Unsloth starts after a password exists, a plain-HTTP listener comes up on every active IPv4 interface, Tailscale included. | With keyless on, anyone on 192.168.0.x could then chat with the loaded model without a key; tools stay off. Tailscale peers would need a key. Starting LAN also suspends stdio MCP servers. Windows Firewall needs a Private-profile rule, and the PC's IP 192.0.2.11 is not DHCP-reserved. The iPhone does not need this, because Locally uses LM Studio. |
+| **LAN auto-start armed — NOT ruled (open, 8.17)** | Nothing happens today: the boot log skips it only with `admin_password_change_required` (`tauri_log_excerpts.txt`, 17:23Z and 17:59Z). The next time Unsloth starts after a password exists, a plain-HTTP listener comes up on every active IPv4 interface, Tailscale included. | With keyless on, anyone on 192.0.2.x could then chat with the loaded model without a key; tools stay off. Tailscale peers would need a key. Starting LAN also suspends stdio MCP servers. Windows Firewall needs a Private-profile rule, and the PC's IP 192.0.2.11 is not DHCP-reserved. The iPhone does not need this, because Locally uses LM Studio. |
 
 ### 7.2 Who actually gets keyless access
 
@@ -470,7 +470,7 @@ Admission requires all of these:
 10. **Whether 7–9B QLoRA completes**, whether Triton finds the VS 18 toolchain, and whether an over-budget run spills to system memory or raises OOM.
 11. **8 GB fit** for diffusion, video, TTS and STT training and generation, and where STT and TTS models are placed next to a resident chat model.
 12. ~~Qwen3-Embedding-0.6B GGUF as Unsloth's embedder~~ **Superseded by plan D1:** `legacy/embed` goes to the BRAVO container, not Unsloth.
-13. **The `HF_TOKEN` scopes.** The account is `clduab11` (checked after ALPHA); whether the token can write is unknown.
+13. **The `HF_TOKEN` scopes.** The account is `your-account` (checked after ALPHA); whether the token can write is unknown.
 
 **Settled by the operator (2026-09-23):**
 14. Keyless access ON; Keep model resident ON with manual unload; no admin password for now.

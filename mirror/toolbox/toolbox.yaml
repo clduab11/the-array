@@ -208,7 +208,7 @@ tools:
     profiles: [build-code, plan-triage]
     what: Errors and traces for apps that report to Sentry (inspect + seer skills only)
     transport: http
-    url: https://mcp.sentry.dev/mcp/clduab11/clduab11
+    url: https://mcp.sentry.dev/mcp/your-account/your-account
     auth: {type: oauth}
     note: Scoped to one org and project. Leave the triage and project-management skills off.
     evidence: https://github.com/getsentry/sentry-mcp

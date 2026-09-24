@@ -5,7 +5,7 @@ set -euo pipefail
 
 PROXY_URL="${PROXY_URL:-http://localhost:4000}"
 ENV_FILE="${ENV_FILE:-./.env}"
-OUT_FILE="${OUT_FILE:-./the virtual-key token file}"
+OUT_FILE="${OUT_FILE:-./.virtual-keys.env}"
 HEALTH_RETRIES="${HEALTH_RETRIES:-12}"   # 12 * 5s = 60s warm-up window
 
 for tool in curl jq; do
@@ -186,4 +186,4 @@ chmod 600 "$OUT_FILE"
 echo ""
 echo "==> Done. minted=$minted, skipped=$skipped"
 echo "==> Tokens written to $OUT_FILE (chmod 600)"
-echo "==> CONFIRM .gitignore covers both .env AND the virtual-key token file before next push"
+echo "==> CONFIRM .gitignore covers both .env AND .virtual-keys.env before next push"

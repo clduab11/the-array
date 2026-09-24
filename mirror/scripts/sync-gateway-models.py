@@ -10,7 +10,7 @@ Re-run after every LiteLLM config change that adds or removes models:
     python scripts/sync-gateway-models.py              # provider openai-compatible, key VKEY_MSTY_GATEWAY_WINPC
     python scripts/sync-gateway-models.py --prune      # also delete registrations LiteLLM no longer serves
     python scripts/sync-gateway-models.py --dry-run
-Secrets are read from .env / the virtual-key token file inside the script and never printed.
+Secrets are read from .env / .virtual-keys.env inside the script and never printed.
 """
 import argparse, json, pathlib, sys, time, urllib.parse, urllib.request, urllib.error
 
@@ -43,12 +43,12 @@ def http(method, url, headers, body=None, timeout=60):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--provider", default="openai-compatible")
-    ap.add_argument("--key-var", default="VKEY_MSTY_GATEWAY_WINPC", help="the LiteLLM key this Gateway record uses (the virtual-key token file)")
+    ap.add_argument("--key-var", default="VKEY_MSTY_GATEWAY_WINPC", help="the LiteLLM key this Gateway record uses (.virtual-keys.env)")
     ap.add_argument("--prune", action="store_true")
     ap.add_argument("--dry-run", action="store_true")
     a = ap.parse_args()
 
-    env, keys = dotenv(ROOT / ".env"), dotenv(ROOT / "the virtual-key token file")
+    env, keys = dotenv(ROOT / ".env"), dotenv(ROOT / ".virtual-keys.env")
     nx = {"X-front-Gateway-Token": env["GATEWAY_ADMIN_TOKEN"]}
 
     st, prov = http("GET", f"{GATEWAY}/v1/providers/{a.provider}", nx)

@@ -261,6 +261,18 @@ def child():
     return json.loads(r) if r else None
 
 
+def _ram_mode() -> str:
+    """How a load that does not fit wholly on the GPU holds its host-RAM part, from Unsloth's model-memory settings:
+    Keep resident with "Don't reserve system RAM" off pins the WHOLE file (--load-mode mmap+mlock; LFM2.5 pinned
+    5.3 GB for 574 MiB of CPU experts, 2026-09-23); with it on, the file stays mapped and pageable."""
+    s, mm = call("GET", "/api/settings/model-memory", timeout=30)
+    if s != 200:
+        return "model-memory setting unreadable"
+    if mm.get("mlock_active"):
+        return "PINNED: Keep resident locks the whole file in RAM"
+    return "file-mapped and pageable: no RAM lock"
+
+
 def unload_resident():
     s, st = call("GET", "/api/inference/status", timeout=30)
     if not st.get("loaded"):
@@ -324,7 +336,7 @@ def cmd_plan(a):
         # Manual mode, every layer requested (above the block count so the output layer is covered), experts of k on CPU
         rec.update({"max_seq_length": a.min_ctx, "n_cpu_moe": k, "gpu_memory_mode": "manual", "gpu_layers": prof["layers"] + 1})
         lines.append(f"MoE with {prof['experts']} experts: does not fit whole; experts of {k}/{prof['layers']} layers on CPU "
-                     f"(estimate), context {a.min_ctx}. Expect host-RAM use of ~{int(k * per_layer)} MiB (mlocked while Keep resident is on)")
+                     f"(estimate), context {a.min_ctx}. Expect host-RAM use of ~{int(k * per_layer)} MiB ({_ram_mode()})")
     else:
         # Auto, when it cannot prove a fit, spills weight TENSORS and keeps the KV cache on the GPU (llama_cpp.py; the
         # source measured 13.63 vs 1.03 t/s against whole-layer offload on a 27B at 128K). Manual --gpu-layers N moves
@@ -370,8 +382,8 @@ def cmd_apply(a):
         sys.exit("--gpu-layers must be >= 0 (Manual mode with -1 turns llama.cpp's fitter on); omit it for Auto")
     if a.n_cpu_moe is not None:
         body.update({"n_cpu_moe": a.n_cpu_moe, "gpu_memory_mode": "manual", "gpu_layers": 999 if a.gpu_layers is None else a.gpu_layers})
-        print("note: with Keep resident ON, the experts placed on CPU are mlocked in host RAM. Check host Available and "
-              "commit against their size (and LM Studio's residue) before verify.", file=sys.stderr)
+        print(f"note: the experts placed on CPU live in host RAM ({_ram_mode()}). Check host Available against their "
+              "size (and LM Studio's residue) before verify.", file=sys.stderr)
     elif a.gpu_layers is not None:
         body.update({"gpu_memory_mode": "manual", "gpu_layers": a.gpu_layers})
     if a.parallel is not None:

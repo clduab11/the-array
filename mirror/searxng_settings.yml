@@ -10,8 +10,8 @@ search:
   autocomplete: google
   default_lang: en
   formats:
-  - html
-  - json
+    - html
+    - json
 server:
   secret_key: ${SEARXNG_SECRET}
   limiter: false
@@ -25,7 +25,7 @@ ui:
   theme_args:
     simple_style: dark
 enabled_plugins:
-- Hash plugin
-- Self Information
-- Tracker URL remover
-- Open Access DOI rewrite
+  - Hash plugin
+  - Self Information
+  - Tracker URL remover
+  - Open Access DOI rewrite

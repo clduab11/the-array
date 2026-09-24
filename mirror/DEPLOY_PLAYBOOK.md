@@ -63,8 +63,8 @@ Everything else (postgres 5432, redis 6379, prometheus 9090, tempo 3210, parked 
 | `grafana/provisioning/dashboards/praxen.yaml` | Dashboard provider: `allowUiUpdates:false`, `disableDeletion:true`, 30s poll. |
 | `grafana/provisioning/datasources/praxen-datasources.yaml` | Datasources, `editable:false`. uids `afimxbo42ap6oe` (prometheus), `dfipt8nyznn5sc` (tempo), `praxen-loki`, `praxen-litellm-pg`, `sibling-project-b-infinity` are LOAD-BEARING — never change. |
 | `grafana/dashboards/*.json` | The live boards (`praxen-msty` is home). Disk is the only author surface. |
-| `provision-keys.sh` | v2.0.0 team + virtual-key minting (§3 step 8). Rebuilds `the virtual-key token file` on every run. |
-| `.env` / `the virtual-key token file` / `.env.template` | Secrets + virtual-key tokens (gitignored) / sanitised template. Never `cat` the first two into a transcript. |
+| `provision-keys.sh` | v2.0.0 team + virtual-key minting (§3 step 8). Rebuilds `.virtual-keys.env` on every run. |
+| `.env` / `.virtual-keys.env` / `.env.template` | Secrets + virtual-key tokens (gitignored) / sanitised template. Never `cat` the first two into a transcript. |
 | `scripts/verify-stack.py` | 14-probe gate, exit 1 on any FAIL. Run before and after every change. |
 | `scripts/check-image-updates.py` | Reports which pins are behind upstream. Reports only, never applies. |
 | `scripts/extract_chains.py` / `scripts/sync-venice-pricing.py` | Stdout dumper of aliases/chains/terminal tally (`fallback-chains/chains-reference.md` is authored around it) / re-injects per-entry Venice pricing from the live vendor API — re-run + restart when Venice rotates. |
@@ -81,7 +81,7 @@ Everything else (postgres 5432, redis 6379, prometheus 9090, tempo 3210, parked 
 
 ## §3 — First bring-up on a fresh box, in order
 
-**1. Port the tree.** `git config --global core.autocrlf false` BEFORE the clone/copy (LF-sensitive files). Secrets, a fresh `pg_dump`, and `the virtual-key token file` travel side-channel — never through the repo or a sync folder.
+**1. Port the tree.** `git config --global core.autocrlf false` BEFORE the clone/copy (LF-sensitive files). Secrets, a fresh `pg_dump`, and `.virtual-keys.env` travel side-channel — never through the repo or a sync folder.
 
 **2. Create `.env` from the template and fill EVERY variable.** `.env.template` v2.0.0 (2026-09-10) is reconciled to the live file; its v1.1.0 predecessor had drifted 8 names behind for months and anyone following it got a dead stack (no UI login, no renderer token, three provider lanes 401ing, no iMac URL). The consumer map below is authoritative whenever the two disagree again — diff `grep -oE '^[A-Z_]+=' .env .env.template` before every bring-up.
 
@@ -137,7 +137,7 @@ Expected `docker compose ps`: 10 `praxen-*` containers `running`; 7 show `(healt
 
 **7. Firewall rules (§1)** if this is a new Windows install.
 
-**8. Provision teams + keys — FULL RUN ON A FRESH BOX ONLY.** `provision-keys.sh` is idempotent for teams/keys but **rebuilds `the virtual-key token file` from scratch on every run** (`mv` overwrite — existing keys come back as empty placeholders). NEVER run it on the live box to add one key; add the spec line for the record and mint via direct `/key/generate`. Two facts about the script's roster: it is the 2026-06-20 cut (teams sum $N, six keys, some since deleted) — after a fresh run, reconcile teams (`/team/update`) and keys (`/key/generate`, `/key/delete`) to the live ledger in `CLAUDE.md` `<deployed_state>`; and it does NOT mint `front-go-winpc`, which `verify-stack.py` gate 5 reads from `the virtual-key token file` as `VKEY_MSTY_GO_WINPC`.
+**8. Provision teams + keys — FULL RUN ON A FRESH BOX ONLY.** `provision-keys.sh` is idempotent for teams/keys but **rebuilds `.virtual-keys.env` from scratch on every run** (`mv` overwrite — existing keys come back as empty placeholders). NEVER run it on the live box to add one key; add the spec line for the record and mint via direct `/key/generate`. Two facts about the script's roster: it is the 2026-06-20 cut (teams sum $N, six keys, some since deleted) — after a fresh run, reconcile teams (`/team/update`) and keys (`/key/generate`, `/key/delete`) to the live ledger in `CLAUDE.md` `<deployed_state>`; and it does NOT mint `front-go-winpc`, which `verify-stack.py` gate 5 reads from `.virtual-keys.env` as `VKEY_MSTY_GO_WINPC`.
 
 ```bash
 ./provision-keys.sh
@@ -146,10 +146,10 @@ Expected `docker compose ps`: 10 `praxen-*` containers `running`; 7 show `(healt
 Mint any key outside the script with `budget_duration` set — a key minted without it never resets (the `front-go-imac` lesson):
 
 ```bash
-curl -sS -X POST http://localhost:4000/key/generate -H "Authorization: Bearer $(grep -E '^LITELLM_MASTER_KEY=' .env | cut -d= -f2-)" -H 'Content-Type: application/json' -d '{"key_alias":"<alias>","team_id":"<team>","max_budget":10.0,"budget_duration":"1mo","models":["fast"]}' | jq -r '"VKEY_<ALIAS_UPPER_SNAKE>=" + .key' >> the virtual-key token file && chmod 600 the virtual-key token file
+curl -sS -X POST http://localhost:4000/key/generate -H "Authorization: Bearer $(grep -E '^LITELLM_MASTER_KEY=' .env | cut -d= -f2-)" -H 'Content-Type: application/json' -d '{"key_alias":"<alias>","team_id":"<team>","max_budget":10.0,"budget_duration":"1mo","models":["fast"]}' | jq -r '"VKEY_<ALIAS_UPPER_SNAKE>=" + .key' >> .virtual-keys.env && chmod 600 .virtual-keys.env
 ```
 
-The token is returned exactly ONCE by `/key/generate`; the pipe above writes it straight into `the virtual-key token file` (the file the gate reads) without it ever reaching stdout — substitute the real `<ALIAS_UPPER_SNAKE>` before running, and never echo it.
+The token is returned exactly ONCE by `/key/generate`; the pipe above writes it straight into `.virtual-keys.env` (the file the gate reads) without it ever reaching stdout — substitute the real `<ALIAS_UPPER_SNAKE>` before running, and never echo it.
 
 **9. Gate.** Must read **14/14**. Anything less is not a finished bring-up.
 
