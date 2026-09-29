@@ -1,4 +1,4 @@
-# Sanitized structural mirror of the-array/litellm_config.yaml (2026-09-23). Comments and identity values
+# Sanitized structural mirror of the-array/litellm_config.yaml (2026-09-29). Comments and identity values
 # removed or replaced; budgets are placeholders. See mirror/README.md before restoring from it.
 general_settings:
   master_key: os.environ/LITELLM_MASTER_KEY
@@ -90,15 +90,31 @@ litellm_settings:
         - claude-opus-4-6
         - gpt-5.4-pro
         - local-gemma4-uncensored
+    - claude-sonnet-5-5:
+        - claude-sonnet-5
+        - claude-sonnet-4-6
+        - gpt-5.5
+        - local-gemma4-uncensored
+    - claude-sonnet-5-5-advised-opus:
+        - claude-sonnet-5-5
+        - claude-sonnet-5
+        - local-gemma4-uncensored
+    - claude-opus-5-5-advised-fable:
+        - claude-opus-5-5
+        - claude-opus-4-8
+        - local-gemma4-uncensored
     - reasoning:
+        - claude-sonnet-5
         - grok-4.5
         - gemini-3.1-pro
         - local-gemma4-uncensored
     - praxen/reasoning:
+        - claude-sonnet-5
         - grok-4.5
         - gemini-3.1-pro
         - local-gemma4-uncensored
     - array/reasoning:
+        - claude-sonnet-5
         - grok-4.5
         - gemini-3.1-pro
         - local-gemma4-uncensored
@@ -168,12 +184,14 @@ litellm_settings:
         - local-ministral-3b
         - local-qwen3.5-4b
     - legacy-go/coding-lite:
+        - glm-5.3-flash
         - gemini-3.6-flash
         - laguna-s-2.1
         - local-granite-4.1
         - imac-gemma4-12b-qat
         - local-qwen3.5-4b
     - go/coding-lite:
+        - glm-5.3-flash
         - gemini-3.6-flash
         - laguna-s-2.1
         - local-granite-4.1
@@ -197,14 +215,14 @@ litellm_settings:
         - claude-fable-5
         - claude-opus-5
         - gpt-5.6-sol-pro
-        - claude-sonnet-5
+        - claude-sonnet-5-5
         - imac-gemma4-12b-qat
         - local-qwen3.5-4b
     - go/coding-heavy:
         - claude-fable-5
         - claude-opus-5
         - gpt-5.6-sol-pro
-        - claude-sonnet-5
+        - claude-sonnet-5-5
         - imac-gemma4-12b-qat
         - local-qwen3.5-4b
     - legacy-go/fast:
@@ -222,11 +240,13 @@ litellm_settings:
         - mercury-2.5
         - local-ministral-3b
     - legacy-go/reasoning:
+        - claude-sonnet-5
         - gemini-3.1-pro
         - grok-4.5
         - gpt-5.6-terra
         - local-gemma4-uncensored
     - go/reasoning:
+        - claude-sonnet-5
         - gemini-3.1-pro
         - grok-4.5
         - gpt-5.6-terra
@@ -264,12 +284,12 @@ litellm_settings:
     - praxen/openai-router:
         - gpt-5.5
         - gpt-5.6-sol
-        - claude-sonnet-5
+        - claude-sonnet-5-5
         - local-gemma4-uncensored
     - array/auto-openai:
         - gpt-5.5
         - gpt-5.6-sol
-        - claude-sonnet-5
+        - claude-sonnet-5-5
         - local-gemma4-uncensored
     - array/auto:
         - claude-sonnet-5
@@ -278,6 +298,7 @@ litellm_settings:
         - local-gemma4-uncensored
   fallbacks:
     - reasoning:
+        - claude-sonnet-5
         - grok-4.5
         - gemini-3.1-pro
         - local-gemma4-uncensored
@@ -320,10 +341,12 @@ litellm_settings:
         - local-ministral-3b
         - local-qwen3.5-4b
     - praxen/reasoning:
+        - claude-sonnet-5
         - grok-4.5
         - gemini-3.1-pro
         - local-gemma4-uncensored
     - array/reasoning:
+        - claude-sonnet-5
         - grok-4.5
         - gemini-3.1-pro
         - local-gemma4-uncensored
@@ -396,12 +419,14 @@ litellm_settings:
         - local-gemma4-uncensored
         - local-qwen3.5-4b
     - legacy-go/coding-lite:
+        - glm-5.3-flash
         - gemini-3.6-flash
         - laguna-s-2.1
         - local-granite-4.1
         - imac-gemma4-12b-qat
         - local-qwen3.5-4b
     - go/coding-lite:
+        - glm-5.3-flash
         - gemini-3.6-flash
         - laguna-s-2.1
         - local-granite-4.1
@@ -425,14 +450,14 @@ litellm_settings:
         - claude-fable-5
         - claude-opus-5
         - gpt-5.6-sol-pro
-        - claude-sonnet-5
+        - claude-sonnet-5-5
         - imac-gemma4-12b-qat
         - local-qwen3.5-4b
     - go/coding-heavy:
         - claude-fable-5
         - claude-opus-5
         - gpt-5.6-sol-pro
-        - claude-sonnet-5
+        - claude-sonnet-5-5
         - imac-gemma4-12b-qat
         - local-qwen3.5-4b
     - legacy-go/fast:
@@ -450,11 +475,13 @@ litellm_settings:
         - mercury-2.5
         - local-ministral-3b
     - legacy-go/reasoning:
+        - claude-sonnet-5
         - gemini-3.1-pro
         - grok-4.5
         - gpt-5.6-terra
         - local-gemma4-uncensored
     - go/reasoning:
+        - claude-sonnet-5
         - gemini-3.1-pro
         - grok-4.5
         - gpt-5.6-terra
@@ -512,12 +539,12 @@ litellm_settings:
     - praxen/openai-router:
         - gpt-5.5
         - gpt-5.6-sol
-        - claude-sonnet-5
+        - claude-sonnet-5-5
         - local-gemma4-uncensored
     - array/auto-openai:
         - gpt-5.5
         - gpt-5.6-sol
-        - claude-sonnet-5
+        - claude-sonnet-5-5
         - local-gemma4-uncensored
     - gpt-5.6-sol-priority:
         - gpt-5.6-sol
@@ -585,6 +612,10 @@ litellm_settings:
         - claude-opus-4-8
         - gpt-5.4-pro
         - local-gemma4-uncensored
+    - claude-opus-5-5-advised-fable:
+        - claude-opus-5-5
+        - claude-opus-4-8
+        - local-gemma4-uncensored
     - claude-opus-5:
         - claude-opus-4-8
         - claude-opus-4-6
@@ -603,6 +634,15 @@ litellm_settings:
     - claude-sonnet-5-advised:
         - claude-sonnet-5
         - claude-sonnet-4-6
+        - local-gemma4-uncensored
+    - claude-sonnet-5-5:
+        - claude-sonnet-5
+        - claude-sonnet-4-6
+        - gpt-5.5
+        - local-gemma4-uncensored
+    - claude-sonnet-5-5-advised-opus:
+        - claude-sonnet-5-5
+        - claude-sonnet-5
         - local-gemma4-uncensored
     - claude-sonnet-4-6:
         - claude-sonnet-5
@@ -645,7 +685,7 @@ litellm_settings:
     - grok-4.7:
         - grok-4.6
         - grok-4.5
-        - claude-sonnet-5
+        - claude-sonnet-5-5
         - local-gemma4-uncensored
     - mistral-large-3:
         - claude-sonnet-4-6
@@ -764,6 +804,13 @@ litellm_settings:
         - grok-code
         - imac-gemma4-12b-qat
         - local-qwen3.5-4b
+    - mimo-v2.6-flash:
+        - glm-5.3-flash
+        - gemini-3.6-flash
+        - laguna-s-2.1
+        - local-granite-4.1
+        - imac-gemma4-12b-qat
+        - local-qwen3.5-4b
     - venice-qwen3-coder:
         - venice-glm-5.1
         - codestral
@@ -848,11 +895,11 @@ router_settings:
     TimeoutErrorAllowedFails: 10
   model_group_alias:
     reasoning:
-      model: claude-sonnet-5
+      model: claude-sonnet-5-5
       hidden: true
-    array/reasoning: claude-sonnet-5
+    array/reasoning: claude-sonnet-5-5
     praxen/reasoning:
-      model: claude-sonnet-5
+      model: claude-sonnet-5-5
       hidden: true
     deep-reasoning:
       model: claude-fable-5
@@ -900,9 +947,9 @@ router_settings:
     legacy/embed:
       model: local-embed-qwen3
       hidden: true
-    go/coding-lite: mimo-v2.5
+    go/coding-lite: mimo-v2.6-flash
     legacy-go/coding-lite:
-      model: mimo-v2.5
+      model: mimo-v2.6-flash
       hidden: true
     go/coding-balanced: grok-code
     legacy-go/coding-balanced:
@@ -916,9 +963,9 @@ router_settings:
     legacy-go/fast:
       model: grok-4.3
       hidden: true
-    go/reasoning: claude-sonnet-5
+    go/reasoning: claude-sonnet-5-5
     legacy-go/reasoning:
-      model: claude-sonnet-5
+      model: claude-sonnet-5-5
       hidden: true
     go/private: venice/e2ee-glm-5-3-p
     legacy-go/private:
@@ -1139,12 +1186,22 @@ model_list:
       cache_control_injection_points:
         - location: message
           role: system
+  - model_name: claude-sonnet-5-5
+    litellm_params:
+      model: anthropic/claude-sonnet-5-5
+      api_key: os.environ/ANTHROPIC_API_KEY
+      max_budget: 1.0
+      budget_duration: 1mo
+      cache_control_injection_points:
+        - location: message
+          role: system
   - model_name: claude-sonnet-5-advised
     litellm_params:
       model: anthropic/claude-sonnet-5
       api_key: os.environ/ANTHROPIC_API_KEY
       max_budget: 1.0
       budget_duration: 1mo
+      timeout: 600
       extra_headers:
         anthropic-beta: advisor-tool-2026-03-01
       tools:
@@ -1153,6 +1210,48 @@ model_list:
           model: claude-fable-5
           max_uses: 3
           max_tokens: 4096
+          caching:
+            type: ephemeral
+            ttl: 5m
+      cache_control_injection_points:
+        - location: message
+          role: system
+  - model_name: claude-sonnet-5-5-advised-opus
+    litellm_params:
+      model: anthropic/claude-sonnet-5-5
+      api_key: os.environ/ANTHROPIC_API_KEY
+      max_budget: 1.0
+      budget_duration: 1mo
+      timeout: 600
+      extra_headers:
+        anthropic-beta: advisor-tool-2026-03-01
+      tools:
+        - type: advisor_20260301
+          name: advisor
+          model: claude-opus-5-5
+          max_uses: 3
+          max_tokens: 2048
+          caching:
+            type: ephemeral
+            ttl: 5m
+      cache_control_injection_points:
+        - location: message
+          role: system
+  - model_name: claude-opus-5-5-advised-fable
+    litellm_params:
+      model: anthropic/claude-opus-5-5
+      api_key: os.environ/ANTHROPIC_API_KEY
+      max_budget: 1.0
+      budget_duration: 1mo
+      timeout: 600
+      extra_headers:
+        anthropic-beta: advisor-tool-2026-03-01
+      tools:
+        - type: advisor_20260301
+          name: advisor
+          model: claude-fable-5-1
+          max_uses: 3
+          max_tokens: 2048
           caching:
             type: ephemeral
             ttl: 5m
@@ -1272,6 +1371,7 @@ model_list:
       api_key: os.environ/ANTHROPIC_API_KEY
       max_budget: 1.0
       budget_duration: 1mo
+      timeout: 600
       extra_headers:
         anthropic-beta: advisor-tool-2026-03-01
       tools:
@@ -1292,12 +1392,13 @@ model_list:
       api_key: os.environ/ANTHROPIC_API_KEY
       max_budget: 1.0
       budget_duration: 1mo
+      timeout: 600
       extra_headers:
         anthropic-beta: advisor-tool-2026-03-01
       tools:
         - type: advisor_20260301
           name: advisor
-          model: claude-sonnet-4-6
+          model: claude-sonnet-5-5
           max_uses: 3
           max_tokens: 4096
           caching:
@@ -1312,6 +1413,7 @@ model_list:
       api_key: os.environ/ANTHROPIC_API_KEY
       max_budget: 1.0
       budget_duration: 1mo
+      timeout: 600
       extra_headers:
         anthropic-beta: advisor-tool-2026-03-01
       tools:
@@ -1448,6 +1550,16 @@ model_list:
   - model_name: mimo-v2.5
     litellm_params:
       model: openrouter/xiaomi/mimo-v2.5
+      extra_body:
+        provider:
+          data_collection: deny
+          zdr: true
+      api_key: os.environ/OPENROUTER_API_KEY
+      max_budget: 1.0
+      budget_duration: 1mo
+  - model_name: mimo-v2.6-flash
+    litellm_params:
+      model: openrouter/xiaomi/mimo-v2.6-flash
       extra_body:
         provider:
           data_collection: deny
@@ -2528,7 +2640,7 @@ model_list:
         tiers:
           SIMPLE: local-ministral-3b
           MEDIUM: gpt-5.6-luna
-          COMPLEX: claude-sonnet-5
+          COMPLEX: claude-sonnet-5-5
           REASONING: gpt-5.6-sol
         default_model: gpt-5.6-luna
   - model_name: array/auto-openai
