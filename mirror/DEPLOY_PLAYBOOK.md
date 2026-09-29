@@ -12,8 +12,8 @@ CHANGELOG
 ## §0 — Read me first
 
 - **This file** is the *procedure* layer: how to bring the stack up from nothing, run it daily, change it, bump it, bind clients to it, roll it back, and recognise its known failures. It contains no rulings and no history beyond what a procedure needs.
-- **`CLAUDE.md`** is *doctrine + ledger*: `<deployed_state>` (what is live, verified), `<durable_rules>` (rules that survived incidents), `<phase_state>` (closed-op AARs). When a procedure here and a rule there disagree, the rule wins and this file is wrong — fix this file.
-- **`ops/STATE.md`** is *continuity*: one page, "what was true at the last session". Session start = read it, then verify the config epoch against the live `litellm_config.yaml` header. **The repo wins on conflict** with either STATE.md or this playbook; dated `handoffs/` docs are the long-form record.
+- **`AGENTS.md`** is the *contract* every agent loads (commands, boundaries, where things live), and **`docs/rules/*.md`** hold the durable rules per surface (litellm, compose, grafana, keys, local-serving, workspace, clients, comms) with their why. `CLAUDE.md` is only a one-line import of `AGENTS.md`. Closed-op history lives in `docs/history/`. When a procedure here and a rule there disagree, the rule wins and this file is wrong — fix this file.
+- **`docs/STATE.md`** is *continuity*: one page, "what was true at the last session". Session start = read it, then verify the config epoch against the live `litellm_config.yaml` header. **The repo wins on conflict** with either STATE.md or this playbook; dated `handoffs/` docs are the long-form record.
 - Every command below is written for **Git Bash on pc-host** unless the block says `# elevated PowerShell`. Dumps and restores are byte-sensitive — run them from Git Bash, not PowerShell (PowerShell redirection re-encodes native output).
 - Two identifiers that trip everyone: the compose **service key** is `litellm-proxy`; the **container name** is `praxen-litellm`. `docker compose` takes the service key; `docker exec` / `docker logs` take the container name.
 
@@ -69,7 +69,7 @@ Everything else (postgres 5432, redis 6379, prometheus 9090, tempo 3210, parked 
 | `scripts/check-image-updates.py` | Reports which pins are behind upstream. Reports only, never applies. |
 | `scripts/extract_chains.py` / `scripts/sync-venice-pricing.py` | Stdout dumper of aliases/chains/terminal tally (`fallback-chains/chains-reference.md` is authored around it) / re-injects per-entry Venice pricing from the live vendor API — re-run + restart when Venice rotates. |
 | `fallback-chains/chains-reference.md` / `docs/litellm-config-changelog-archive.md` | Chain snapshot regenerated at every routing bump / verbatim rolled-out config changelogs (§5). |
-| `CLAUDE.md` / `ops/STATE.md` | Doctrine + ledger / continuity page (§0). |
+| `CLAUDE.md` / `docs/STATE.md` | Doctrine + ledger / continuity page (§0). |
 | `tailscale-serve.json` | Sidecar serve config — sidecar retired 2026-07-28, file kept for the parked service. |
 | `backup/`, `to-be-deleted/`, `handoffs/` | Rollback ladder / visible soft-delete staging / active handoffs — doctrine below. `deliverables/`, `Claude outputs/`, `.firecrawl/`, `.worktrees/` are gitignored working dirs. |
 
@@ -151,7 +151,7 @@ curl -sS -X POST http://localhost:4000/key/generate -H "Authorization: Bearer $(
 
 The token is returned exactly ONCE by `/key/generate`; the pipe above writes it straight into `.virtual-keys.env` (the file the gate reads) without it ever reaching stdout — substitute the real `<ALIAS_UPPER_SNAKE>` before running, and never echo it.
 
-**9. Gate.** Must read **14/14**. Anything less is not a finished bring-up.
+**9. Gate.** Every probe must PASS (18 probes as of 2026-09-23; the count grows as gates are added). Anything less is not a finished bring-up.
 
 ```bash
 python scripts/verify-stack.py
@@ -259,7 +259,7 @@ PYTHONUTF8=1 python scripts/extract_chains.py > backup/litellm-config/chains-dum
 
 **8. Changelog rule.** The file header keeps `CHANGELOG - current vX` plus ONE prior. At each bump roll the older block VERBATIM to `docs/litellm-config-changelog-archive.md` under a dated heading, and extend the one-line roll ledger at the end of the in-file history note.
 
-**9. Gate, then ledger.** `verify-stack.py` 14/14 → update the config line in `CLAUDE.md` `<workspace_layout>` + the epoch in `ops/STATE.md` → commit when asked.
+**9. Gate, then ledger.** `verify-stack.py` all PASS → update the epoch in `docs/STATE.md` (one page, current state only; the config's own changelog block is the version record) → commit when asked.
 
 ## §6 — Image bumps
 

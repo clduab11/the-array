@@ -4,7 +4,7 @@ This folder is a **failsafe snapshot** of the configuration that runs the stack,
 and sanitized before it left the machine. It is not the showcase (that is the rest of this repository) and it is
 not directly deployable: identity values were replaced, so a restore needs them re-entered by hand.
 
-Generated 2026-09-23 by a private tool; every file passed the leak gate before commit.
+Generated 2026-09-29 by a private tool; every file passed the leak gate before commit.
 
 ## What is here
 

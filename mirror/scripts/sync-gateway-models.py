@@ -20,6 +20,13 @@ LITELLM = "http://localhost:4000"
 RESPONSES_ONLY = {"pplx-sonar", "pplx-pro-search"}  # /v1/responses routes (config v4.13.1)
 
 
+def not_for_gateway(mid):
+    """Advised routes and intake-extract stay out of the Gateway picker (the operator 2026-09-29, config v4.18.0): a streamed chat on
+    an advised route logs $0 spend and surfaces the advisor consult as a tool call, and intake-extract is a production route
+    with its own key. Direct LiteLLM keys still reach all of them."""
+    return "-advised" in mid or mid == "intake-extract"
+
+
 def dotenv(path):
     out = {}
     for line in path.read_text(encoding="utf-8").splitlines():
@@ -64,8 +71,9 @@ def main():
     # cannot carry /v1/responses-only routes ("Model endpoint family is not supported by provider kind").
     # OpenRouter's "~vendor/model-latest" alias slugs (seen 2026-09-23) 400 in Gateway: "Model ID must use path-safe
     # model segments" — skipped too; they stay callable through the proxy by name.
-    want = sorted({m["id"] for m in lm["data"] if "*" not in m["id"] and "/~" not in m["id"] and m["id"] not in RESPONSES_ONLY})
-    print(f"LiteLLM lists {len(want)} registrable models for {a.key_var} ({time.time() - t0:.1f}s); skipped wildcard routes, OpenRouter ~ aliases and {sorted(RESPONSES_ONLY)}")
+    want = sorted({m["id"] for m in lm["data"] if "*" not in m["id"] and "/~" not in m["id"] and m["id"] not in RESPONSES_ONLY
+                   and not not_for_gateway(m["id"])})
+    print(f"LiteLLM lists {len(want)} registrable models for {a.key_var} ({time.time() - t0:.1f}s); skipped wildcard routes, OpenRouter ~ aliases, {sorted(RESPONSES_ONLY)} and advised routes + intake-extract")
 
     if prov["autoProxyModels"]:
         body = {k: prov[k] for k in ("name", "kind", "scope", "baseUrl", "enabled")} | {"autoProxyModels": False}

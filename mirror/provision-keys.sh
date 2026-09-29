@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Sanitized structural mirror of the-array/provision-keys.sh (2026-09-23). Comments and identity values
+# Sanitized structural mirror of the-array/provision-keys.sh (2026-09-29). Comments and identity values
 # removed or replaced; budgets are placeholders. See mirror/README.md before restoring from it.
 set -euo pipefail
 
