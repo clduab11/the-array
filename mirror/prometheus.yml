@@ -1,4 +1,4 @@
-# Sanitized structural mirror of the-array/prometheus.yml (2026-09-29). Comments and identity values
+# Sanitized structural mirror of the-array/prometheus.yml (2026-10-02). Comments and identity values
 # removed or replaced; budgets are placeholders. See mirror/README.md before restoring from it.
 global:
   scrape_interval: 15s
@@ -52,6 +52,15 @@ scrape_configs:
         labels:
           environment: production
           service: alloy
+  - job_name: embed
+    metrics_path: /metrics
+    scheme: http
+    static_configs:
+      - targets:
+          - praxen-embed:8080
+        labels:
+          environment: production
+          service: embed
   - job_name: prometheus
     static_configs:
       - targets:

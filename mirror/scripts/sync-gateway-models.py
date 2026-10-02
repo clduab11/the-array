@@ -23,8 +23,9 @@ RESPONSES_ONLY = {"pplx-sonar", "pplx-pro-search"}  # /v1/responses routes (conf
 def not_for_gateway(mid):
     """Advised routes and intake-extract stay out of the Gateway picker (the operator 2026-09-29, config v4.18.0): a streamed chat on
     an advised route logs $0 spend and surfaces the advisor consult as a tool call, and intake-extract is a production route
-    with its own key. Direct LiteLLM keys still reach all of them."""
-    return "-advised" in mid or mid == "intake-extract"
+    with its own key. Direct LiteLLM keys still reach all of them. gsec-unsloth-probe (config v4.19.0) is the gate's G-SEC probe
+    target, not a model anyone should pick."""
+    return "-advised" in mid or mid in ("intake-extract", "gsec-unsloth-probe")
 
 
 def dotenv(path):
