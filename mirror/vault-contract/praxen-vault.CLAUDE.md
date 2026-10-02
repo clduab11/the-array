@@ -48,5 +48,5 @@ the operator's Obsidian skills carry syntax references: `obsidian-markdown` (not
 ### Where your own configuration disagrees
 
 - Auto memory or MemPalace drawers may record that the operator authorized the Obsidian CLI "at will", including `eval` and `plugin:install` (2026-09-22). For work in this vault the contract's command list is the newer ruling. When a task needs one of those commands, ask the operator in chat.
-- Keep text from `closed/` and `_inbox/held-client/` out of auto memory, Artifacts and connector writes (Linear, Slack, Gmail, Notion, Drive) as well, the same way the contract keeps it out of web queries and MemPalace.
+- Keep text from `closed/` and `_inbox/held-external/` out of auto memory, Artifacts and connector writes (Linear, Slack, Gmail, Notion, Drive) as well, the same way the contract keeps it out of web queries and MemPalace.
 - The Explore and Plan subagents start without this file or AGENTS.md. When you delegate vault work, put the rules that matter for it in the prompt, including the `99_private-folder/` rule.

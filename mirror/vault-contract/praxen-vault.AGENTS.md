@@ -30,7 +30,7 @@ If one of these files disagrees with this one, follow this one and flag the conf
 | Path | Access | Why or how |
 |---|---|---|
 | `_inbox/` | read, write | New notes land here unless the operator names a folder. It is untriaged. Filing a triaged note into a content folder is normal. |
-| `closed/`, `_inbox/held-client/` | read, write | clientderived material. Keep its text out of web queries, MemPalace and other folders unless the operator asks. |
+| `closed/`, `_inbox/held-external/` | read, write | third-party-derived material. Keep its text out of web queries, MemPalace and other folders unless the operator asks. |
 | `10-wiki/`, `20-projects/`, `21-knowledge-stacks/`, `70-library/`, `90-meta/` | read, write | Content folders. Their text is embedded for retrieval, so follow the note rules. |
 | `_archive/` | read, write | Superseded notes. |
 | `_templates/`, every `*.base` file | read | Templates and Bases views. Edit them only when asked. |
@@ -39,7 +39,7 @@ If one of these files disagrees with this one, follow this one and flag the conf
 | `.obsidian/`, `.vault-operator/`, `.trash/` | none | App and plugin state. |
 | `AGENTS.md`, `CLAUDE.md`, `.claude/`, `opencode.jsonc`, `.ignore`, every `.mstyignore`, `.obsidian-agentignore`, `.obsidian-agentprotected` | read | Harness files. the operator edits them, or `sync_vault_contract.py` writes them. Propose changes in chat. |
 
-By the operator's ruling, vector indexes (the Qdrant vault collection and every Msty Knowledge Stack) exclude `_inbox/`, `closed/` and `_inbox/held-client/`. Do not add those folders to an index, a stack or an indexer setting.
+By the operator's ruling, vector indexes (the Qdrant vault collection and every Msty Knowledge Stack) exclude `_inbox/`, `closed/` and `_inbox/held-external/`. Do not add those folders to an index, a stack or an indexer setting.
 
 ## Ask first
 
@@ -48,7 +48,7 @@ Describe the exact change and wait for the operator's yes before you do any of t
 - Deleting anything. `promptDelete` is off, so Obsidian will not ask.
 - Changing more than 10 existing files in one task, so that a runaway loop stops early. New notes do not count.
 - Renaming a property, changing its type, or adding a `kind` value. Bases match exact names and values.
-- Moving or copying anything out of `closed/` or `_inbox/held-client/`.
+- Moving or copying anything out of `closed/` or `_inbox/held-external/`.
 - Creating a top-level folder. The taxonomy mirrors Proton Drive by the operator's ruling.
 - Moving or renaming anything in `_attachments/`. The copy ledger and `vault_file` links depend on those paths.
 - Writing to MemPalace. Every tool the operator uses shares it.
@@ -118,7 +118,7 @@ Bases filter on exact property names, types and values. A wrong type or spelling
 ## MemPalace
 
 - Search it when a task depends on past decisions or project history, scoped by the hub note's `palace_wing`: `palace_query` with `FIND "<keywords>" IN <wing> LIMIT 6`, or `mempalace_search` where that is your tool's name. Quote drawers verbatim with their `source_file`. If a search returns nothing, say so.
-- Writes follow "Ask first". Never file text from `closed/` or `_inbox/held-client/`.
+- Writes follow "Ask first". Never file text from `closed/` or `_inbox/held-external/`.
 
 ## Check, then report
 
