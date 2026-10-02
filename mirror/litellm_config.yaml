@@ -1,4 +1,4 @@
-# Sanitized structural mirror of the-array/litellm_config.yaml (2026-09-29). Comments and identity values
+# Sanitized structural mirror of the-array/litellm_config.yaml (2026-10-02). Comments and identity values
 # removed or replaced; budgets are placeholders. See mirror/README.md before restoring from it.
 general_settings:
   master_key: os.environ/LITELLM_MASTER_KEY
@@ -27,6 +27,7 @@ litellm_settings:
   callbacks:
     - refusal_fallback.proxy_handler_instance
     - jev_gate.judge_instance
+    - unsloth_guard.guard_instance
   service_callback:
     - prometheus_system
   turn_off_message_logging: true
@@ -44,9 +45,9 @@ litellm_settings:
   telemetry: false
   require_auth_for_metrics_endpoint: false
   context_window_fallbacks:
-    - imac-gemma4-12b-qat:
+    - local-gemma4-12b:
         - local-qwen3.5-4b
-    - local-granite-4.1:
+    - local-lfm2.5-8b:
         - local-qwen3.5-4b
     - local-ministral-3b:
         - local-qwen3.5-4b
@@ -152,24 +153,24 @@ litellm_settings:
         - mimo-v2.5
         - venice-qwen3-coder
         - codestral
-        - local-granite-4.1
-        - imac-gemma4-12b-qat
+        - local-lfm2.5-8b
+        - local-gemma4-12b
         - local-qwen3.5-4b
     - praxen/coding:
         - kimi-k2.7-code
         - mimo-v2.5
         - venice-qwen3-coder
         - codestral
-        - local-granite-4.1
-        - imac-gemma4-12b-qat
+        - local-lfm2.5-8b
+        - local-gemma4-12b
         - local-qwen3.5-4b
     - array/coding:
         - kimi-k2.7-code
         - mimo-v2.5
         - venice-qwen3-coder
         - codestral
-        - local-granite-4.1
-        - imac-gemma4-12b-qat
+        - local-lfm2.5-8b
+        - local-gemma4-12b
         - local-qwen3.5-4b
     - vision:
         - grok-4.5
@@ -187,43 +188,43 @@ litellm_settings:
         - glm-5.3-flash
         - gemini-3.6-flash
         - laguna-s-2.1
-        - local-granite-4.1
-        - imac-gemma4-12b-qat
+        - local-lfm2.5-8b
+        - local-gemma4-12b
         - local-qwen3.5-4b
     - go/coding-lite:
         - glm-5.3-flash
         - gemini-3.6-flash
         - laguna-s-2.1
-        - local-granite-4.1
-        - imac-gemma4-12b-qat
+        - local-lfm2.5-8b
+        - local-gemma4-12b
         - local-qwen3.5-4b
     - legacy-go/coding-balanced:
         - minimax-m3
         - kimi-k3
         - venice/e2ee-glm-5-2-p
-        - local-granite-4.1
-        - imac-gemma4-12b-qat
+        - local-lfm2.5-8b
+        - local-gemma4-12b
         - local-qwen3.5-4b
     - go/coding-balanced:
         - minimax-m3
         - kimi-k3
         - venice/e2ee-glm-5-2-p
-        - local-granite-4.1
-        - imac-gemma4-12b-qat
+        - local-lfm2.5-8b
+        - local-gemma4-12b
         - local-qwen3.5-4b
     - legacy-go/coding-heavy:
         - claude-fable-5
         - claude-opus-5
         - gpt-5.6-sol-pro
         - claude-sonnet-5-5
-        - imac-gemma4-12b-qat
+        - local-gemma4-12b
         - local-qwen3.5-4b
     - go/coding-heavy:
         - claude-fable-5
         - claude-opus-5
         - gpt-5.6-sol-pro
         - claude-sonnet-5-5
-        - imac-gemma4-12b-qat
+        - local-gemma4-12b
         - local-qwen3.5-4b
     - legacy-go/fast:
         - grok-4.5
@@ -283,11 +284,13 @@ litellm_settings:
         - local-qwen3.5-4b
     - praxen/openai-router:
         - gpt-5.5
+        - gpt-6.1-sol
         - gpt-5.6-sol
         - claude-sonnet-5-5
         - local-gemma4-uncensored
     - array/auto-openai:
         - gpt-5.5
+        - gpt-6.1-sol
         - gpt-5.6-sol
         - claude-sonnet-5-5
         - local-gemma4-uncensored
@@ -320,8 +323,8 @@ litellm_settings:
         - mimo-v2.5
         - venice-qwen3-coder
         - codestral
-        - local-granite-4.1
-        - imac-gemma4-12b-qat
+        - local-lfm2.5-8b
+        - local-gemma4-12b
         - local-qwen3.5-4b
     - private:
         - venice/e2ee-glm-5-3-flash
@@ -381,16 +384,16 @@ litellm_settings:
         - mimo-v2.5
         - venice-qwen3-coder
         - codestral
-        - local-granite-4.1
-        - imac-gemma4-12b-qat
+        - local-lfm2.5-8b
+        - local-gemma4-12b
         - local-qwen3.5-4b
     - array/coding:
         - kimi-k2.7-code
         - mimo-v2.5
         - venice-qwen3-coder
         - codestral
-        - local-granite-4.1
-        - imac-gemma4-12b-qat
+        - local-lfm2.5-8b
+        - local-gemma4-12b
         - local-qwen3.5-4b
     - praxen/private:
         - venice/e2ee-glm-5-3-flash
@@ -422,43 +425,43 @@ litellm_settings:
         - glm-5.3-flash
         - gemini-3.6-flash
         - laguna-s-2.1
-        - local-granite-4.1
-        - imac-gemma4-12b-qat
+        - local-lfm2.5-8b
+        - local-gemma4-12b
         - local-qwen3.5-4b
     - go/coding-lite:
         - glm-5.3-flash
         - gemini-3.6-flash
         - laguna-s-2.1
-        - local-granite-4.1
-        - imac-gemma4-12b-qat
+        - local-lfm2.5-8b
+        - local-gemma4-12b
         - local-qwen3.5-4b
     - legacy-go/coding-balanced:
         - minimax-m3
         - kimi-k3
         - venice/e2ee-glm-5-2-p
-        - local-granite-4.1
-        - imac-gemma4-12b-qat
+        - local-lfm2.5-8b
+        - local-gemma4-12b
         - local-qwen3.5-4b
     - go/coding-balanced:
         - minimax-m3
         - kimi-k3
         - venice/e2ee-glm-5-2-p
-        - local-granite-4.1
-        - imac-gemma4-12b-qat
+        - local-lfm2.5-8b
+        - local-gemma4-12b
         - local-qwen3.5-4b
     - legacy-go/coding-heavy:
         - claude-fable-5
         - claude-opus-5
         - gpt-5.6-sol-pro
         - claude-sonnet-5-5
-        - imac-gemma4-12b-qat
+        - local-gemma4-12b
         - local-qwen3.5-4b
     - go/coding-heavy:
         - claude-fable-5
         - claude-opus-5
         - gpt-5.6-sol-pro
         - claude-sonnet-5-5
-        - imac-gemma4-12b-qat
+        - local-gemma4-12b
         - local-qwen3.5-4b
     - legacy-go/fast:
         - grok-4.5
@@ -538,11 +541,13 @@ litellm_settings:
         - local-qwen3.5-4b
     - praxen/openai-router:
         - gpt-5.5
+        - gpt-6.1-sol
         - gpt-5.6-sol
         - claude-sonnet-5-5
         - local-gemma4-uncensored
     - array/auto-openai:
         - gpt-5.5
+        - gpt-6.1-sol
         - gpt-5.6-sol
         - claude-sonnet-5-5
         - local-gemma4-uncensored
@@ -553,6 +558,7 @@ litellm_settings:
         - local-gemma4-uncensored
     - gpt-5.5-priority:
         - gpt-5.5
+        - gpt-6.1-sol
         - gpt-5.6-sol
         - claude-opus-4-8
         - local-gemma4-uncensored
@@ -624,6 +630,11 @@ litellm_settings:
     - gpt-6-sol:
         - gpt-5.6-sol
         - gpt-5.5
+        - claude-opus-4-8
+        - local-gemma4-uncensored
+    - gpt-6.1-sol:
+        - gpt-6-sol
+        - gpt-5.6-sol
         - claude-opus-4-8
         - local-gemma4-uncensored
     - claude-sonnet-5:
@@ -745,10 +756,6 @@ litellm_settings:
         - gemini-3.5-flash
         - gpt-5.4-mini
         - local-ministral-3b
-    - gpt-4.1-nano:
-        - gpt-4.1-mini
-        - gemini-3.1-flash-lite
-        - local-ministral-3b
     - claude-haiku-4-5:
         - gpt-5.4-mini
         - gemini-3.5-flash
@@ -780,41 +787,41 @@ litellm_settings:
     - codestral:
         - grok-code
         - kimi-k2.7-code
-        - imac-gemma4-12b-qat
+        - local-gemma4-12b
         - local-qwen3.5-4b
     - devstral-2:
         - codestral
         - grok-code
-        - imac-gemma4-12b-qat
+        - local-gemma4-12b
         - local-qwen3.5-4b
     - grok-code:
         - kimi-k2.7-code
         - mimo-v2.5
         - venice-qwen3-coder
-        - local-granite-4.1
-        - imac-gemma4-12b-qat
+        - local-lfm2.5-8b
+        - local-gemma4-12b
         - local-qwen3.5-4b
     - kimi-k2.7-code:
         - mimo-v2.5
         - grok-code
-        - imac-gemma4-12b-qat
+        - local-gemma4-12b
         - local-qwen3.5-4b
     - mimo-v2.5:
         - kimi-k2.7-code
         - grok-code
-        - imac-gemma4-12b-qat
+        - local-gemma4-12b
         - local-qwen3.5-4b
     - mimo-v2.6-flash:
         - glm-5.3-flash
         - gemini-3.6-flash
         - laguna-s-2.1
-        - local-granite-4.1
-        - imac-gemma4-12b-qat
+        - local-lfm2.5-8b
+        - local-gemma4-12b
         - local-qwen3.5-4b
     - venice-qwen3-coder:
         - venice-glm-5.1
         - codestral
-        - imac-gemma4-12b-qat
+        - local-gemma4-12b
         - local-qwen3.5-4b
     - gemini-2.5-pro:
         - gemini-3.1-pro
@@ -1159,6 +1166,18 @@ model_list:
         - temperature
         - top_p
         - top_logprobs
+  - model_name: gpt-6.1-sol
+    litellm_params:
+      model: openai/responses/gpt-6.1-sol
+      api_key: os.environ/OPENAI_API_KEY
+      service_tier: default
+      store: false
+      max_budget: 1.0
+      budget_duration: 1mo
+      additional_drop_params:
+        - temperature
+        - top_p
+        - top_logprobs
   - model_name: gpt-5.6-sol
     litellm_params:
       model: openai/gpt-5.6-sol
@@ -1462,13 +1481,6 @@ model_list:
       service_tier: default
       max_budget: 1.0
       budget_duration: 1mo
-  - model_name: gpt-4.1-nano
-    litellm_params:
-      model: openai/gpt-4.1-nano
-      api_key: os.environ/OPENAI_API_KEY
-      service_tier: default
-      max_budget: 1.0
-      budget_duration: 1mo
   - model_name: gpt-5.4-mini
     litellm_params:
       model: openai/gpt-5.4-mini
@@ -1510,6 +1522,7 @@ model_list:
       max_tokens: 2048
       input_cost_per_token: 2.0e-07
       output_cost_per_token: 7.5e-07
+      cache_read_input_token_cost: 2.0e-08
   - model_name: mistral-small
     litellm_params:
       model: mistral/mistral-small-latest
@@ -1574,6 +1587,7 @@ model_list:
       api_key: os.environ/VENICE_API_KEY
       input_cost_per_token: 1.54e-06
       output_cost_per_token: 4.84e-06
+      cache_read_input_token_cost: 2.86e-07
       max_budget: 1.0
       budget_duration: 1mo
   - model_name: venice-llama-3.3-70b
@@ -1610,6 +1624,7 @@ model_list:
       api_key: os.environ/VENICE_API_KEY
       input_cost_per_token: 3.5e-07
       output_cost_per_token: 1.5e-06
+      cache_read_input_token_cost: 4.0e-08
       max_budget: 1.0
       budget_duration: 1mo
   - model_name: glm-4.7-heretic
@@ -1619,6 +1634,7 @@ model_list:
       api_key: os.environ/VENICE_API_KEY
       input_cost_per_token: 7.0e-08
       output_cost_per_token: 4.0e-07
+      cache_read_input_token_cost: 3.5e-08
       max_budget: 1.0
       budget_duration: 1mo
   - model_name: qwen-3.6-plus-venice
@@ -1628,6 +1644,8 @@ model_list:
       api_key: os.environ/VENICE_API_KEY
       input_cost_per_token: 6.25e-07
       output_cost_per_token: 3.75e-06
+      cache_read_input_token_cost: 6.25e-08
+      cache_creation_input_token_cost: 7.8e-07
       max_budget: 1.0
       budget_duration: 1mo
   - model_name: venice-rp-uncensored
@@ -1650,7 +1668,7 @@ model_list:
       budget_duration: 1mo
   - model_name: openrouter-free
     litellm_params:
-      model: openrouter/z-ai/glm-5.2:free
+      model: openrouter/qwen/qwen3.8-27b:free
       extra_body:
         provider:
           data_collection: deny
@@ -1658,6 +1676,14 @@ model_list:
       api_key: os.environ/OPENROUTER_API_KEY
       max_budget: 1.0
       budget_duration: 1mo
+  - model_name: venice/abliteration-abliterated-model-large-v2
+    litellm_params:
+      model: openai/abliteration-abliterated-model-large-v2
+      api_base: https://api.venice.ai/api/v1
+      api_key: os.environ/VENICE_API_KEY
+      input_cost_per_token: 3.0e-06
+      output_cost_per_token: 5.0e-06
+      cache_read_input_token_cost: 3.0e-07
   - model_name: venice/aion-labs-aion-3-0
     litellm_params:
       model: openai/aion-labs-aion-3-0
@@ -1665,6 +1691,7 @@ model_list:
       api_key: os.environ/VENICE_API_KEY
       input_cost_per_token: 3.75e-06
       output_cost_per_token: 7.5e-06
+      cache_read_input_token_cost: 9.375e-07
   - model_name: venice/aion-labs-aion-3-0-mini
     litellm_params:
       model: openai/aion-labs-aion-3-0-mini
@@ -1672,6 +1699,23 @@ model_list:
       api_key: os.environ/VENICE_API_KEY
       input_cost_per_token: 8.75e-07
       output_cost_per_token: 1.75e-06
+      cache_read_input_token_cost: 2.25e-07
+  - model_name: venice/aion-labs-aion-3-5
+    litellm_params:
+      model: openai/aion-labs-aion-3-5
+      api_base: https://api.venice.ai/api/v1
+      api_key: os.environ/VENICE_API_KEY
+      input_cost_per_token: 3.75e-06
+      output_cost_per_token: 7.5e-06
+      cache_read_input_token_cost: 9.375e-07
+  - model_name: venice/aion-labs-aion-3-5-mini
+    litellm_params:
+      model: openai/aion-labs-aion-3-5-mini
+      api_base: https://api.venice.ai/api/v1
+      api_key: os.environ/VENICE_API_KEY
+      input_cost_per_token: 8.75e-07
+      output_cost_per_token: 1.75e-06
+      cache_read_input_token_cost: 2.25e-07
   - model_name: venice/claude-fable-5
     litellm_params:
       model: openai/claude-fable-5
@@ -1679,6 +1723,8 @@ model_list:
       api_key: os.environ/VENICE_API_KEY
       input_cost_per_token: 1.2e-05
       output_cost_per_token: 6.0e-05
+      cache_read_input_token_cost: 1.2e-06
+      cache_creation_input_token_cost: 1.5e-05
   - model_name: venice/claude-opus-4-5
     litellm_params:
       model: openai/claude-opus-4-5
@@ -1686,6 +1732,8 @@ model_list:
       api_key: os.environ/VENICE_API_KEY
       input_cost_per_token: 6.0e-06
       output_cost_per_token: 3.0e-05
+      cache_read_input_token_cost: 6.0e-07
+      cache_creation_input_token_cost: 7.5e-06
   - model_name: venice/claude-opus-4-6
     litellm_params:
       model: openai/claude-opus-4-6
@@ -1693,6 +1741,8 @@ model_list:
       api_key: os.environ/VENICE_API_KEY
       input_cost_per_token: 6.0e-06
       output_cost_per_token: 3.0e-05
+      cache_read_input_token_cost: 6.0e-07
+      cache_creation_input_token_cost: 7.5e-06
   - model_name: venice/claude-opus-4-7
     litellm_params:
       model: openai/claude-opus-4-7
@@ -1700,6 +1750,8 @@ model_list:
       api_key: os.environ/VENICE_API_KEY
       input_cost_per_token: 6.0e-06
       output_cost_per_token: 3.0e-05
+      cache_read_input_token_cost: 6.0e-07
+      cache_creation_input_token_cost: 7.5e-06
   - model_name: venice/claude-opus-4-8
     litellm_params:
       model: openai/claude-opus-4-8
@@ -1707,6 +1759,8 @@ model_list:
       api_key: os.environ/VENICE_API_KEY
       input_cost_per_token: 6.0e-06
       output_cost_per_token: 3.0e-05
+      cache_read_input_token_cost: 6.0e-07
+      cache_creation_input_token_cost: 7.5e-06
   - model_name: venice/claude-opus-4-8-fast
     litellm_params:
       model: openai/claude-opus-4-8-fast
@@ -1714,6 +1768,8 @@ model_list:
       api_key: os.environ/VENICE_API_KEY
       input_cost_per_token: 1.2e-05
       output_cost_per_token: 6.0e-05
+      cache_read_input_token_cost: 1.2e-06
+      cache_creation_input_token_cost: 1.5e-05
   - model_name: venice/claude-sonnet-4-5
     litellm_params:
       model: openai/claude-sonnet-4-5
@@ -1721,6 +1777,8 @@ model_list:
       api_key: os.environ/VENICE_API_KEY
       input_cost_per_token: 3.75e-06
       output_cost_per_token: 1.875e-05
+      cache_read_input_token_cost: 3.75e-07
+      cache_creation_input_token_cost: 4.69e-06
   - model_name: venice/claude-sonnet-4-6
     litellm_params:
       model: openai/claude-sonnet-4-6
@@ -1728,13 +1786,17 @@ model_list:
       api_key: os.environ/VENICE_API_KEY
       input_cost_per_token: 3.6e-06
       output_cost_per_token: 1.8e-05
+      cache_read_input_token_cost: 3.6e-07
+      cache_creation_input_token_cost: 4.5e-06
   - model_name: venice/claude-sonnet-5
     litellm_params:
       model: openai/claude-sonnet-5
       api_base: https://api.venice.ai/api/v1
       api_key: os.environ/VENICE_API_KEY
-      input_cost_per_token: 3.0e-06
-      output_cost_per_token: 1.5e-05
+      input_cost_per_token: 2.5e-06
+      output_cost_per_token: 1.25e-05
+      cache_read_input_token_cost: 2.5e-07
+      cache_creation_input_token_cost: 3.125e-06
   - model_name: venice/deepseek-v3.2
     litellm_params:
       model: openai/deepseek-v3.2
@@ -1742,6 +1804,7 @@ model_list:
       api_key: os.environ/VENICE_API_KEY
       input_cost_per_token: 3.3e-07
       output_cost_per_token: 4.8e-07
+      cache_read_input_token_cost: 1.6e-07
   - model_name: venice/deepseek-v4-flash
     litellm_params:
       model: openai/deepseek-v4-flash
@@ -1749,6 +1812,7 @@ model_list:
       api_key: os.environ/VENICE_API_KEY
       input_cost_per_token: 1.38e-07
       output_cost_per_token: 2.75e-07
+      cache_read_input_token_cost: 2.8e-08
   - model_name: venice/deepseek-v4-pro
     litellm_params:
       model: openai/deepseek-v4-pro
@@ -1756,6 +1820,7 @@ model_list:
       api_key: os.environ/VENICE_API_KEY
       input_cost_per_token: 1.65e-06
       output_cost_per_token: 3.301e-06
+      cache_read_input_token_cost: 3.3e-07
   - model_name: venice/e2ee-deepseek-v4-flash
     litellm_params:
       model: openai/e2ee-deepseek-v4-flash
@@ -1763,6 +1828,10 @@ model_list:
       api_key: os.environ/VENICE_API_KEY
       input_cost_per_token: 1.82e-07
       output_cost_per_token: 3.73e-07
+      cache_read_input_token_cost: 3.8e-08
+      extra_body:
+        venice_parameters:
+          include_venice_system_prompt: false
   - model_name: venice/e2ee-gemma-4-26b-a4b-uncensored-p
     litellm_params:
       model: openai/e2ee-gemma-4-26b-a4b-uncensored-p
@@ -1777,6 +1846,10 @@ model_list:
       api_key: os.environ/VENICE_API_KEY
       input_cost_per_token: 1.75e-06
       output_cost_per_token: 5.5e-06
+      cache_read_input_token_cost: 3.25e-07
+      extra_body:
+        venice_parameters:
+          include_venice_system_prompt: false
   - model_name: venice/e2ee-glm-5-3-flash
     litellm_params:
       model: openai/e2ee-glm-5-3-flash
@@ -1784,6 +1857,10 @@ model_list:
       api_key: os.environ/VENICE_API_KEY
       input_cost_per_token: 1.6e-07
       output_cost_per_token: 5.4e-07
+      cache_read_input_token_cost: 3.8e-08
+      extra_body:
+        venice_parameters:
+          include_venice_system_prompt: false
   - model_name: venice/e2ee-kimi-k2-6
     litellm_params:
       model: openai/e2ee-kimi-k2-6
@@ -1791,6 +1868,7 @@ model_list:
       api_key: os.environ/VENICE_API_KEY
       input_cost_per_token: 8.7e-07
       output_cost_per_token: 4.12e-06
+      cache_read_input_token_cost: 4.4e-07
   - model_name: venice/e2ee-kimi-k3-p
     litellm_params:
       model: openai/e2ee-kimi-k3-p
@@ -1798,6 +1876,7 @@ model_list:
       api_key: os.environ/VENICE_API_KEY
       input_cost_per_token: 3.75e-06
       output_cost_per_token: 1.875e-05
+      cache_read_input_token_cost: 3.75e-07
   - model_name: venice/e2ee-qwen3-8-27b
     litellm_params:
       model: openai/e2ee-qwen3-8-27b
@@ -1805,6 +1884,7 @@ model_list:
       api_key: os.environ/VENICE_API_KEY
       input_cost_per_token: 4.7e-07
       output_cost_per_token: 3.53e-06
+      cache_read_input_token_cost: 4.7e-08
   - model_name: venice/e2ee-glm-5-2-p
     litellm_params:
       model: openai/e2ee-glm-5-2-p
@@ -1812,6 +1892,10 @@ model_list:
       api_key: os.environ/VENICE_API_KEY
       input_cost_per_token: 1.75e-06
       output_cost_per_token: 5.75e-06
+      cache_read_input_token_cost: 3.0e-07
+      extra_body:
+        venice_parameters:
+          include_venice_system_prompt: false
   - model_name: venice/e2ee-gpt-oss-120b-p
     litellm_params:
       model: openai/e2ee-gpt-oss-120b-p
@@ -1833,6 +1917,10 @@ model_list:
       api_key: os.environ/VENICE_API_KEY
       input_cost_per_token: 1.82e-07
       output_cost_per_token: 1.18e-06
+      cache_read_input_token_cost: 6.0e-08
+      extra_body:
+        venice_parameters:
+          include_venice_system_prompt: false
   - model_name: venice/e2ee-qwen3-vl-30b-a3b-p
     litellm_params:
       model: openai/e2ee-qwen3-vl-30b-a3b-p
@@ -1847,6 +1935,8 @@ model_list:
       api_key: os.environ/VENICE_API_KEY
       input_cost_per_token: 2.5e-06
       output_cost_per_token: 1.5e-05
+      cache_read_input_token_cost: 5.0e-07
+      cache_creation_input_token_cost: 5.0e-07
   - model_name: venice/gemini-3-5-flash
     litellm_params:
       model: openai/gemini-3-5-flash
@@ -1854,6 +1944,8 @@ model_list:
       api_key: os.environ/VENICE_API_KEY
       input_cost_per_token: 1.55e-06
       output_cost_per_token: 9.45e-06
+      cache_read_input_token_cost: 1.55e-07
+      cache_creation_input_token_cost: 8.6e-08
   - model_name: venice/gemini-3-flash-preview
     litellm_params:
       model: openai/gemini-3-flash-preview
@@ -1861,6 +1953,7 @@ model_list:
       api_key: os.environ/VENICE_API_KEY
       input_cost_per_token: 7.0e-07
       output_cost_per_token: 3.75e-06
+      cache_read_input_token_cost: 7.0e-08
   - model_name: venice/gemma-4-uncensored
     litellm_params:
       model: openai/gemma-4-uncensored
@@ -1882,6 +1975,7 @@ model_list:
       api_key: os.environ/VENICE_API_KEY
       input_cost_per_token: 1.3e-07
       output_cost_per_token: 4.0e-07
+      cache_read_input_token_cost: 5.0e-08
   - model_name: venice/google-gemma-4-31b-it
     litellm_params:
       model: openai/google-gemma-4-31b-it
@@ -1889,6 +1983,7 @@ model_list:
       api_key: os.environ/VENICE_API_KEY
       input_cost_per_token: 1.2e-07
       output_cost_per_token: 3.6e-07
+      cache_read_input_token_cost: 9.0e-08
   - model_name: venice/grok-4-20
     litellm_params:
       model: openai/grok-4-20
@@ -1896,6 +1991,7 @@ model_list:
       api_key: os.environ/VENICE_API_KEY
       input_cost_per_token: 1.42e-06
       output_cost_per_token: 2.83e-06
+      cache_read_input_token_cost: 2.3e-07
   - model_name: venice/grok-4-20-multi-agent
     litellm_params:
       model: openai/grok-4-20-multi-agent
@@ -1903,6 +1999,7 @@ model_list:
       api_key: os.environ/VENICE_API_KEY
       input_cost_per_token: 1.42e-06
       output_cost_per_token: 2.83e-06
+      cache_read_input_token_cost: 2.3e-07
   - model_name: venice/grok-4-3
     litellm_params:
       model: openai/grok-4-3
@@ -1910,6 +2007,7 @@ model_list:
       api_key: os.environ/VENICE_API_KEY
       input_cost_per_token: 1.42e-06
       output_cost_per_token: 2.83e-06
+      cache_read_input_token_cost: 2.3e-07
   - model_name: venice/grok-4-5
     litellm_params:
       model: openai/grok-4-5
@@ -1917,6 +2015,7 @@ model_list:
       api_key: os.environ/VENICE_API_KEY
       input_cost_per_token: 2.27e-06
       output_cost_per_token: 6.8e-06
+      cache_read_input_token_cost: 3.4e-07
   - model_name: venice/grok-build-0-1
     litellm_params:
       model: openai/grok-build-0-1
@@ -1924,6 +2023,7 @@ model_list:
       api_key: os.environ/VENICE_API_KEY
       input_cost_per_token: 1.0e-06
       output_cost_per_token: 2.0e-06
+      cache_read_input_token_cost: 2.0e-07
   - model_name: venice/agent-3-llama-3.1-405b
     litellm_params:
       model: openai/agent-3-llama-3.1-405b
@@ -1938,6 +2038,7 @@ model_list:
       api_key: os.environ/VENICE_API_KEY
       input_cost_per_token: 1.25e-06
       output_cost_per_token: 5.0625e-06
+      cache_read_input_token_cost: 2.125e-07
   - model_name: venice/kimi-k2-5
     litellm_params:
       model: openai/kimi-k2-5
@@ -1945,6 +2046,7 @@ model_list:
       api_key: os.environ/VENICE_API_KEY
       input_cost_per_token: 5.6e-07
       output_cost_per_token: 3.5e-06
+      cache_read_input_token_cost: 2.2e-07
   - model_name: venice/kimi-k2-6
     litellm_params:
       model: openai/kimi-k2-6
@@ -1952,6 +2054,7 @@ model_list:
       api_key: os.environ/VENICE_API_KEY
       input_cost_per_token: 7.5e-07
       output_cost_per_token: 3.5e-06
+      cache_read_input_token_cost: 1.6e-07
   - model_name: venice/kimi-k2-7-code
     litellm_params:
       model: openai/kimi-k2-7-code
@@ -1959,6 +2062,7 @@ model_list:
       api_key: os.environ/VENICE_API_KEY
       input_cost_per_token: 7.5e-07
       output_cost_per_token: 3.5e-06
+      cache_read_input_token_cost: 1.6e-07
   - model_name: venice/kimi-k3
     litellm_params:
       model: openai/kimi-k3
@@ -1966,6 +2070,7 @@ model_list:
       api_key: os.environ/VENICE_API_KEY
       input_cost_per_token: 3.75e-06
       output_cost_per_token: 1.875e-05
+      cache_read_input_token_cost: 3.75e-07
   - model_name: venice/llama-3.2-3b
     litellm_params:
       model: openai/llama-3.2-3b
@@ -1987,6 +2092,7 @@ model_list:
       api_key: os.environ/VENICE_API_KEY
       input_cost_per_token: 3.125e-07
       output_cost_per_token: 9.375e-07
+      cache_read_input_token_cost: 3.125e-08
   - model_name: venice/minimax-m25
     litellm_params:
       model: openai/minimax-m25
@@ -1994,6 +2100,7 @@ model_list:
       api_key: os.environ/VENICE_API_KEY
       input_cost_per_token: 2.7e-07
       output_cost_per_token: 9.5e-07
+      cache_read_input_token_cost: 3.0e-08
   - model_name: venice/minimax-m27
     litellm_params:
       model: openai/minimax-m27
@@ -2001,6 +2108,7 @@ model_list:
       api_key: os.environ/VENICE_API_KEY
       input_cost_per_token: 3.75e-07
       output_cost_per_token: 1.5e-06
+      cache_read_input_token_cost: 6.875e-08
   - model_name: venice/minimax-m3-preview
     litellm_params:
       model: openai/minimax-m3-preview
@@ -2008,19 +2116,13 @@ model_list:
       api_key: os.environ/VENICE_API_KEY
       input_cost_per_token: 3.0e-07
       output_cost_per_token: 1.2e-06
-  - model_name: venice/mistral-small-2603
-    litellm_params:
-      model: openai/mistral-small-2603
-      api_base: https://api.venice.ai/api/v1
-      api_key: os.environ/VENICE_API_KEY
-      input_cost_per_token: 1.875e-07
-      output_cost_per_token: 7.5e-07
+      cache_read_input_token_cost: 6.0e-08
   - model_name: venice/mistral-small-3-2-24b-instruct
     litellm_params:
       model: openai/mistral-small-3-2-24b-instruct
       api_base: https://api.venice.ai/api/v1
       api_key: os.environ/VENICE_API_KEY
-      input_cost_per_token: 9.38e-08
+      input_cost_per_token: 9.375e-08
       output_cost_per_token: 2.5e-07
   - model_name: venice/nvidia-nemotron-3-nano-30b-a3b
     litellm_params:
@@ -2036,6 +2138,7 @@ model_list:
       api_key: os.environ/VENICE_API_KEY
       input_cost_per_token: 6.25e-07
       output_cost_per_token: 3.125e-06
+      cache_read_input_token_cost: 1.875e-07
   - model_name: venice/olafangensan-glm-4.7-flash-heretic
     litellm_params:
       model: openai/olafangensan-glm-4.7-flash-heretic
@@ -2043,6 +2146,7 @@ model_list:
       api_key: os.environ/VENICE_API_KEY
       input_cost_per_token: 7.0e-08
       output_cost_per_token: 4.0e-07
+      cache_read_input_token_cost: 3.5e-08
   - model_name: venice/openai-gpt-4o-2024-11-20
     litellm_params:
       model: openai/openai-gpt-4o-2024-11-20
@@ -2057,6 +2161,7 @@ model_list:
       api_key: os.environ/VENICE_API_KEY
       input_cost_per_token: 1.875e-07
       output_cost_per_token: 7.5e-07
+      cache_read_input_token_cost: 9.375e-08
   - model_name: venice/openai-gpt-52
     litellm_params:
       model: openai/openai-gpt-52
@@ -2064,13 +2169,7 @@ model_list:
       api_key: os.environ/VENICE_API_KEY
       input_cost_per_token: 2.19e-06
       output_cost_per_token: 1.75e-05
-  - model_name: venice/openai-gpt-52-codex
-    litellm_params:
-      model: openai/openai-gpt-52-codex
-      api_base: https://api.venice.ai/api/v1
-      api_key: os.environ/VENICE_API_KEY
-      input_cost_per_token: 2.19e-06
-      output_cost_per_token: 1.75e-05
+      cache_read_input_token_cost: 2.19e-07
   - model_name: venice/openai-gpt-53-codex
     litellm_params:
       model: openai/openai-gpt-53-codex
@@ -2078,6 +2177,7 @@ model_list:
       api_key: os.environ/VENICE_API_KEY
       input_cost_per_token: 2.19e-06
       output_cost_per_token: 1.75e-05
+      cache_read_input_token_cost: 2.19e-07
   - model_name: venice/openai-gpt-54
     litellm_params:
       model: openai/openai-gpt-54
@@ -2085,6 +2185,7 @@ model_list:
       api_key: os.environ/VENICE_API_KEY
       input_cost_per_token: 3.13e-06
       output_cost_per_token: 1.88e-05
+      cache_read_input_token_cost: 3.13e-07
   - model_name: venice/openai-gpt-54-mini
     litellm_params:
       model: openai/openai-gpt-54-mini
@@ -2092,6 +2193,7 @@ model_list:
       api_key: os.environ/VENICE_API_KEY
       input_cost_per_token: 9.375e-07
       output_cost_per_token: 5.625e-06
+      cache_read_input_token_cost: 9.375e-08
   - model_name: venice/openai-gpt-54-pro
     litellm_params:
       model: openai/openai-gpt-54-pro
@@ -2106,6 +2208,7 @@ model_list:
       api_key: os.environ/VENICE_API_KEY
       input_cost_per_token: 6.25e-06
       output_cost_per_token: 3.75e-05
+      cache_read_input_token_cost: 6.25e-07
   - model_name: venice/openai-gpt-55-pro
     litellm_params:
       model: openai/openai-gpt-55-pro
@@ -2120,6 +2223,8 @@ model_list:
       api_key: os.environ/VENICE_API_KEY
       input_cost_per_token: 2.5e-07
       output_cost_per_token: 1.5e-06
+      cache_read_input_token_cost: 2.5e-08
+      cache_creation_input_token_cost: 3.125e-07
   - model_name: venice/openai-gpt-56-luna-pro
     litellm_params:
       model: openai/openai-gpt-56-luna-pro
@@ -2127,20 +2232,29 @@ model_list:
       api_key: os.environ/VENICE_API_KEY
       input_cost_per_token: 2.5e-07
       output_cost_per_token: 1.5e-06
+      cache_read_input_token_cost: 2.5e-08
+      cache_creation_input_token_cost: 3.125e-07
   - model_name: venice/openai-gpt-56-sol
     litellm_params:
       model: openai/openai-gpt-56-sol
       api_base: https://api.venice.ai/api/v1
       api_key: os.environ/VENICE_API_KEY
-      input_cost_per_token: 2.5e-06
-      output_cost_per_token: 1.25e-05
+      input_cost_per_token: 5.0e-06
+      output_cost_per_token: 2.5e-05
+      cache_read_input_token_cost: 5.0e-07
+      cache_creation_input_token_cost: 6.25e-06
   - model_name: venice/openai-gpt-56-sol-pro
     litellm_params:
       model: openai/openai-gpt-56-sol-pro
       api_base: https://api.venice.ai/api/v1
       api_key: os.environ/VENICE_API_KEY
-      input_cost_per_token: 2.5e-06
-      output_cost_per_token: 1.25e-05
+      input_cost_per_token: 5.0e-06
+      output_cost_per_token: 2.5e-05
+      cache_read_input_token_cost: 5.0e-07
+      cache_creation_input_token_cost: 6.25e-06
+      extra_body:
+        venice_parameters:
+          include_venice_system_prompt: false
   - model_name: venice/openai-gpt-56-terra
     litellm_params:
       model: openai/openai-gpt-56-terra
@@ -2148,6 +2262,8 @@ model_list:
       api_key: os.environ/VENICE_API_KEY
       input_cost_per_token: 2.5e-06
       output_cost_per_token: 1.5e-05
+      cache_read_input_token_cost: 2.5e-07
+      cache_creation_input_token_cost: 3.125e-06
   - model_name: venice/openai-gpt-56-terra-pro
     litellm_params:
       model: openai/openai-gpt-56-terra-pro
@@ -2155,6 +2271,8 @@ model_list:
       api_key: os.environ/VENICE_API_KEY
       input_cost_per_token: 2.5e-06
       output_cost_per_token: 1.5e-05
+      cache_read_input_token_cost: 2.5e-07
+      cache_creation_input_token_cost: 3.125e-06
   - model_name: venice/openai-gpt-oss-120b
     litellm_params:
       model: openai/openai-gpt-oss-120b
@@ -2169,6 +2287,8 @@ model_list:
       api_key: os.environ/VENICE_API_KEY
       input_cost_per_token: 6.25e-07
       output_cost_per_token: 3.75e-06
+      cache_read_input_token_cost: 6.25e-08
+      cache_creation_input_token_cost: 7.8e-07
   - model_name: venice/qwen-3-7-max
     litellm_params:
       model: openai/qwen-3-7-max
@@ -2176,6 +2296,8 @@ model_list:
       api_key: os.environ/VENICE_API_KEY
       input_cost_per_token: 2.7e-06
       output_cost_per_token: 8.05e-06
+      cache_read_input_token_cost: 2.7e-07
+      cache_creation_input_token_cost: 3.35e-06
   - model_name: venice/qwen-3-7-plus
     litellm_params:
       model: openai/qwen-3-7-plus
@@ -2183,6 +2305,15 @@ model_list:
       api_key: os.environ/VENICE_API_KEY
       input_cost_per_token: 5.0e-07
       output_cost_per_token: 2.0e-06
+      cache_read_input_token_cost: 5.0e-08
+      cache_creation_input_token_cost: 6.25e-07
+  - model_name: venice/qwen-3-8-27b
+    litellm_params:
+      model: openai/qwen-3-8-27b
+      api_base: https://api.venice.ai/api/v1
+      api_key: os.environ/VENICE_API_KEY
+      input_cost_per_token: 4.5e-07
+      output_cost_per_token: 3.2e-06
   - model_name: venice/qwen3-235b-a22b-instruct-2507
     litellm_params:
       model: openai/qwen3-235b-a22b-instruct-2507
@@ -2204,6 +2335,7 @@ model_list:
       api_key: os.environ/VENICE_API_KEY
       input_cost_per_token: 3.125e-07
       output_cost_per_token: 1.25e-06
+      cache_read_input_token_cost: 1.5625e-07
   - model_name: venice/qwen3-5-397b-a17b
     litellm_params:
       model: openai/qwen3-5-397b-a17b
@@ -2232,6 +2364,7 @@ model_list:
       api_key: os.environ/VENICE_API_KEY
       input_cost_per_token: 3.5e-07
       output_cost_per_token: 1.5e-06
+      cache_read_input_token_cost: 4.0e-08
   - model_name: venice/qwen3-next-80b
     litellm_params:
       model: openai/qwen3-next-80b
@@ -2246,6 +2379,7 @@ model_list:
       api_key: os.environ/VENICE_API_KEY
       input_cost_per_token: 2.1e-07
       output_cost_per_token: 1.9e-06
+      cache_read_input_token_cost: 1.0e-07
   - model_name: venice/venice-uncensored-1-2
     litellm_params:
       model: openai/venice-uncensored-1-2
@@ -2267,6 +2401,7 @@ model_list:
       api_key: os.environ/VENICE_API_KEY
       input_cost_per_token: 4.0e-07
       output_cost_per_token: 2.0e-06
+      cache_read_input_token_cost: 8.0e-08
   - model_name: venice/z-ai-glm-5-turbo
     litellm_params:
       model: openai/z-ai-glm-5-turbo
@@ -2274,6 +2409,7 @@ model_list:
       api_key: os.environ/VENICE_API_KEY
       input_cost_per_token: 1.2e-06
       output_cost_per_token: 4.0e-06
+      cache_read_input_token_cost: 2.4e-07
   - model_name: venice/z-ai-glm-5v-turbo
     litellm_params:
       model: openai/z-ai-glm-5v-turbo
@@ -2281,6 +2417,7 @@ model_list:
       api_key: os.environ/VENICE_API_KEY
       input_cost_per_token: 1.5e-06
       output_cost_per_token: 5.0e-06
+      cache_read_input_token_cost: 3.0e-07
   - model_name: venice/zai-org-glm-4.6
     litellm_params:
       model: openai/zai-org-glm-4.6
@@ -2288,6 +2425,7 @@ model_list:
       api_key: os.environ/VENICE_API_KEY
       input_cost_per_token: 4.3e-07
       output_cost_per_token: 1.75e-06
+      cache_read_input_token_cost: 8.0e-08
   - model_name: venice/zai-org-glm-4.7
     litellm_params:
       model: openai/zai-org-glm-4.7
@@ -2295,6 +2433,7 @@ model_list:
       api_key: os.environ/VENICE_API_KEY
       input_cost_per_token: 5.5e-07
       output_cost_per_token: 2.65e-06
+      cache_read_input_token_cost: 1.1e-07
   - model_name: venice/zai-org-glm-4.7-flash
     litellm_params:
       model: openai/zai-org-glm-4.7-flash
@@ -2302,6 +2441,7 @@ model_list:
       api_key: os.environ/VENICE_API_KEY
       input_cost_per_token: 6.0e-08
       output_cost_per_token: 4.0e-07
+      cache_read_input_token_cost: 1.0e-08
   - model_name: venice/zai-org-glm-5
     litellm_params:
       model: openai/zai-org-glm-5
@@ -2309,6 +2449,7 @@ model_list:
       api_key: os.environ/VENICE_API_KEY
       input_cost_per_token: 1.0e-06
       output_cost_per_token: 3.2e-06
+      cache_read_input_token_cost: 2.0e-07
   - model_name: venice/zai-org-glm-5-1
     litellm_params:
       model: openai/zai-org-glm-5-1
@@ -2316,6 +2457,7 @@ model_list:
       api_key: os.environ/VENICE_API_KEY
       input_cost_per_token: 1.54e-06
       output_cost_per_token: 4.84e-06
+      cache_read_input_token_cost: 2.86e-07
   - model_name: venice/zai-org-glm-5-2
     litellm_params:
       model: openai/zai-org-glm-5-2
@@ -2323,16 +2465,7 @@ model_list:
       api_key: os.environ/VENICE_API_KEY
       input_cost_per_token: 1.4e-06
       output_cost_per_token: 4.4e-06
-  - model_name: inception/mercury
-    litellm_params:
-      model: openai/mercury
-      api_base: https://api.inceptionlabs.ai/v1
-      api_key: os.environ/MERCURY_API_KEY
-  - model_name: inception/mercury-coder
-    litellm_params:
-      model: openai/mercury-coder
-      api_base: https://api.inceptionlabs.ai/v1
-      api_key: os.environ/MERCURY_API_KEY
+      cache_read_input_token_cost: 2.6e-07
   - model_name: gemini-3.5-flash
     litellm_params:
       model: gemini/gemini-3.5-flash
@@ -2520,35 +2653,64 @@ model_list:
         tiers:
           SIMPLE: local-ministral-3b
           MEDIUM: local-qwen3.5-4b
-          COMPLEX: imac-gemma4-12b-qat
-          REASONING: imac-gemma4-12b-qat
+          COMPLEX: local-gemma4-12b
+          REASONING: local-gemma4-12b
         default_model: local-ministral-3b
   - model_name: local-gemma4-uncensored
     litellm_params:
-      model: openai/gemma4-26b-a4b-uncensored-hauhaucs-balanced
-      api_base: os.environ/WINDOWS_LM_STUDIO_URL
-      api_key: not-needed
-      timeout: 600
+      model: openai/groxaxo/Huihui-gemma-4-26B-A4B-it-abliterated-GGUF:UD-Q4_K_S
+      api_base: os.environ/UNSLOTH_PC_URL
+      api_key: os.environ/UNSLOTH_PC_API_KEY
+      timeout: 900
     model_info:
-      supports_vision: true
+      supports_vision: false
       supports_function_calling: true
-  - model_name: local-granite-4.1
+  - model_name: local-lfm2.5-8b
     litellm_params:
-      model: openai/parable-granite-4.1-8b-claude-fable-5
-      custom_llm_provider: openai
-      api_base: os.environ/WINDOWS_LM_STUDIO_URL
-      api_key: not-needed
+      model: openai/unsloth/LFM2.5-8B-A1B-GGUF:UD-Q4_K_XL
+      api_base: os.environ/UNSLOTH_PC_URL
+      api_key: os.environ/UNSLOTH_PC_API_KEY
       max_tokens: 8192
-      timeout: 600
+      timeout: 420
+    model_info:
+      supports_function_calling: true
+      supports_vision: false
+  - model_name: local-gemma4-12b
+    litellm_params:
+      model: openai/unsloth/gemma-4-12B-it-qat-GGUF:UD-Q4_K_XL
+      api_base: os.environ/UNSLOTH_PC_URL
+      api_key: os.environ/UNSLOTH_PC_API_KEY
+      max_tokens: 4096
+      timeout: 1200
+    model_info:
+      supports_function_calling: true
+      supports_vision: true
+  - model_name: local-qwen3.5-4b-mtp
+    litellm_params:
+      model: openai/unsloth/Qwen3.5-4B-MTP-GGUF:UD-Q4_K_XL
+      api_base: os.environ/UNSLOTH_PC_URL
+      api_key: os.environ/UNSLOTH_PC_API_KEY
+      max_tokens: 8192
+      timeout: 420
+    model_info:
+      supports_function_calling: true
+      supports_vision: false
+  - model_name: local-sharp-spark-4b
+    litellm_params:
+      model: openai/peculiar-ragdoll/Sharp-Spark-X2.5-4B-GGUF:Q6_K_XL
+      api_base: os.environ/UNSLOTH_PC_URL
+      api_key: os.environ/UNSLOTH_PC_API_KEY
+      max_tokens: 8192
+      timeout: 480
     model_info:
       supports_function_calling: true
       supports_vision: false
   - model_name: local-huihui-gpt
     litellm_params:
-      model: openai/huihui-gpt-oss-20b-abliterated-v2
+      model: openai/huihui-ai/Huihui-gpt-oss-20b-mxfp4-abliterated-v2:mxfp4
       custom_llm_provider: openai
-      api_base: os.environ/WINDOWS_LM_STUDIO_URL
-      api_key: not-needed
+      api_base: os.environ/UNSLOTH_PC_URL
+      api_key: os.environ/UNSLOTH_PC_API_KEY
       max_tokens: 8192
       timeout: 1200
     model_info:
@@ -2556,10 +2718,10 @@ model_list:
       supports_vision: false
   - model_name: local-ornith-35b
     litellm_params:
-      model: openai/ornith-1.5-35b-a3b
+      model: openai/peculiar-ragdoll/Cyber-Tiel-Coder-35B-A3B-GGUF-MTP:UD-Q4_K_S
       custom_llm_provider: openai
-      api_base: os.environ/WINDOWS_LM_STUDIO_URL
-      api_key: not-needed
+      api_base: os.environ/UNSLOTH_PC_URL
+      api_key: os.environ/UNSLOTH_PC_API_KEY
       max_tokens: 8192
       timeout: 1200
     model_info:
@@ -2567,19 +2729,28 @@ model_list:
       supports_vision: true
   - model_name: local-qwen3.5-4b
     litellm_params:
-      model: openai/qwen3.5-4b-uncensored-hauhaucs-aggressive
-      api_base: os.environ/WINDOWS_LM_STUDIO_URL
-      api_key: not-needed
+      model: openai/HauhauCS/Qwen3.5-4B-Uncensored-HauhauCS-Aggressive:Q6_K
+      api_base: os.environ/UNSLOTH_PC_URL
+      api_key: os.environ/UNSLOTH_PC_API_KEY
       max_tokens: 8192
       timeout: 420
     model_info:
       supports_vision: true
       supports_function_calling: true
+  - model_name: gsec-unsloth-probe
+    litellm_params:
+      model: openai/lmstudio-community/Ministral-3-3B-Instruct-2512-GGUF:Q6_K
+      api_base: os.environ/UNSLOTH_PC_URL
+      api_key: os.environ/UNSLOTH_PC_API_KEY
+      max_tokens: 1024
+      timeout: 600
+    model_info:
+      supports_function_calling: true
   - model_name: local-ministral-3b
     litellm_params:
-      model: openai/mistralai/ministral-3-3b
-      api_base: os.environ/WINDOWS_LM_STUDIO_URL
-      api_key: not-needed
+      model: openai/lmstudio-community/Ministral-3-3B-Instruct-2512-GGUF:Q6_K
+      api_base: os.environ/UNSLOTH_PC_URL
+      api_key: os.environ/UNSLOTH_PC_API_KEY
       max_tokens: 8192
       timeout: 360
     model_info:
@@ -2587,32 +2758,12 @@ model_list:
       supports_function_calling: true
   - model_name: local-embed-qwen3
     litellm_params:
-      model: openai/text-embedding-qwen3-embedding-0.6b
-      api_base: os.environ/WINDOWS_LM_STUDIO_URL
+      model: openai/qwen3-embedding-0.6b
+      api_base: http://praxen-embed:8080/v1
       api_key: not-needed
     model_info:
       mode: embedding
       output_vector_size: 1024
-  - model_name: imac-lfm2.5-2.6b
-    litellm_params:
-      model: openai/lfm2.5-2.6b-mlx-mxfp8
-      api_base: os.environ/SECOND_LM_STUDIO_URL
-      api_key: not-needed
-      max_tokens: 8192
-      timeout: 420
-    model_info:
-      supports_function_calling: true
-  - model_name: imac-gemma4-12b-qat
-    litellm_params:
-      model: openai/google/gemma-4-12b
-      custom_llm_provider: openai
-      api_base: os.environ/SECOND_LM_STUDIO_URL
-      api_key: not-needed
-      max_tokens: 4096
-      timeout: 1200
-    model_info:
-      supports_vision: true
-      supports_function_calling: true
   - model_name: praxen/local-router
     litellm_params:
       model: auto_router/complexity_router
@@ -2625,7 +2776,7 @@ model_list:
         tiers:
           SIMPLE: local-ministral-3b
           MEDIUM: local-qwen3.5-4b
-          COMPLEX: imac-gemma4-12b-qat
+          COMPLEX: local-gemma4-12b
           REASONING: local-gemma4-uncensored
         default_model: local-ministral-3b
   - model_name: array/auto
@@ -2641,7 +2792,7 @@ model_list:
           SIMPLE: local-ministral-3b
           MEDIUM: gpt-5.6-luna
           COMPLEX: claude-sonnet-5-5
-          REASONING: gpt-5.6-sol
+          REASONING: gpt-6.1-sol
         default_model: gpt-5.6-luna
   - model_name: array/auto-openai
     litellm_params:
@@ -2670,7 +2821,7 @@ model_list:
         tiers:
           SIMPLE: local-ministral-3b
           MEDIUM: local-qwen3.5-4b
-          COMPLEX: imac-gemma4-12b-qat
+          COMPLEX: local-gemma4-12b
           REASONING: local-gemma4-uncensored
         default_model: local-ministral-3b
   - model_name: go/local
@@ -2685,6 +2836,6 @@ model_list:
         tiers:
           SIMPLE: local-ministral-3b
           MEDIUM: local-qwen3.5-4b
-          COMPLEX: imac-gemma4-12b-qat
-          REASONING: imac-gemma4-12b-qat
+          COMPLEX: local-gemma4-12b
+          REASONING: local-gemma4-12b
         default_model: local-ministral-3b

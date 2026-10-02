@@ -29,7 +29,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 GRAFANA = "http://localhost:3200"
-EXPECT = {"praxen-msty.json": "praxen-msty", "praxen-routing.json": "praxen-routing", "praxen-forensics.json": "praxen-forensics"}
+EXPECT = {"praxen-command.json": "praxen-command", "praxen-routing.json": "praxen-routing", "praxen-forensics.json": "praxen-forensics"}
 DS_TYPES = {"afimxbo42ap6oe": "prometheus", "praxen-litellm-pg": "grafana-postgresql-datasource", "praxen-loki": "loki", "dfipt8nyznn5sc": "tempo"}
 
 

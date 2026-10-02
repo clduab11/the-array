@@ -1,4 +1,4 @@
-# Sanitized structural mirror of the-array/docker-compose.yml (2026-09-29). Comments and identity values
+# Sanitized structural mirror of the-array/docker-compose.yml (2026-10-02). Comments and identity values
 # removed or replaced; budgets are placeholders. See mirror/README.md before restoring from it.
 x-logging:
   driver: json-file
@@ -161,8 +161,8 @@ services:
       OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo:4318
       OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
       OTEL_SERVICE_NAME: praxen-litellm
-      WINDOWS_LM_STUDIO_URL: ${WINDOWS_LM_STUDIO_URL}
-      SECOND_LM_STUDIO_URL: ${SECOND_LM_STUDIO_URL}
+      UNSLOTH_PC_URL: ${UNSLOTH_PC_URL}
+      UNSLOTH_PC_API_KEY: ${UNSLOTH_PC_API_KEY}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       GEMINI_API_KEY: ${GEMINI_API_KEY}
@@ -191,6 +191,7 @@ services:
       - ./litellm_config.yaml:/app/config.yaml:ro
       - ./litellm/refusal_fallback.py:/app/refusal_fallback.py:ro
       - ./litellm/jev_gate.py:/app/jev_gate.py:ro
+      - ./litellm/unsloth_guard.py:/app/unsloth_guard.py:ro
     command:
       - --config
       - /app/config.yaml
@@ -356,7 +357,7 @@ services:
       GF_RENDERING_RENDERER_TOKEN: ${RENDERER_AUTH_TOKEN}
       GF_PANELS_DISABLE_SANITIZE_HTML: 'true'
       GF_SECURITY_ALLOW_EMBEDDING: 'true'
-      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /etc/grafana/dashboards/praxen-msty.json
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /etc/grafana/dashboards/praxen-command.json
       GF_PLUGINS_PREINSTALL_SYNC: yesoreyeram-infinity-datasource@4.0.0,volkovlabs-echarts-panel@7.2.5
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_USER: ${POSTGRES_USER:-pc-host}
@@ -538,6 +539,64 @@ services:
         limits:
           memory: 512M
           cpus: '1.0'
+  embed:
+    restart: unless-stopped
+    image: ghcr.io/ggml-org/llama.cpp:server-b11118@sha256:fb8f521cdfee1b763a6ef0d6633922e780c1393c03b49945526550cf55010343
+    container_name: praxen-embed
+    profiles:
+      - core
+      - observe
+      - agents
+      - full
+      - dev
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+    command:
+      - -m
+      - /models/Qwen3-Embedding-0.6B-Q8_0.gguf
+      - --embeddings
+      - --pooling
+      - last
+      - -c
+      - '8192'
+      - -np
+      - '4'
+      - -kvu
+      - -b
+      - '512'
+      - -ub
+      - '512'
+      - -fa
+      - 'on'
+      - -t
+      - '4'
+      - -tb
+      - '4'
+      - --alias
+      - qwen3-embedding-0.6b
+      - --metrics
+      - --no-webui
+      - --port
+      - '8080'
+    volumes:
+      - embedmodels:/models:ro
+    networks:
+      - praxen-network
+    cpus: '4'
+    mem_limit: 3g
+    healthcheck:
+      test:
+        - CMD
+        - curl
+        - -fsS
+        - http://localhost:8080/health
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
 networks:
   praxen-network:
     name: praxen-network
@@ -569,3 +628,5 @@ volumes:
     name: praxen-lokidata
   alloydata:
     name: praxen-alloydata
+  embedmodels:
+    name: praxen-embedmodels

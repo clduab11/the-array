@@ -7,7 +7,7 @@
 # Secrets policy: keys live in Windows USER environment variables (Msty: Base Environment). Configs only
 # ever hold the variable NAME. Nothing in this folder may contain a key.
 version: 1
-updated: 2026-09-19
+updated: 2026-09-29
 
 profiles:
   build-code: Build and ship code
@@ -30,12 +30,32 @@ clients:
   claude-code: {profiles: [build-code, rnd-researcher, plan-triage, biz-ops]}
   front-studio: {profiles: [build-code, rnd-researcher, biz-ops, plan-triage, desktop]}
   front-go: {profiles: [biz-ops, plan-triage]}
+  paperclip: {profiles: [build-code, rnd-researcher, plan-triage]}
+  claude-code-wsl: {profiles: [build-code, rnd-researcher, plan-triage, biz-ops]}
+  codex-wsl: {profiles: [build-code, rnd-researcher, plan-triage]}
+  opencode-wsl: {profiles: [build-code, rnd-researcher, plan-triage]}
+  grok: {profiles: [build-code, rnd-researcher, plan-triage]}
+  hermes: {profiles: [build-code]}
 
 runtimes:
   npx: C:/Program Files/nodejs/npx.cmd
   uvx: ~/.local/bin/uvx.exe
+  mempalace_full: ~/.local/bin/mempalace-mcp.exe
+  mempalace_light: ~/.local/bin/mempalace-light-mcp.exe
   mcp_remote: mcp-remote@0.14.2   # where a client cannot send an env-sourced header natively; in Zed for EVERY hosted tool,
                                   # because Zed forwards context_servers to its ACP agents without its own OAuth session (2026-09-19)
+
+# Linux-native WSL commands. The MemPalace executables are Windows interop by design; the hub remains Windows-only.
+client_runtimes:
+  claude-code-wsl: &wsl_runtimes
+    npx: /usr/bin/npx
+    uvx: /home/pc-host/.local/bin/uvx
+    mempalace_full: /mnt/c/Users/pc-host/.local/bin/mempalace-mcp.exe
+    mempalace_light: /mnt/c/Users/pc-host/.local/bin/mempalace-light-mcp.exe
+  codex-wsl: *wsl_runtimes
+  opencode-wsl: *wsl_runtimes
+  grok: *wsl_runtimes
+  paperclip: *wsl_runtimes
 
 # Environment variable NAMES the toolbox reads. status = what the 2026-09-16 scan of the Windows user
 # environment found (names only). "add" means create it before the tool will work.
@@ -402,6 +422,40 @@ tools:
     args: ["--stdio"]
     note: 8 tools / ~1.8K tokens. Same OAuth credential as Hostinger Hosting. Take a DNS snapshot before any update.
     evidence: https://github.com/hostinger/api-mcp-server
+
+  # MemPalace's full server stays with Claude; other inline-schema clients use the compact server. The hub is the only writer.
+  - id: mempalace
+    name: MemPalace
+    tier: role
+    profiles: [build-code, rnd-researcher, biz-ops, plan-triage]
+    clients_only: [claude-code, claude-code-wsl]
+    what: Search the shared memory palace; full server for Claude
+    transport: stdio
+    runner: path
+    command_runtime: mempalace_full
+    note: The Windows executable talks to the loopback-only hub. Claude is the only toolbox client assigned the full tool surface.
+  - id: mempalace-light
+    name: MemPalace (light)
+    tier: role
+    profiles: [build-code, rnd-researcher, biz-ops, plan-triage]
+    clients_only: [zed, opencode, coder, vscode, codex, front-studio, front-go, paperclip, codex-wsl, opencode-wsl, grok]
+    what: Search the shared memory palace with the compact MCP server
+    transport: stdio
+    runner: path
+    command_runtime: mempalace_light
+    note: Uses the Windows interop executable; the compact server exposes palace_query, palace_exec and palace_coordinate, so compact does not mean read-only. The hub remains loopback-only on Windows.
+  - id: mempalace
+    name: MemPalace
+    tier: role
+    profiles: [build-code]
+    clients_only: [hermes]
+    default_enabled: false
+    setup: Blocked until the container-to-hub HTTP 403 is resolved and the read-only tool filter is verified.
+    what: Read-only MemPalace search for the Hermes container
+    transport: http
+    url: http://host.docker.internal:HUB_PORT/mcp
+    auth: {type: none}
+    note: Keep disabled. The container cannot reach the hub yet; never widen the hub's exposure as a workaround.
 
 # Removed from the toolbox, with what covers the job instead.
 dropped:

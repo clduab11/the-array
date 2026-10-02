@@ -20,6 +20,7 @@ Per-client rules come from the 2026-09-16 format research (sources in the PDF):
 """
 import argparse
 import json
+import os
 import pathlib
 import re
 import shutil
@@ -29,7 +30,8 @@ import tempfile
 import yaml
 
 HERE = pathlib.Path(__file__).resolve().parent
-CLIENTS = ["claude-code", "vscode", "zed", "opencode", "coder", "codex", "front-studio", "front-go"]
+CLIENTS = ["claude-code", "claude-code-wsl", "vscode", "zed", "opencode", "opencode-wsl",
+           "coder", "codex", "codex-wsl", "grok", "paperclip", "hermes", "front-studio", "front-go"]
 TOKEN_SHAPES = re.compile(r"(sk-[A-Za-z0-9]{12,}|jina_[A-Za-z0-9]{12,}|tvly-[A-Za-z0-9]{8,}|fc-[A-Za-z0-9]{16,}|ghp_[A-Za-z0-9]{16,}"
                           r"|github_pat_[A-Za-z0-9_]{16,}|hf_[A-Za-z0-9]{16,}|lin_api_[A-Za-z0-9]{16,}|ntn_[A-Za-z0-9]{16,}|ctx7sk[A-Za-z0-9-]{8,})")
 
@@ -69,6 +71,8 @@ def selected(manifest, client):
 
 
 def stdio_parts(tool, runtimes, npx_cmd):
+    if tool["runner"] == "path":
+        return runtimes[tool["command_runtime"]], list(tool.get("args", []))
     if tool["runner"] == "npx":
         if tool.get("bin"):  # a package that ships several binaries: name the one to run
             return npx_cmd, ["-y", "-p", tool["package"], tool["bin"], *tool.get("args", [])]
@@ -77,13 +81,13 @@ def stdio_parts(tool, runtimes, npx_cmd):
 
 
 # ------------------------------------------------------------------------------------------- renderers
-def render_claude_code(manifest, tools):
+def render_claude_code(manifest, tools, windows=True):
     on, off = {}, {}
     for tool, enabled in tools:
         env_lit, secrets = dict(tool.get("env") or {}), secrets_of(tool)
         if tool["transport"] == "stdio":
             command, args = stdio_parts(tool, manifest["runtimes"], "npx")
-            entry = {"type": "stdio", "command": "cmd", "args": ["/c", command, *args]} if tool["runner"] == "npx" else \
+            entry = {"type": "stdio", "command": "cmd", "args": ["/c", command, *args]} if windows and tool["runner"] == "npx" else \
                     {"type": "stdio", "command": command, "args": args}
             env = {**env_lit, **{s: "${%s}" % s for s in secrets}}
             if env:
@@ -187,8 +191,8 @@ def toml_str(value):
     return json.dumps(value, ensure_ascii=False)
 
 
-def render_codex(manifest, tools):
-    lines = ["# Paste into %USERPROFILE%\\.codex\\config.toml. Keys are passed by NAME; Codex reads them from its own environment.", ""]
+def render_codex(manifest, tools, target=r"%USERPROFILE%\.codex\config.toml"):
+    lines = [f"# Paste into {target}. Keys are passed by NAME; Codex reads them from its own environment.", ""]
     for tool, enabled in tools:
         lines.append(f"[mcp_servers.{snake(tool['id'])}]")
         auth = tool.get("auth") or {}
@@ -214,6 +218,41 @@ def render_codex(manifest, tools):
         lines.append(f"enabled = {'true' if enabled else 'false'}")
         lines.append("")
     return {"mcp_servers.toml": "\n".join(lines)}
+
+
+def render_codex_wsl(manifest, tools):
+    return render_codex(manifest, tools, "~/.codex/config.toml")
+
+
+def render_grok(manifest, tools):
+    rendered = render_claude_code(manifest, tools, windows=False)
+    return {"mcpServers.json": rendered[".mcp.json"]}
+
+
+def render_paperclip(manifest, tools):
+    # Paperclip's company connector is an approved stdio template, not a clientimport file.
+    light = next((tool for tool, _ in tools if tool["id"] == "mempalace-light"), None)
+    if light is None:
+        raise ValueError("Paperclip profile is missing the MemPalace light-server entry")
+    return {"CONNECTORS.md": "\n".join([
+        "# Paperclip — MemPalace connector reference", "",
+        "Paperclip stores company connectors in its Connectors UI; this file is a reference, not an import.",
+        "Use the approved `mempalace-read` local-stdio template. Its manifest allow-list exposes `palace_query` only.",
+        "The generic light MCP executable also exposes write tools, so do not paste its command into Paperclip.",
+        "The live connection status is recorded in `docs/STATE.md` under OP PAPERCLIP → DELTA.", ""
+    ])}
+
+
+def render_hermes(manifest, tools):
+    tool = next((tool for tool, _ in tools if tool["id"] == "mempalace" and tool["transport"] == "http"), None)
+    if tool is None:
+        raise ValueError("Hermes profile is missing the MemPalace HTTP entry")
+    config = {"mcp_servers": {"mempalace": {
+        "url": tool["url"], "enabled": False, "lazy": True,
+        "tools": {"include": ["palace_query"]}
+    }}}
+    body = yaml.safe_dump(config, sort_keys=False, allow_unicode=True)
+    return {"mcp-servers.yaml": "# Disabled until the documented container-to-hub 403 is resolved.\n" + body}
 
 
 def render_msty_studio(manifest, tools):
@@ -285,7 +324,31 @@ def secrets_md(manifest):
     return "\n".join(["# Keys the toolbox reads (names only)", "",
                       "Set each as a Windows **user** environment variable, then fully quit and reopen every app (tray included) so it sees the change.",
                       "Msty Studio reads the same names from Workspaces > Environments instead.", "",
-                      "| Variable | Status on 2026-09-16 | Used by | Note |", "|---|---|---|---|", *rows, ""])
+                      f"| Variable | Status on {manifest.get('updated', 'unknown')} | Used by | Note |", "|---|---|---|---|", *rows, ""])
+
+
+def promote_without_deleting(candidate, destination):
+    """Atomically replace generated files, refusing to erase stale outputs."""
+    candidate_files = {p.relative_to(candidate) for p in candidate.rglob("*") if p.is_file()}
+    existing_files = {p.relative_to(destination) for p in destination.rglob("*") if p.is_file()} if destination.exists() else set()
+    stale = sorted(existing_files - candidate_files)
+    if stale:
+        names = ", ".join(str(p).replace("\\", "/") for p in stale)
+        raise RuntimeError(f"Refusing to delete stale outputs; soft-stage and manifest them first: {names}")
+
+    for rel in sorted(candidate_files):
+        src, dst = candidate / rel, destination / rel
+        if dst.exists() and dst.is_dir():
+            raise RuntimeError(f"Output file conflicts with existing directory: {dst}")
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        fd, temp_name = tempfile.mkstemp(prefix=f".{dst.name}.", suffix=".tmp", dir=dst.parent)
+        os.close(fd)
+        try:
+            shutil.copy2(src, temp_name)
+            os.replace(temp_name, dst)
+        finally:
+            if os.path.exists(temp_name):
+                os.unlink(temp_name)
 
 
 def main():
@@ -293,23 +356,50 @@ def main():
     parser.add_argument("--check", action="store_true", help="render to a temp folder and run the secret scan only")
     args = parser.parse_args()
     manifest = yaml.safe_load((HERE / "toolbox.yaml").read_text(encoding="utf-8"))
-    root = pathlib.Path(tempfile.mkdtemp()) if args.check else HERE / "out"
-    if root.exists() and not args.check:
-        shutil.rmtree(root)
-    renderers = {"claude-code": render_claude_code, "vscode": render_vscode, "zed": render_zed,
-                 "opencode": render_opencode_like, "coder": lambda m, t: render_opencode_like(m, t, coder=True),
-                 "codex": render_codex, "front-studio": render_msty_studio, "front-go": render_msty_go}
-    for client in CLIENTS:
-        tools = selected(manifest, client)
-        write(root, client, renderers[client](manifest, tools))
-        print(f"{client:12} {sum(e for _, e in tools):2} on, {sum(not e for _, e in tools):2} off")
-    (root / "SECRETS.md").write_text(secrets_md(manifest), encoding="utf-8", newline="\n")
-    leaks = [str(p.relative_to(root)) for p in root.rglob("*") if p.is_file() and TOKEN_SHAPES.search(p.read_text(encoding="utf-8"))]
-    if leaks:
-        sys.exit(f"SECRET-SHAPED STRING IN OUTPUT: {leaks}")
-    print(f"secret scan clean; output: {root}")
-    if args.check:
-        shutil.rmtree(root)
+    candidate = pathlib.Path(tempfile.mkdtemp(prefix="praxen-toolbox-render-"))
+    try:
+        renderers = {
+            "claude-code": render_claude_code,
+            "claude-code-wsl": lambda m, t: render_claude_code(m, t, windows=False),
+            "vscode": render_vscode,
+            "zed": render_zed,
+            "opencode": render_opencode_like,
+            "opencode-wsl": render_opencode_like,
+            "coder": lambda m, t: render_opencode_like(m, t, coder=True),
+            "codex": render_codex,
+            "codex-wsl": render_codex_wsl,
+            "grok": render_grok,
+            "paperclip": render_paperclip,
+            "hermes": render_hermes,
+            "front-studio": render_msty_studio,
+            "front-go": render_msty_go,
+        }
+        for client in CLIENTS:
+            client_manifest = dict(manifest)
+            client_manifest["runtimes"] = {
+                **manifest["runtimes"],
+                **manifest.get("client_runtimes", {}).get(client, {}),
+            }
+            tools = selected(client_manifest, client)
+            write(candidate, client, renderers[client](client_manifest, tools))
+            if client == "paperclip":
+                print(f"{client:16} connector reference")
+            elif client == "hermes":
+                print(f"{client:16} disabled MemPalace template")
+            else:
+                print(f"{client:16} {sum(e for _, e in tools):2} on, {sum(not e for _, e in tools):2} off")
+        (candidate / "SECRETS.md").write_text(secrets_md(manifest), encoding="utf-8", newline="\n")
+        leaks = [str(p.relative_to(candidate)) for p in candidate.rglob("*") if p.is_file() and TOKEN_SHAPES.search(p.read_text(encoding="utf-8"))]
+        if leaks:
+            sys.exit(f"SECRET-SHAPED STRING IN OUTPUT: {leaks}")
+        if args.check:
+            print("secret scan clean; output not promoted")
+        else:
+            destination = HERE / "out"
+            promote_without_deleting(candidate, destination)
+            print(f"secret scan clean; output: {destination}")
+    finally:
+        shutil.rmtree(candidate, ignore_errors=True)
 
 
 if __name__ == "__main__":

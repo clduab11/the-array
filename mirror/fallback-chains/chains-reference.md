@@ -1,41 +1,38 @@
 # PRAXEN LiteLLM — Chain Reference
 
-**Snapshot:** config **v4.18.0** · **2026-09-29** — REGENERATED from the live config via
-`PYTHONUTF8=1 python scripts/extract_chains.py` (backup of the v4.17.0 snapshot at
-`backup/litellm-config/chains-reference.md.bak.pre-v4.18.0`). Delta notes keep CURRENT + ONE prior; older ones live in
+**Snapshot:** config **v4.22.0** · **2026-10-02** — REGENERATED from the live config via
+`PYTHONUTF8=1 python scripts/extract_chains.py` (backup of the v4.21.0 snapshot at
+`backup/litellm-config/chains-reference.md.bak.pre-v4.22.0`). Delta notes keep CURRENT + ONE prior; older ones live in
 the backup rungs and git history.
 
-**Chain deltas at v4.18.0 — the operator's rulings: Sonnet 5.5 promoted, MiMo V2.6 Flash for go/coding-lite (2026-09-29)**
+**Chain deltas at v4.22.0 — the operator's rulings on the catalog sheet (2026-10-02)**
 
-- **Sonnet 5.5 takes Sonnet 5's duty.** Alias primaries `reasoning` / `array/reasoning` / `praxen/reasoning` / `go/reasoning` /
-  `legacy-go/reasoning` and the `array/auto` COMPLEX tier now resolve to `claude-sonnet-5-5`. `claude-sonnet-5` becomes the
-  FIRST rung of those five chains (it answers when Sonnet 5.5 400s a forced `tool_choice` or is down, at the same price):
-  `reasoning: [claude-sonnet-5, grok-4.5, gemini-3.1-pro, local-gemma4-uncensored]` ·
-  `go/reasoning: [claude-sonnet-5, gemini-3.1-pro, grok-4.5, gpt-5.6-terra, local-gemma4-uncensored]`.
-  It stays first in `array/auto`'s chain and keeps its catch duty for `claude-sonnet-4-6` and `claude-sonnet-5-advised`.
-- **House-workhorse rungs → `claude-sonnet-5-5`:** `go/coding-heavy` (+legacy-go), `praxen/openai-router`,
-  `array/auto-openai`, `grok-4.7`.
-- **`go/coding-lite` (+legacy-go) → `mimo-v2.6-flash`**, and its chain gains `glm-5.3-flash` (ZDR) as the first rung:
-  `[glm-5.3-flash, gemini-3.6-flash, laguna-s-2.1, local-granite-4.1, imac-gemma4-12b-qat, local-qwen3.5-4b]`. GLM 5.3
-  Prime and Qwen 3.8 Max Prime were NOT added (no zero-retention endpoint). **+1 regular chain:** `mimo-v2.6-flash` carries
-  the same shape as its catch chain.
-- Every change applies to both `fallbacks` and `content_policy_fallbacks` (mirrors stay identical).
-- Counts: 209 entries · 114 regular chains · 45 content-policy chains.
+- **`gpt-6.1-sol` takes duty.** It is the REASONING tier of the `array/auto` router (was `gpt-5.6-sol`; half the price),
+  probed: a proof prompt through `array/auto` was served by `openai/responses/gpt-6.1-sol`, plain and streamed.
+- **`gpt-6.1-sol` goes ahead of `gpt-5.6-sol` in three chains** (regular and content-policy lists):
+  `praxen/openai-router` and `array/auto-openai` → `[gpt-5.5, gpt-6.1-sol, gpt-5.6-sol, claude-sonnet-5-5, local-gemma4-uncensored]` ·
+  `gpt-5.5-priority` → `[gpt-5.5, gpt-6.1-sol, gpt-5.6-sol, claude-opus-4-8, local-gemma4-uncensored]`.
+  Not changed: `gpt-5.6-sol-priority` (its own standard twin stays first) and `gpt-6-sol` (the reverse edge would loop).
+- **Rung order is depth-first.** A failed rung walks its OWN chain before the caller's next rung is tried: a request that
+  `gpt-5.5` rejects on `gpt-5.5-priority` was answered by `claude-sonnet-4-6` (rung 1 of `gpt-5.5`'s chain), not by the
+  `gpt-6.1-sol` rung. A second rung is reached only when the first rung's whole chain is exhausted.
+- **−1 regular chain, 115 → 114:** `gpt-4.1-nano` was cut with its entry (OpenAI shutdown 2026-10-23).
+- Four dead entries removed (`venice/mistral-small-2603`, `venice/openai-gpt-52-codex`, `inception/mercury`,
+  `inception/mercury-coder`) and four Venice entries added (`venice/abliteration-abliterated-model-large-v2`,
+  `venice/aion-labs-aion-3-5`, `venice/aion-labs-aion-3-5-mini`, `venice/qwen-3-8-27b`); none held or holds chain duty.
+- Counts: 211 entries · 114 regular chains · 45 content-policy chains.
 
-**Chain deltas at v4.17.0 (prior) — OP ADVISOR-PAIRS: Claude Sonnet 5.5 and two advised pairs (2026-09-29)**
+**Chain deltas at v4.21.0 (prior) — OP CATALOG-CURRENCY: GPT-6.1 Sol (2026-10-01)**
 
-- **+3 regular chains, 110 → 113; +3 content-policy chains, 42 → 45.** Each new group mirrors its regular chain exactly under
-  `content_policy_fallbacks` (all three executors run refusal classifiers). Zero duty in any alias, router or other chain:
-  `claude-sonnet-5-5: [claude-sonnet-5, claude-sonnet-4-6, gpt-5.5, local-gemma4-uncensored]` ·
-  `claude-sonnet-5-5-advised-opus: [claude-sonnet-5-5, claude-sonnet-5, local-gemma4-uncensored]` ·
-  `claude-opus-5-5-advised-fable: [claude-opus-5-5, claude-opus-4-8, local-gemma4-uncensored]`.
-- **Advised routes degrade to their plain executor** (the advisor is lost on fallback), then a plaintext-era rung, then the
-  local floor — the `claude-sonnet-5-advised` pattern.
-- **Probed behaviour worth knowing when reading these chains:** LiteLLM walks chains RECURSIVELY (`max_fallbacks` 5), so a
-  400 caused by the request's own shape keeps descending until some model accepts the request. `tool_choice: "required"` on `claude-sonnet-5-5`
-  400s upstream and `claude-sonnet-5` answers; a client that ANSWERS the advisor's tool call on an advised route 400s and the
-  nested chains served that turn from `gpt-5.4` (cross-vendor).
-- Counts: 208 entries · 113 regular chains · 45 content-policy chains.
+- **+1 regular chain, 114 → 115:** `gpt-6.1-sol: [gpt-6-sol, gpt-5.6-sol, claude-opus-4-8, local-gemma4-uncensored]`. No
+  content-policy mirror, as with `gpt-6-sol` and `gpt-6-luna`.
+- **A wildcard name inherits a chain by its stripped model name** (probed): `openai/gpt-6.1-sol` with function tools 400s on
+  the chat path and was answered by `gpt-6-sol` through that chain.
+- Every cloud duty route was probed by name on 10-01 (79 routes); all served themselves except the access-gated
+  `claude-mythos-5`. `openrouter-free` points at `qwen/qwen3.8-27b:free` and has no chain, by design.
+- The same dump was the first to show the 09-30 local-floor swaps (`local-granite-4.1` → `local-lfm2.5-8b`,
+  `imac-gemma4-12b-qat` → `local-gemma4-12b`).
+- Counts at v4.21.0: 212 entries · 115 regular chains · 45 content-policy chains.
 
 ```
 ===== A. ALIASES (model_group_alias) — alias -> PRIMARY target =====
@@ -86,7 +83,7 @@ count: 39
   reasoning: claude-sonnet-5 -> grok-4.5 -> gemini-3.1-pro -> local-gemma4-uncensored
   deep-reasoning: venice/openai-gpt-56-sol-pro -> gpt-5.5-pro -> claude-opus-4-8 -> local-gemma4-uncensored
   fast: gpt-5.4-mini -> gpt-5.6-luna -> mercury-2 -> mercury-2.5 -> grok-4.3 -> gemini-3.5-flash -> local-ministral-3b
-  coding: kimi-k2.7-code -> mimo-v2.5 -> venice-qwen3-coder -> codestral -> local-granite-4.1 -> imac-gemma4-12b-qat -> local-qwen3.5-4b
+  coding: kimi-k2.7-code -> mimo-v2.5 -> venice-qwen3-coder -> codestral -> local-lfm2.5-8b -> local-gemma4-12b -> local-qwen3.5-4b
   private: venice/e2ee-glm-5-3-flash -> venice/e2ee-glm-5-2-p -> venice/e2ee-deepseek-v4-flash -> venice/e2ee-qwen3-6-35b-a3b -> local-gemma4-uncensored -> local-qwen3.5-4b
   private-uncensored: venice/e2ee-gemma-4-26b-a4b-uncensored-p -> venice-uncensored-1.1 -> glm-4.7-heretic -> local-gemma4-uncensored -> local-qwen3.5-4b
   vision: grok-4.5 -> local-ministral-3b -> local-qwen3.5-4b
@@ -96,18 +93,18 @@ count: 39
   array/deep-reasoning: venice/openai-gpt-56-sol-pro -> gpt-5.5-pro -> claude-opus-4-8 -> local-gemma4-uncensored
   praxen/fast: gpt-5.4-mini -> gpt-5.6-luna -> mercury-2 -> mercury-2.5 -> grok-4.3 -> gemini-3.5-flash -> local-ministral-3b
   array/fast: gpt-5.4-mini -> gpt-5.6-luna -> mercury-2 -> mercury-2.5 -> grok-4.3 -> gemini-3.5-flash -> local-ministral-3b
-  praxen/coding: kimi-k2.7-code -> mimo-v2.5 -> venice-qwen3-coder -> codestral -> local-granite-4.1 -> imac-gemma4-12b-qat -> local-qwen3.5-4b
-  array/coding: kimi-k2.7-code -> mimo-v2.5 -> venice-qwen3-coder -> codestral -> local-granite-4.1 -> imac-gemma4-12b-qat -> local-qwen3.5-4b
+  praxen/coding: kimi-k2.7-code -> mimo-v2.5 -> venice-qwen3-coder -> codestral -> local-lfm2.5-8b -> local-gemma4-12b -> local-qwen3.5-4b
+  array/coding: kimi-k2.7-code -> mimo-v2.5 -> venice-qwen3-coder -> codestral -> local-lfm2.5-8b -> local-gemma4-12b -> local-qwen3.5-4b
   praxen/private: venice/e2ee-glm-5-3-flash -> venice/e2ee-glm-5-2-p -> venice/e2ee-deepseek-v4-flash -> venice/e2ee-qwen3-6-35b-a3b -> local-gemma4-uncensored -> local-qwen3.5-4b
   array/private: venice/e2ee-glm-5-3-flash -> venice/e2ee-glm-5-2-p -> venice/e2ee-deepseek-v4-flash -> venice/e2ee-qwen3-6-35b-a3b -> local-gemma4-uncensored -> local-qwen3.5-4b
   praxen/private-uncensored: venice/e2ee-gemma-4-26b-a4b-uncensored-p -> venice-uncensored-1.1 -> glm-4.7-heretic -> local-gemma4-uncensored -> local-qwen3.5-4b
   array/private-uncensored: venice/e2ee-gemma-4-26b-a4b-uncensored-p -> venice-uncensored-1.1 -> glm-4.7-heretic -> local-gemma4-uncensored -> local-qwen3.5-4b
-  legacy-go/coding-lite: glm-5.3-flash -> gemini-3.6-flash -> laguna-s-2.1 -> local-granite-4.1 -> imac-gemma4-12b-qat -> local-qwen3.5-4b
-  go/coding-lite: glm-5.3-flash -> gemini-3.6-flash -> laguna-s-2.1 -> local-granite-4.1 -> imac-gemma4-12b-qat -> local-qwen3.5-4b
-  legacy-go/coding-balanced: minimax-m3 -> kimi-k3 -> venice/e2ee-glm-5-2-p -> local-granite-4.1 -> imac-gemma4-12b-qat -> local-qwen3.5-4b
-  go/coding-balanced: minimax-m3 -> kimi-k3 -> venice/e2ee-glm-5-2-p -> local-granite-4.1 -> imac-gemma4-12b-qat -> local-qwen3.5-4b
-  legacy-go/coding-heavy: claude-fable-5 -> claude-opus-5 -> gpt-5.6-sol-pro -> claude-sonnet-5-5 -> imac-gemma4-12b-qat -> local-qwen3.5-4b
-  go/coding-heavy: claude-fable-5 -> claude-opus-5 -> gpt-5.6-sol-pro -> claude-sonnet-5-5 -> imac-gemma4-12b-qat -> local-qwen3.5-4b
+  legacy-go/coding-lite: glm-5.3-flash -> gemini-3.6-flash -> laguna-s-2.1 -> local-lfm2.5-8b -> local-gemma4-12b -> local-qwen3.5-4b
+  go/coding-lite: glm-5.3-flash -> gemini-3.6-flash -> laguna-s-2.1 -> local-lfm2.5-8b -> local-gemma4-12b -> local-qwen3.5-4b
+  legacy-go/coding-balanced: minimax-m3 -> kimi-k3 -> venice/e2ee-glm-5-2-p -> local-lfm2.5-8b -> local-gemma4-12b -> local-qwen3.5-4b
+  go/coding-balanced: minimax-m3 -> kimi-k3 -> venice/e2ee-glm-5-2-p -> local-lfm2.5-8b -> local-gemma4-12b -> local-qwen3.5-4b
+  legacy-go/coding-heavy: claude-fable-5 -> claude-opus-5 -> gpt-5.6-sol-pro -> claude-sonnet-5-5 -> local-gemma4-12b -> local-qwen3.5-4b
+  go/coding-heavy: claude-fable-5 -> claude-opus-5 -> gpt-5.6-sol-pro -> claude-sonnet-5-5 -> local-gemma4-12b -> local-qwen3.5-4b
   legacy-go/fast: grok-4.5 -> gpt-5.6-luna -> gemini-3.6-flash -> mercury-2 -> mercury-2.5 -> local-ministral-3b
   go/fast: grok-4.5 -> gpt-5.6-luna -> gemini-3.6-flash -> mercury-2 -> mercury-2.5 -> local-ministral-3b
   legacy-go/reasoning: claude-sonnet-5 -> gemini-3.1-pro -> grok-4.5 -> gpt-5.6-terra -> local-gemma4-uncensored
@@ -126,10 +123,10 @@ count: 39
   array/auto-local: local-gemma4-uncensored -> local-qwen3.5-4b
   legacy-go/local: local-qwen3.5-4b
   go/local: local-qwen3.5-4b
-  praxen/openai-router: gpt-5.5 -> gpt-5.6-sol -> claude-sonnet-5-5 -> local-gemma4-uncensored
-  array/auto-openai: gpt-5.5 -> gpt-5.6-sol -> claude-sonnet-5-5 -> local-gemma4-uncensored
+  praxen/openai-router: gpt-5.5 -> gpt-6.1-sol -> gpt-5.6-sol -> claude-sonnet-5-5 -> local-gemma4-uncensored
+  array/auto-openai: gpt-5.5 -> gpt-6.1-sol -> gpt-5.6-sol -> claude-sonnet-5-5 -> local-gemma4-uncensored
   gpt-5.6-sol-priority: gpt-5.6-sol -> gpt-5.5 -> claude-opus-4-8 -> local-gemma4-uncensored
-  gpt-5.5-priority: gpt-5.5 -> gpt-5.6-sol -> claude-opus-4-8 -> local-gemma4-uncensored
+  gpt-5.5-priority: gpt-5.5 -> gpt-6.1-sol -> gpt-5.6-sol -> claude-opus-4-8 -> local-gemma4-uncensored
   claude-opus-4-8: claude-fable-5[1m] -> gemini-3.1-pro -> claude-opus-4-6 -> local-gemma4-uncensored
   claude-fable-5[1m]: claude-opus-4-8 -> claude-opus-4-6 -> gpt-5.4-pro -> local-gemma4-uncensored
   claude-fable-5: claude-opus-4-8 -> claude-opus-4-6 -> gpt-5.4-pro -> local-gemma4-uncensored
@@ -145,6 +142,7 @@ count: 39
   claude-opus-5-5-advised-fable: claude-opus-5-5 -> claude-opus-4-8 -> local-gemma4-uncensored
   claude-opus-5: claude-opus-4-8 -> claude-opus-4-6 -> gpt-5.4-pro -> local-gemma4-uncensored
   gpt-6-sol: gpt-5.6-sol -> gpt-5.5 -> claude-opus-4-8 -> local-gemma4-uncensored
+  gpt-6.1-sol: gpt-6-sol -> gpt-5.6-sol -> claude-opus-4-8 -> local-gemma4-uncensored
   claude-sonnet-5: claude-sonnet-4-6 -> gpt-5.5 -> gpt-5.4 -> local-gemma4-uncensored
   claude-sonnet-5-advised: claude-sonnet-5 -> claude-sonnet-4-6 -> local-gemma4-uncensored
   claude-sonnet-5-5: claude-sonnet-5 -> claude-sonnet-4-6 -> gpt-5.5 -> local-gemma4-uncensored
@@ -172,7 +170,6 @@ count: 39
   gpt-5.6-luna: gpt-5.4-mini -> gemini-3.5-flash -> local-ministral-3b
   gpt-6-luna: gpt-5.6-luna -> gpt-5.4-mini -> local-ministral-3b
   gpt-4.1-mini: gemini-3.5-flash -> gpt-5.4-mini -> local-ministral-3b
-  gpt-4.1-nano: gpt-4.1-mini -> gemini-3.1-flash-lite -> local-ministral-3b
   claude-haiku-4-5: gpt-5.4-mini -> gemini-3.5-flash -> local-ministral-3b
   claude-haiku-4-5-advised-opus: claude-haiku-4-5 -> gpt-5.4-mini -> local-ministral-3b
   claude-haiku-4-5-advised-sonnet: claude-haiku-4-5 -> gpt-5.4-mini -> local-ministral-3b
@@ -180,13 +177,13 @@ count: 39
   mistral-small: gpt-4.1-mini -> gemini-3.5-flash -> local-ministral-3b
   command-r7b: gpt-5.4-nano -> gemini-3.1-flash-lite -> local-ministral-3b
   mercury-2: gpt-5.4-mini -> gemini-3.5-flash -> local-ministral-3b
-  codestral: grok-code -> kimi-k2.7-code -> imac-gemma4-12b-qat -> local-qwen3.5-4b
-  devstral-2: codestral -> grok-code -> imac-gemma4-12b-qat -> local-qwen3.5-4b
-  grok-code: kimi-k2.7-code -> mimo-v2.5 -> venice-qwen3-coder -> local-granite-4.1 -> imac-gemma4-12b-qat -> local-qwen3.5-4b
-  kimi-k2.7-code: mimo-v2.5 -> grok-code -> imac-gemma4-12b-qat -> local-qwen3.5-4b
-  mimo-v2.5: kimi-k2.7-code -> grok-code -> imac-gemma4-12b-qat -> local-qwen3.5-4b
-  mimo-v2.6-flash: glm-5.3-flash -> gemini-3.6-flash -> laguna-s-2.1 -> local-granite-4.1 -> imac-gemma4-12b-qat -> local-qwen3.5-4b
-  venice-qwen3-coder: venice-glm-5.1 -> codestral -> imac-gemma4-12b-qat -> local-qwen3.5-4b
+  codestral: grok-code -> kimi-k2.7-code -> local-gemma4-12b -> local-qwen3.5-4b
+  devstral-2: codestral -> grok-code -> local-gemma4-12b -> local-qwen3.5-4b
+  grok-code: kimi-k2.7-code -> mimo-v2.5 -> venice-qwen3-coder -> local-lfm2.5-8b -> local-gemma4-12b -> local-qwen3.5-4b
+  kimi-k2.7-code: mimo-v2.5 -> grok-code -> local-gemma4-12b -> local-qwen3.5-4b
+  mimo-v2.5: kimi-k2.7-code -> grok-code -> local-gemma4-12b -> local-qwen3.5-4b
+  mimo-v2.6-flash: glm-5.3-flash -> gemini-3.6-flash -> laguna-s-2.1 -> local-lfm2.5-8b -> local-gemma4-12b -> local-qwen3.5-4b
+  venice-qwen3-coder: venice-glm-5.1 -> codestral -> local-gemma4-12b -> local-qwen3.5-4b
   gemini-2.5-pro: gemini-3.1-pro -> claude-opus-4-6 -> local-gemma4-uncensored
   venice/e2ee-glm-5-3-p: venice/e2ee-glm-5-2-p -> venice/e2ee-deepseek-v4-flash -> venice/e2ee-qwen3-6-35b-a3b -> local-gemma4-uncensored -> local-qwen3.5-4b
   venice/e2ee-glm-5-2-p: venice/e2ee-deepseek-v4-flash -> venice/e2ee-qwen3-6-35b-a3b -> local-gemma4-uncensored -> local-qwen3.5-4b
@@ -203,7 +200,7 @@ count: 39
 ===== C. default_fallbacks: None =====
 
 ===== D. TERMINAL-RUNG TALLY (last model in each chain) =====
-  local-gemma4-uncensored    terminal for 49 chains
+  local-gemma4-uncensored    terminal for 50 chains
   local-qwen3.5-4b           terminal for 41 chains
-  local-ministral-3b         terminal for 24 chains
+  local-ministral-3b         terminal for 23 chains
 ```
