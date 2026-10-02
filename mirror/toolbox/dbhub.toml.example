@@ -1,0 +1,40 @@
+# DBHub — the toolbox's one database tool, read-only, for the LiteLLM spend ledger.
+# Copy to ~/.config/praxen-toolbox/dbhub.toml (the path toolbox.yaml passes with --config).
+#
+# Before it works:
+#   1. Create a Postgres role that can only SELECT (ideally only from "LiteLLM_SpendLogs" and the
+#      "LiteLLM_SpendLogs_ct" view). The LiteLLM database also holds key hashes and config rows.
+#   2. Set the Windows user variable PRAXEN_SPEND_RO_DSN to that role's connection string, e.g.
+#      postgres://spend_reader:<password>@localhost:5432/litellm?sslmode=disable
+#      Do NOT reuse DATABASE_URI, which is not a read-only login.
+#
+# readonly lives ONLY here. A DBHub launched with just --dsn can write, so always launch with --config.
+# DBHub reloads this file when it changes.
+
+[[sources]]
+id = "spend"
+description = "LiteLLM spend ledger (read-only role)"
+dsn = "${PRAXEN_SPEND_RO_DSN}"
+lazy = true
+connection_timeout = 10
+query_timeout = 20
+
+[[tools]]
+name = "execute_sql"
+source = "spend"
+readonly = true
+max_rows = 500
+
+[[tools]]
+name = "search_objects"
+source = "spend"
+
+# Add a local SQLite file later the same way, for example:
+# [[sources]]
+# id = "notes"
+# dsn = "sqlite:///C:/path/to/file.db"
+# [[tools]]
+# name = "execute_sql"
+# source = "notes"
+# readonly = true
+# max_rows = 200
