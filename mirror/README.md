@@ -15,7 +15,6 @@ Generated 2026-10-02 by a private tool; every file passed the leak gate before c
 | `provision-keys.sh`, `env.template` | Team and key provisioning, and every environment variable the stack reads (names only) |
 | `fallback-chains/chains-reference.md` | The fallback chains, generated from the config |
 | `scripts/`, `toolbox/` | The live operating scripts and the MCP toolbox sources |
-| `docs/unsloth-desktop-guide.md` | Local model hosting on an 8 GB card |
 | `vault-contract/` | The agent contract for the notes vault and its sync script |
 | `DEPLOY_PLAYBOOK.md` | The restore and operations procedure |
 
@@ -33,7 +32,8 @@ The dashboards are in `../grafana/dashboards/` (sanitized by their own port).
   for the LAN, 203.0.113.x and 198.18.0.x for container networks), one per distinct real address.
 - **Names:** people, hosts, clients, sibling projects, key families, mailboxes and user paths were replaced with
   neutral placeholders (for example `pc-host`, `~`, `user@example.com`, `front-*`, `legacy-go/*`, `intake-*`).
-- **Not copied:** secrets (never in git), and the narrative documents (operator notes, state logs, handoffs, rule pages).
+- **Not copied:** secrets (never in git), the narrative documents (operator notes, state logs, handoffs, rule pages), and
+  the local-hosting guide, which records one machine's sign-in and security settings.
   Scripts here cite some of them by path (`docs/rules/...`, `docs/STATE.md`); those paths are not part of this snapshot.
 
 ## Restoring from it
