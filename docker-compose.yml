@@ -211,7 +211,7 @@ services:
           cpus: "0.5"
 
   loki:
-    image: grafana/loki:3.7.7   # note: this tag has NO v-prefix
+    image: grafana/loki:3.7.8   # note: this tag has NO v-prefix
     container_name: praxen-loki
     profiles: ["observe", "full", "dev"]
     <<: *default-restart
@@ -288,7 +288,7 @@ services:
           cpus: "0.5"
 
   grafana:
-    image: grafana/grafana:13.1.5   # MINOR bumps migrate grafana.db forward on first boot - back it up first
+    image: grafana/grafana:13.1.6   # MINOR bumps migrate grafana.db forward on first boot - back it up first
     container_name: praxen-grafana
     profiles: ["observe", "full", "dev"]
     <<: *default-restart
@@ -422,7 +422,7 @@ services:
   # ===========================================================================
 
   qdrant:
-    image: qdrant/qdrant:v1.15.4
+    image: qdrant/qdrant:v1.19.1
     container_name: praxen-qdrant
     profiles: ["agents", "full", "dev"]
     <<: *default-restart
@@ -447,7 +447,7 @@ services:
           cpus: "1.0"
 
   n8n:
-    image: n8nio/n8n:2.23.3
+    image: n8nio/n8n:2.40.3
     container_name: praxen-n8n
     profiles: ["agents", "full", "dev"]
     <<: *default-restart
