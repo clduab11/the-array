@@ -47,4 +47,5 @@ After changing a Windows environment variable, fully quit each app (tray include
 ## Change it
 
 Edit `toolbox.yaml`, run `render.py`, re-merge. Pin versions; never `@latest`. A tool with a `setup:` line
-renders switched off until that step is done. Regeneration writes atomically and refuses stale files; back them up and soft-stage them with a manifest before changing the generated file set.
+renders switched off until that step is done. `enabled_for: [clients]` renders a tool on only for those clients and
+`disabled_for: [clients]` renders it off there (presence still follows `clients_only` and `profiles`). Regeneration writes atomically and refuses stale files; back them up and soft-stage them with a manifest before changing the generated file set.

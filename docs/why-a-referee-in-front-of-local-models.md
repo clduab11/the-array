@@ -2,11 +2,11 @@
 
 Why the-array puts a decision model (TypeSafe Jev) behind the answers and in front of the routing, written for people who run
 more than one local model. Companion to `jev-decision-layer.md` (the mechanics) — this is the argument, with the numbers
-measured on the reference deployment on 2026-09-17/18 (LiteLLM 1.100.1, an 8 GB consumer GPU, LM Studio locals on two machines).
+measured on the reference deployment on 2026-09-17/18 (LiteLLM 1.100.1, an 8 GB consumer GPU, local models on two machines; the local tier has since moved to Unsloth Desktop).
 
 ## The problem, if you run more than one local model
 
-If you serve a few models through LM Studio (or llama.cpp, or vLLM) behind a gateway, you already know the two
+If you serve a few models through Unsloth Desktop (or llama.cpp, or vLLM) behind a gateway, you already know the two
 failure modes nobody's dashboard shows you:
 
 1. **The polite non-answer.** Your 3B says "I'm sorry, but I can't help with that." — HTTP 200, `finish_reason: stop`.
@@ -106,6 +106,9 @@ So here is exactly how I have it wired, and why:
   decides. Not because it would work worse — the bench says it would work better — but because "every prompt
   leaves the box to decide which local model answers" is a privacy decision, not a technical one. The config makes
   it three lines to flip if that trade is fine for your lane.
+- **Update, October 2026:** the reference deployment has since made that trade on its local routers. Jev picks the
+  tier there too, and a request sent straight to a small local model can be moved up to a stronger one, never down.
+  The private lanes still never reach Jev. The current module is `mirror/litellm/jev_gate.py`.
 
 Other caveats, plainly: early access and waitlisted, and the vendor says the price may be subsidized; not trained
 on customer input but retention is open-ended (ZDR is an enterprise term); the vendor's accuracy claims are on a
