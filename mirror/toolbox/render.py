@@ -18,8 +18,8 @@ Per-client rules come from the 2026-09-16 format research (sources in the PDF):
   OpenCode      "mcp" (V1 shape); {env:VAR}; command is one array; "environment"
   Coder Code     same as OpenCode, command wrapped in cmd /c, environment mapped explicitly
   Codex         [mcp_servers.<name>]; env_vars / bearer_token_env_var / env_http_headers (names, not values)
-  Msty Studio   one JSON per stdio tool for Add New Tool; {MSTY_VAR} from Workspaces > Environments
-  Msty Go       manual checklist (no import; npx.cmd; OAuth for remote tools)
+  desktop chat app   one JSON per stdio tool for Add New Tool; {FRONT_VAR} from Workspaces > Environments
+  task app       manual checklist (no import; npx.cmd; OAuth for remote tools)
 """
 import argparse
 import json
@@ -237,7 +237,7 @@ def render_grok(manifest, tools):
 
 
 def render_paperclip(manifest, tools):
-    # Paperclip's company connector is an approved stdio template, not a clientimport file.
+    # Paperclip's company connector is an approved stdio template, not a client import file.
     light = next((tool for tool, _ in tools if tool.get("command_runtime") == "mempalace_light"), None)  # id is "mempalace" since 2026-10-08
     if light is None:
         raise ValueError("Paperclip profile is missing the MemPalace light-server entry")
@@ -262,7 +262,7 @@ def render_hermes(manifest, tools):
     return {"mcp-servers.yaml": "# Disabled until the documented container-to-hub 403 is resolved.\n" + body}
 
 
-def render_msty_studio(manifest, tools):
+def render_front_studio(manifest, tools):
     files, http_rows, env_names = {}, [], set()
     toolsets = {p: [] for p in manifest["clients"]["front-studio"]["profiles"]}
     for tool, enabled in tools:
@@ -274,29 +274,29 @@ def render_msty_studio(manifest, tools):
         if tool["transport"] == "stdio":
             command, args = stdio_parts(tool, manifest["runtimes"], "npx.cmd")
             entry = {"command": command, "args": args}
-            env = {**(tool.get("env") or {}), **{s: "{MSTY_%s}" % s for s in secrets}}
+            env = {**(tool.get("env") or {}), **{s: "{FRONT_%s}" % s for s in secrets}}
             if env:
                 entry["env"] = env
             files[f"stdio/{tool['id']}.json"] = entry
         else:
             auth = tool.get("auth") or {}
-            header_text = "; ".join(f"{k}: {v}" for k, v in http_headers(tool, lambda s: "{MSTY_%s}" % s).items()) or "—"
+            header_text = "; ".join(f"{k}: {v}" for k, v in http_headers(tool, lambda s: "{FRONT_%s}" % s).items()) or "—"
             how = {"oauth": "OAuth sign-in", "none": "No auth"}.get(auth.get("type"), "Header")
             http_rows.append(f"| {tool['name']} | {tool['url']} | {how} | {header_text} |")
     files["HTTP-TOOLS.md"] = "\n".join([
-        "# Msty Studio — HTTP tools (Add New Tool > HTTP)", "",
-        "Header values use Msty Environment variables. Confirm in the Tool Console that the placeholder resolves inside a header;",
-        "if it does not, paste the key into Msty's header field instead (it stays inside Msty).", "",
+        "# desktop chat app — HTTP tools (Add New Tool > HTTP)", "",
+        "Header values use Front Environment variables. Confirm in the Tool Console that the placeholder resolves inside a header;",
+        "if it does not, paste the key into Front's header field instead (it stays inside Front).", "",
         "| Tool | MCP server URL | Auth | Headers |", "|---|---|---|---|", *http_rows, ""])
     files["ENVIRONMENT.md"] = "\n".join([
-        "# Msty Studio — Base Environment variables", "",
-        "Workspaces > Environments > Base Environment. Msty adds the MSTY_ prefix itself, so create the names without it.", "",
-        *[f"- `{n}` (referenced as `{{MSTY_{n}}}`)" for n in sorted(env_names)], ""])
-    files["TOOLSETS.md"] = "\n".join(["# Msty Studio — toolsets", "", *[f"- **{p}**: {', '.join(sorted(set(v)))}" for p, v in toolsets.items()], ""])
+        "# desktop chat app — Base Environment variables", "",
+        "Workspaces > Environments > Base Environment. Front adds the FRONT_ prefix itself, so create the names without it.", "",
+        *[f"- `{n}` (referenced as `{{FRONT_{n}}}`)" for n in sorted(env_names)], ""])
+    files["TOOLSETS.md"] = "\n".join(["# desktop chat app — toolsets", "", *[f"- **{p}**: {', '.join(sorted(set(v)))}" for p, v in toolsets.items()], ""])
     return files
 
 
-def render_msty_go(manifest, tools):
+def render_front_go(manifest, tools):
     rows = []
     for tool, enabled in tools:
         named_for_go = "front-go" in (tool.get("clients_only") or [])
@@ -312,9 +312,9 @@ def render_msty_go(manifest, tools):
         else:
             auth = (tool.get("auth") or {}).get("type")
             how = f"Remote URL: `{tool['url']}` · " + ("OAuth" if auth == "oauth" else "no auth" if auth == "none" else
-                                                     "OAuth if offered; header auth did not save on Go 0.15.4")
+                                                     "OAuth if offered; header auth did not save on the task app0.15.4")
         rows.append(f"- [ ] **{tool['name']}** — {how}")
-    return {"CHECKLIST.md": "\n".join(["# Msty Go — tools to add by hand (Settings > Tools)", "",
+    return {"CHECKLIST.md": "\n".join(["# task app — tools to add by hand (Settings > Tools)", "",
                                         "Go has no import. Use `npx.cmd`, not `npx`. Type keys into Go's secure fields.", "", *rows, ""])}
 
 
@@ -330,7 +330,7 @@ def secrets_md(manifest):
     rows = [f"| `{name}` | {info['status']} | {info['for']} | {info.get('note', '')} |" for name, info in manifest["secrets"].items()]
     return "\n".join(["# Keys the toolbox reads (names only)", "",
                       "Set each as a Windows **user** environment variable, then fully quit and reopen every app (tray included) so it sees the change.",
-                      "Msty Studio reads the same names from Workspaces > Environments instead.", "",
+                      "desktop chat app reads the same names from Workspaces > Environments instead.", "",
                       f"| Variable | Status on {manifest.get('updated', 'unknown')} | Used by | Note |", "|---|---|---|---|", *rows, ""])
 
 
@@ -378,8 +378,8 @@ def main():
             "grok": render_grok,
             "paperclip": render_paperclip,
             "hermes": render_hermes,
-            "front-studio": render_msty_studio,
-            "front-go": render_msty_go,
+            "front-studio": render_front_studio,
+            "front-go": render_front_go,
         }
         for client in CLIENTS:
             client_manifest = dict(manifest)

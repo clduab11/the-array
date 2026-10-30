@@ -32,8 +32,8 @@ Then merge the rendered block into each app. None of these steps edits an app fo
 | Codex | `out/codex/mcp_servers.toml` | `%USERPROFILE%\.codex\config.toml` |
 | Claude Code | `out/claude-code/.mcp.json` | a repo root, or `claude mcp add-json` per server |
 | Claude Code WSL | `out/claude-code-wsl/.mcp.json` | a WSL repo root, or `claude mcp add-json` per server |
-| Msty Studio | `out/front-studio/` | Add New Tool, one pasted JSON per local tool; HTTP tools by hand; set keys under Workspaces > Environments |
-| Msty Go | `out/front-go/CHECKLIST.md` | Settings > Tools, by hand |
+| desktop chat app | `out/front-studio/` | Add New Tool, one pasted JSON per local tool; HTTP tools by hand; set keys under Workspaces > Environments |
+| task app | `out/front-go/CHECKLIST.md` | Settings > Tools, by hand |
 | Codex WSL | `out/codex-wsl/mcp_servers.toml` | `~/.codex/config.toml` |
 | OpenCode WSL | `out/opencode-wsl/mcp.jsonc` | `~/.config/opencode/opencode.jsonc` (`mcp` key) |
 | Grok Build | `out/grok/mcpServers.json` | merge `mcpServers` into WSL `~/.claude.json` |

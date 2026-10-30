@@ -50,7 +50,7 @@ probabilities instead of text. This module gives the proxy FOUR uses for it, all
      injection, non-English text, tool/browse needs and code work. Policy is PER ROUTER (ROUTER_POLICY,
      env JEV_ROUTER_POLICY_JSON): the cloud routers promote an uncertain verdict to the more capable of
      the two leading tiers (under-routing is the costly error); the LOCAL routers cap that promotion at
-     MEDIUM (an uncertain verdict never boots the 26B or the iMac on its own) and floor long prompts at
+     MEDIUM (an uncertain verdict never boots the 26B or the Mac on its own) and floor long prompts at
      MEDIUM instead of COMPLEX. Injection guard: text that argues for its own tier can never push the
      request BELOW MEDIUM. Non-English text raises the certainty required. Jev failure -> the plugin
      declines -> LiteLLM's built-in heuristic scorer decides (the operator ruling 2026-09-17).
@@ -66,7 +66,7 @@ probabilities instead of text. This module gives the proxy FOUR uses for it, all
   3. STREAM OBSERVER (same instance, async_post_call_streaming_iterator_hook) — streamed text has
      already left the proxy, so nothing is re-routed; the assembled text is judged AFTER the stream ends
      (fire-and-forget, never on the request path) and recorded as action="observed". This is the meter
-     for how often locals and cloud lanes soft-refuse on the streaming front door (Msty).
+     for how often locals and cloud lanes soft-refuse on the streaming front door (Front).
 
   4. SHADOW CLASSIFIER (same instance, async_pre_call_hook) — for the static alias chains named in
      JEV_SHADOW_GROUPS the tier question runs fire-and-forget and is only RECORDED (praxen_jev_shadow_*):
@@ -398,8 +398,8 @@ def _is_local_router(router: str) -> tuple[bool, dict[str, list[str]]]:
 
 # Per-router policy. `uncertain`: "up" = the more capable of the two leading tiers when top p is below the floor.
 # `uncertain_cap`: the highest tier an UNCERTAIN verdict may promote to (local routers: MEDIUM — never boot the
-# 26B / the iMac on a guess). `size_floor_tier`: the tier long prompts are floored at (cloud: COMPLEX; local:
-# MEDIUM — the 4B has 131K ctx and runs at 52.9 tok/s, the iMac 12B at ~7.6). `injection_floor`: text that
+# 26B / the Mac on a guess). `size_floor_tier`: the tier long prompts are floored at (cloud: COMPLEX; local:
+# MEDIUM — the 4B has 131K ctx and runs at 52.9 tok/s, the Mac 12B at ~7.6). `injection_floor`: text that
 # argues for its own tier can never push the request below this. v4 `min_top` (optional): the top probability this router
 # needs before it trusts the verdict outright (absent = JEV_MIN_TOP_PROBABILITY; the Decisions backend calibrates differently).
 DEFAULT_POLICY: dict[str, Any] = {"uncertain": "up", "uncertain_cap": None, "size_floor_tier": "COMPLEX",

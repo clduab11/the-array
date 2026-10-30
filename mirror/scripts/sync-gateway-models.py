@@ -1,4 +1,4 @@
-"""Register LiteLLM's full model list on a Msty Gateway provider record explicitly.
+"""Register LiteLLM's full model list on a gateway app provider record explicitly.
 
 Why: Gateway auto-import (autoProxyModels) fetches LiteLLM's /v1/models live, and LiteLLM v1.100.1 builds that list by calling
 get_model_info once per model — 25-35 s for ~1,100 models. Gateway times out first, so the record showed zero models
@@ -7,7 +7,7 @@ This script turns auto-import off on the record (PUT without `credential` keeps 
 provider) and registers each model id, so the list no longer depends on LiteLLM answering quickly.
 
 Re-run after every LiteLLM config change that adds or removes models:
-    python scripts/sync-gateway-models.py              # provider openai-compatible, key VKEY_FRONT_GATEWAY_WINPC
+    python scripts/sync-gateway-models.py              # provider openai-compatible, key VKEY_front_GATEWAY_WINPC
     python scripts/sync-gateway-models.py --prune      # also delete registrations LiteLLM no longer serves
     python scripts/sync-gateway-models.py --dry-run
 Secrets are read from .env / .virtual-keys.env inside the script and never printed.
@@ -52,7 +52,7 @@ def http(method, url, headers, body=None, timeout=60):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--provider", default="openai-compatible")
-    ap.add_argument("--key-var", default="VKEY_FRONT_GATEWAY_WINPC", help="the LiteLLM key this Gateway record uses (.virtual-keys.env)")
+    ap.add_argument("--key-var", default="VKEY_front_GATEWAY_WINPC", help="the LiteLLM key this Gateway record uses (.virtual-keys.env)")
     ap.add_argument("--prune", action="store_true")
     ap.add_argument("--dry-run", action="store_true")
     a = ap.parse_args()
@@ -86,7 +86,7 @@ def main():
                 sys.exit(f"provider update failed or lost its credential: HTTP {st} {after}")
 
     st, listing = http("GET", f"{GATEWAY}/v1/models", nx, timeout=120)
-    have = {m["msty_model"]["name"] for m in listing.get("data", []) if m.get("msty_model", {}).get("providerId") == a.provider}
+    have = {m["front_model"]["name"] for m in listing.get("data", []) if m.get("front_model", {}).get("providerId") == a.provider}
     missing, stale = [m for m in want if m not in have], sorted(have - set(want))
     print(f"Gateway already lists {len(have)} for {a.provider}; registering {len(missing)}; stale {len(stale)}" + (" (pruning)" if a.prune else ""))
 
@@ -106,7 +106,7 @@ def main():
     st, listing = http("GET", f"{GATEWAY}/v1/models", nx, timeout=120)
     per = {}
     for m in listing.get("data", []):
-        pid = m.get("msty_model", {}).get("providerId", "?")
+        pid = m.get("front_model", {}).get("providerId", "?")
         per[pid] = per.get(pid, 0) + 1
     print(f"done: {fails} failures; Gateway now lists {sum(per.values())} models: {per}")
     sys.exit(1 if fails else 0)

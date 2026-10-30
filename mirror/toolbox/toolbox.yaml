@@ -1,4 +1,4 @@
-# Sanitized structural mirror of the-array/toolbox/toolbox.yaml (2026-10-29). Comments and identity values
+# Sanitized structural mirror of the-array/toolbox/toolbox.yaml (2026-10-30). Comments and identity values
 # removed or replaced; budgets are placeholders. See mirror/README.md before restoring from it.
 version: 1
 updated: 2026-10-08
@@ -8,7 +8,7 @@ profiles:
   rnd-researcher: Research for Labs and the Institute (papers, models, the web)
   biz-ops: Business operations (LLC, tax, legal, HR)
   plan-triage: Portfolio, tickets, spend
-  desktop: Supervised Windows GUI automation (Msty Studio and Zed only)
+  desktop: Supervised Windows GUI automation (desktop chat app and Zed only)
 
 clients:
   zed: {profiles: [build-code, rnd-researcher, plan-triage, desktop]}
@@ -53,11 +53,11 @@ secrets:
   CONTEXT7_API_KEY: {status: present, for: context7}
   FIRECRAWL_API_KEY: {status: present, for: firecrawl}
   HF_TOKEN: {status: present, for: huggingface, note: use a read-only token}
-  GITHUB_MCP_PAT: {status: present, for: github, note: "validated 2026-10-08 on /mcp/readonly (26 tools). OpenCode and Coder keep their own PATs clientside (OPENCODE_GITHUB_MCP_PAT, CODER_JSONC_GITHUB_PAT), which the toolbox cannot express"}
+  GITHUB_MCP_PAT: {status: present, for: github, note: "validated 2026-10-08 on /mcp/readonly (26 tools). OpenCode and Coder keep their own PATs client side (OPENCODE_GITHUB_MCP_PAT, CODER_JSONC_GITHUB_PAT), which the toolbox cannot express"}
   TAVILY_API_KEY: {status: present, for: tavily, note: paid through 2026-10-30, then free tier (1,000 credits/month)}
   LINEAR_API_KEY: {status: optional, for: linear, note: "only for a header-only client; every rendered client signs in with OAuth instead"}
   PRAXEN_SPEND_RO_DSN: {status: present, for: dbhub, note: "set 2026-09-17: role spend_reader, SELECT on LiteLLM_SpendLogs only, default_transaction_read_only; toml at ~/.config/praxen-toolbox/dbhub.toml"}
-  GO_MCP_TOKEN: {status: present, for: front-go, note: "lives only inside Msty Studio's Toolbox entry / Go's Settings > Tools; Studio-only tool, no other client reads it"}
+  GO_MCP_TOKEN: {status: present, for: front-go, note: "lives only inside desktop chat app's Toolbox entry / the task app's Settings > Tools; chat-app-only tool, no other client reads it"}
 
 tools:
   - id: searxng
@@ -97,7 +97,7 @@ tools:
     enabled_for: [coder]   # 2026-10-08 the operator: on in Coder
     note: >-
       The URL filter trims Jina's 12 tools to 4 on Jina's side. 2026-10-08: Jina MCP 1.9.0 renamed search_web_deep to search_web and
-      folded parallel_read_url into read_url (arrays), so the old filter returned 3 tools. Msty had the key written into the tool's
+      folded parallel_read_url into read_url (arrays), so the old filter returned 3 tools. Front had the key written into the tool's
       arguments; this replaces that. Policy 2026-10-03: off by default.
     evidence: https://github.com/jina-ai/MCP
   - id: context7
@@ -250,7 +250,7 @@ tools:
     transport: http
     url: https://mcp.notion.com/mcp
     auth: {type: oauth}
-    note: Temporary. Delete Msty's local @notionhq entry and revoke its integration token. Do the migration with Obsidian's Importer, not through MCP.
+    note: Temporary. Delete Front's local @notionhq entry and revoke its integration token. Do the migration with Obsidian's Importer, not through MCP.
     evidence: https://developers.notion.com/guides/mcp/get-started-with-mcp
   - id: sentry
     name: Sentry
@@ -291,7 +291,7 @@ tools:
     tier: role
     profiles: [desktop]
     clients_only: [front-studio, zed, opencode, coder, codex]   # 2026-10-08: present in the IDE clients, off there (no desktop profile); Coder runs an unpinned copy ON today
-    what: Drive Windows apps that have no API, supervised, in Msty Studio or Zed
+    what: Drive Windows apps that have no API, supervised, in desktop chat app or Zed
     transport: stdio
     runner: uvx
     args: ["windows-mcp==0.8.5", "serve", "--exclude-tools", "PowerShell,Registry,FileSystem,Process"]
@@ -300,22 +300,22 @@ tools:
     evidence: https://github.com/CursorTouch/Windows-MCP
 
   - id: front-go
-    name: Msty Go (control plane)
+    name: task app (control plane)
     tier: role
     profiles: [plan-triage]
     clients_only: [front-studio]
-    what: Drive Msty Go from a Studio chat - create/stop agents, enqueue prompts, read conversations, answer approvals, connect channels (29 tools on Go 0.16.0)
+    what: Drive task app from a desktop chat - create/stop agents, enqueue prompts, read conversations, answer approvals, connect channels (29 tools on the task app0.16.0)
     transport: http
     url: http://127.0.0.1:6274/mcp
     auth: {type: header, header: Authorization, secret: GO_MCP_TOKEN}
     note: >-
-      Documented by Msty as Go's "built-in local MCP endpoint" (docs.msty.ai/go/tools). Probed 2026-09-16: it wants the
+      Documented by the vendor as the task app's local MCP endpoint (docs.example.com/go/tools). Probed 2026-09-16: it wants the
       RAW token in the Authorization header - a "Bearer " prefix returns 401. It exposes Go's CONTROL PLANE (agents,
       channels, approvals, providers, sender groups), not Go's own file/shell tools. Because respond_pending_approval,
       configure_provider and the channel setup tools are on it, keep this tool in its OWN toolset (plan-triage) and never
       co-attached with web-reading tools (SearXNG, Exa, Jina, Firecrawl) - outside web content is the injection path the operator
       cares about. Token comes from Go > Settings > Tools > Built-in local MCP endpoint; it changes when Go rotates it.
-    evidence: https://docs.msty.ai/go/tools
+    evidence: https://docs.example.com/go/tools
 
   - id: gitlab
     name: GitLab
@@ -334,7 +334,7 @@ tools:
     profiles: [biz-ops]
     clients_only: [claude-code, front-studio, zed, opencode, coder]
     enabled_for: [claude-code, front-studio]   # 2026-10-08 policy host tier: present but off elsewhere (22 tools of schema)
-    what: Create PDFs from Markdown, fill forms, merge, split, encrypt (the operator's Msty entry, kept by ruling 2026-09-16)
+    what: Create PDFs from Markdown, fill forms, merge, split, encrypt (the operator's Front entry, kept by ruling 2026-09-16)
     transport: stdio
     runner: npx
     package: "@aryanbv/pdf-toolkit-mcp@0.3.1"
@@ -596,12 +596,12 @@ tools:
     note: Keep disabled. The container cannot reach the hub yet; never widen the hub's exposure as a workaround.
 
 dropped:
-  - {name: Brave Search, why: "Already dropped; the Msty entry is the deprecated reference server", instead: "SearXNG, then Exa"}
+  - {name: Brave Search, why: "Already dropped; the Front entry is the deprecated reference server", instead: "SearXNG, then Exa"}
   - {name: Kagi, why: "the operator 2026-09-16: dropped. kagimcp now exposes search + extract only (FastGPT and Summarizer removed), which SearXNG, Exa and Jina already cover; no OAuth, key only", instead: "SearXNG, then Exa; Jina read_url with a question for long pages"}
   - {name: SearXNG (second copy from GitHub), why: "Duplicate, unpinned, and probably cannot start", instead: SearXNG}
   - {name: Google Search, why: "Google closes its Custom Search API on 2027-01-01; SearXNG already includes Google results", instead: SearXNG}
   - {name: Fetch Content, why: "No slot in the call order, and it can reach the PC's own LiteLLM and Grafana", instead: "Jina read; SearXNG's reader as the free fallback"}
-  - {name: Git, why: "Coding apps run git themselves; the Msty entry mounts an old image with four known advisories", instead: "App terminals + GitHub"}
+  - {name: Git, why: "Coding apps run git themselves; the Front entry mounts an old image with four known advisories", instead: "App terminals + GitHub"}
   - {name: Playwright, why: "Dropped for Zed 2026-09-17 (duplicates Chrome DevTools, browser_evaluate runs arbitrary code). Un-dropped 2026-10-08 for OpenCode and Coder only, as the receipt-checked 0.0.80-r1 launch (the playwright tool above)", instead: "Chrome DevTools in Zed; the guarded Playwright in OpenCode and Coder"}
   - {name: macOS Info, why: "This PC is Windows", instead: "Nothing needed"}
   - {name: Google Maps, why: "Deprecated package, used by no toolset", instead: "Google's Grounding Lite only for a maps job"}
@@ -610,7 +610,7 @@ dropped:
   - {name: SQL Server, why: "No SQL Server exists; the template puts its password on the command line", instead: "DBHub if one appears"}
   - {name: PostgreSQL, why: "Frozen since 2025 and fails on this PC's Python 3.14", instead: DBHub}
   - {name: Redis, why: "53 tools, no read-only switch, aimed at LiteLLM's config cache", instead: "redis-cli from a shell when debugging"}
-  - {name: ChromaDB, why: "A third vector store, no release in a year, Mac path", instead: "Msty Knowledge Stacks"}
+  - {name: ChromaDB, why: "A third vector store, no release in a year, Mac path", instead: "Front Knowledge Stacks"}
   - {name: Google Drive, why: "Archived, never configured, not in the operating flow", instead: "Nothing needed"}
   - {name: Supabase, why: "No Supabase project; its default toolset is ~14x DBHub's", instead: "Nothing needed"}
   - {name: Qdrant, why: "Can't read Coder's index and could litter Coder's store", instead: "Nothing needed"}

@@ -18,7 +18,7 @@ Code never reads AGENTS.md twice (memory, "Remove an earlier AGENTS.md workaroun
 Who reads this file: Claude Code started at the vault root, and claude-acp in Zed with the vault
 open as the worktree. A session started anywhere else (Desktop, for example) loads neither this
 file nor AGENTS.md, and it also skips the vault's .claude/settings.json. Zed Agent, OpenCode,
-Coder, Codex, Msty Go and Vault Operator read AGENTS.md and never this file. the operator's earlier policy
+Coder, Codex, task app and Vault Operator read AGENTS.md and never this file. the operator's earlier policy
 that claude-acp runs on an API key or gateway, never on his Claude subscription, was DEPRECATED
 2026-09-23 (the operator): subscription use in third-party harnesses is allowed, so claude-acp may run on
 his subscription. Confirm what loaded with /context under "Memory files".
@@ -33,7 +33,7 @@ The contract above is the vault's rulebook. This section only maps it onto Claud
 
 ### Tools
 
-- Create new notes with Write. Change existing notes with Edit, never Write: Write replaces the whole file, and the operator or Msty Go may have changed it since you read it.
+- Create new notes with Write. Change existing notes with Edit, never Write: Write replaces the whole file, and the operator or task app may have changed it since you read it.
 - The contract's `vault_*` tools belong to the Local REST API MCP server. When that server is not connected in this session, use the Obsidian CLI rows instead.
 - MCP tools may be deferred. Load them with ToolSearch before the first call.
 - This vault's `.claude/settings.json` denies reads of `99_private-folder/` and the app-state folders, edits to harness files, and the Obsidian CLI commands the contract leaves to the operator. When a call is denied, the contract applies: report it under `Needs the operator` instead of trying another route.
@@ -42,7 +42,7 @@ The contract above is the vault's rulebook. This section only maps it onto Claud
 
 the operator's Obsidian skills carry syntax references: `obsidian-markdown` (notes, properties, wikilinks), `obsidian-bases` (`.base` files), `json-canvas` (`.canvas` files), `obsidian-cli` and `obsidian-ops`. Claude Desktop lists them as `anthropic-skills:<name>`. Load the one that fits before you write that kind of file. They predate the contract, so where they differ the contract wins:
 - The vault is `~/praxen-vault`, not `Desktop/praxen-vault`.
-- Msty Go is authorized to work in this vault.
+- task app is authorized to work in this vault.
 - The CLI is `Obsidian.com` at the full path the contract gives, not `obsidian` on PATH.
 
 ### Where your own configuration disagrees

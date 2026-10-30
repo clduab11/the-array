@@ -1,4 +1,4 @@
-# Sanitized structural mirror of the-array/docker-compose.yml (2026-10-29). Comments and identity values
+# Sanitized structural mirror of the-array/docker-compose.yml (2026-10-30). Comments and identity values
 # removed or replaced; budgets are placeholders. See mirror/README.md before restoring from it.
 x-logging:
   driver: json-file
@@ -611,6 +611,50 @@ services:
       timeout: 5s
       retries: 3
       start_period: 60s
+  host-exporter:
+    restart: unless-stopped
+    image: python:3.12-slim@sha256:ffd5d35f5cf6dfba89eaaebd93d5ad142faa7a7f2c728742c5b50cb81baff526
+    container_name: praxen-host-exporter
+    profiles:
+      - observe
+      - full
+      - dev
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+    command:
+      - python
+      - -u
+      - /app/exporter.py
+    environment:
+      UNSLOTH_PC_URL: ${UNSLOTH_PC_URL}
+      UNSLOTH_PC_API_KEY: ${UNSLOTH_PC_API_KEY}
+      EXPORTER_PORT: '9488'
+      GATEWAY_DB_DIR: /gateway
+    volumes:
+      - ./ops/host-exporter:/app:ro
+      - type: bind
+        source: ${GATEWAY_RUNTIME_DIR:-~/AppData/Roaming/gateway app Runtime}
+        target: /gateway
+        read_only: true
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    networks:
+      - praxen-network
+    mem_limit: 64m
+    cpus: '0.25'
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - import urllib.request; urllib.request.urlopen('http://localhost:9488/metrics', timeout=8)
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
 networks:
   praxen-network:
     name: praxen-network

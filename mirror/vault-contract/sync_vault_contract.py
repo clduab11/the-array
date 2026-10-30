@@ -4,7 +4,7 @@ settings from their single sources, and check the vault for accidental instructi
   python sync_vault_contract.py                 write any target that is missing or stale
   python sync_vault_contract.py --check         report only; exit 1 on drift, a bad source,
                                                 shadowing or an instruction-named file
-  python sync_vault_contract.py --print-go-rule print the static Msty Go rule text to paste once
+  python sync_vault_contract.py --print-go-rule print the static task app rule text to paste once
   python sync_vault_contract.py --vault <dir>   operate on another vault root (testing)
   python sync_vault_contract.py --scan-private  also scan 99_private-folder/ (skipped by default:
                                                 it is the operator's private folder)
@@ -21,7 +21,7 @@ Sources, next to this script. None is named AGENTS.md or CLAUDE.md, so
 
 Targets:
   <vault>/AGENTS.md                     byte copy of the contract (OpenCode, Zed Agent, Codex,
-                                        Coder, Msty Go via an additional folder)
+                                        Coder, task app via an additional folder)
   <vault>/CLAUDE.md                     byte copy of the adapter (Claude Code, claude-acp in Zed)
   <vault>/.claude/settings.json         byte copy of the settings (Claude Code started at the
                                         vault root, claude-acp in Zed)
@@ -63,7 +63,7 @@ SOURCE = HERE / "praxen-vault.AGENTS.md"
 CLAUDE_SOURCE = HERE / "praxen-vault.CLAUDE.md"
 SETTINGS_SOURCE = HERE / "praxen-vault.claude-settings.json"
 DEFAULT_VAULT = Path.home() / "praxen-vault"
-MAX_CHARS = 16_000      # Msty Go caps profile files at 24,000 chars and Codex at 32 KiB; keep headroom.
+MAX_CHARS = 16_000      # task app caps profile files at 24,000 chars and Codex at 32 KiB; keep headroom.
 CLAUDE_MAX_LINES = 200  # code.claude.com/docs/en/memory: target under 200 lines per CLAUDE.md
 CLAUDE_IMPORT = "AGENTS.md"
 PRIVATE_DIR = "99_private-folder"
@@ -81,9 +81,9 @@ ROOT_FLAGGED = {
     "gemini.md": "Gemini CLI loads it; Zed Agent would too if AGENTS.md were missing",
     "hermes.md": "Hermes Agent loads it before AGENTS.md",
     ".hermes.md": "Hermes Agent loads it before AGENTS.md",
-    "soul.md": "Msty Go loads it when the vault is a workspace root",
-    "identity.md": "Msty Go loads it when the vault is a workspace root",
-    "user.md": "Msty Go loads it when the vault is a workspace root",
+    "soul.md": "task app loads it when the vault is a workspace root",
+    "identity.md": "task app loads it when the vault is a workspace root",
+    "user.md": "task app loads it when the vault is a workspace root",
 }
 # Names a harness loads from a SUBFOLDER when it reads a file there (lower case).
 NESTED_NAMES = {

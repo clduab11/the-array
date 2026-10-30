@@ -4,7 +4,7 @@
 **Stack epoch at writing:** compose v1.7.8 (tempo 2.9.5 → 2.10.8, 2026-09-10) · LiteLLM base v1.100.1 (`litellm/Dockerfile` pin, bumped 2026-09-10 from v1.100.0 — one-fix patch, no schema change) · litellm_config.yaml v4.13.1 · gate `scripts/verify-stack.py` 14/14 before, between and after the day's bumps (v1.100.1 + tempo 2.10.8)
 
 CHANGELOG
-- **2.0.0 (2026-09-10, OP REPO-READY / Phase India rewrite)** — full rewrite for the stack as it runs on pc-host since the Branch B cutover (2026-07-17/18). Replaces the banner-deprecated v1.1.0 (2026-04-09, M1 iMac). The prior file's rung left `backup/ops/` on 2026-10-02 under the two-rung rule (staged in `to-be-deleted/`).
+- **2.0.0 (2026-09-10, OP REPO-READY / Phase India rewrite)** — full rewrite for the stack as it runs on pc-host since the Branch B cutover (2026-07-17/18). Replaces the banner-deprecated v1.1.0 (2026-04-09, Mac). The prior file's rung left `backup/ops/` on 2026-10-02 under the two-rung rule (staged in `to-be-deleted/`).
 - **1.1.0 (2026-04-09)** — a Mac, Docker 8GB VM, MLflow, init-db.sh, 54-tool MCP wiring. Deprecated 2026-05-24; every phase in it is dead (§10).
 
 ---
@@ -28,11 +28,11 @@ CHANGELOG
 
 **`.wslconfig`** at `~\.wslconfig`: `memory=28GB` (was 35.9GB; cut 2026-08-05 after wedge #2). Rollback copy: `backup/current/wslconfig.bak.2026-08-05-pre-28gb`. This cap is a **shared budget with the local models Unsloth has loaded**; exceeding host RAM terminates the `docker-desktop` distro.
 
-**Unsloth Desktop** on the PC serves every local chat route on `127.0.0.1:8888` (keyed; it auto-updates freely, gate after). From inside the proxy container it is reachable ONLY as `http://host.docker.internal:8888/v1` (§7), and every Unsloth deployment passes `litellm/unsloth_guard.py`. Embeddings run in the `praxen-embed` container (llama.cpp CPU, no host port). Local GGUFs come from Unsloth's Hub (HF cache); the iMac tier is retired. Current routes and per-model rows: `docs/STATE.md` and the config's LOCAL TIER block.
+**Unsloth Desktop** on the PC serves every local chat route on `127.0.0.1:8888` (keyed; it auto-updates freely, gate after). From inside the proxy container it is reachable ONLY as `http://host.docker.internal:8888/v1` (§7), and every Unsloth deployment passes `litellm/unsloth_guard.py`. Embeddings run in the `praxen-embed` container (llama.cpp CPU, no host port). Local GGUFs come from Unsloth's Hub (HF cache); the Mac tier is retired. Current routes and per-model rows: `docs/STATE.md` and the config's LOCAL TIER block.
 
 **Tooling on PATH:** `docker`, `git` (set `core.autocrlf=false` before first checkout — `provision-keys.sh`, YAML and the Alloy River config are LF-sensitive), `python` (3.x; `verify-stack.py` and `check-image-updates.py` are stdlib-only; `extract_chains.py` needs PyYAML), `jq` 1.8.2 (hard dependency of `provision-keys.sh`), `curl`.
 
-**Firewall (Private profile, inbound, elevated PowerShell).** Three published ports are LAN/tailnet-exposed (opened for the iMac's clients; any LAN or tailnet device reaches them); each is gated by a named rule. Create any that are missing:
+**Firewall (Private profile, inbound, elevated PowerShell).** Three published ports are LAN/tailnet-exposed (opened for the Mac's clients; any LAN or tailnet device reaches them); each is gated by a named rule. Create any that are missing:
 
 ```bash
 # elevated PowerShell
@@ -85,7 +85,7 @@ Everything else (postgres 5432, redis 6379, prometheus 9090, tempo 3210, parked 
 
 **1. Port the tree.** `git config --global core.autocrlf false` BEFORE the clone/copy (LF-sensitive files). Secrets, a fresh `pg_dump`, and `.virtual-keys.env` travel side-channel — never through the repo or a sync folder.
 
-**2. Create `.env` from the template and fill EVERY variable.** `.env.template` is reconciled to the live file (last on 2026-09-30, when the Unsloth variables went in); its v1.1.0 predecessor had drifted 8 names behind for months and anyone following it got a dead stack (no UI login, no renderer token, three provider lanes 401ing, no iMac URL). The consumer map below is authoritative whenever the two disagree again — diff `grep -oE '^[A-Z_]+=' .env .env.template` before every bring-up.
+**2. Create `.env` from the template and fill EVERY variable.** `.env.template` is reconciled to the live file (last on 2026-09-30, when the Unsloth variables went in); its v1.1.0 predecessor had drifted 8 names behind for months and anyone following it got a dead stack (no UI login, no renderer token, three provider lanes 401ing, no Mac URL). The consumer map below is authoritative whenever the two disagree again — diff `grep -oE '^[A-Z_]+=' .env .env.template` before every bring-up.
 
 ```bash
 cp .env.template .env
@@ -99,8 +99,9 @@ cp .env.template .env
 | `UI_USERNAME`, `UI_PASSWORD` | `litellm-proxy` admin UI login at `:4000/ui` |
 | `RENDERER_AUTH_TOKEN` | `grafana` (`GF_RENDERING_RENDERER_TOKEN`) + `grafana-image-renderer` (`AUTH_TOKEN`). Grafana 13 **boot-fails** without a non-default value. |
 | `GRAFANA_ADMIN_USER`, `GRAFANA_ADMIN_PASSWORD` | `grafana`; `verify-stack.py` |
-| `UNSLOTH_PC_URL` | `litellm-proxy` — every `local-*` chat route. Value MUST be `http://host.docker.internal:8888/v1` (§7). |
-| `UNSLOTH_PC_API_KEY` | `litellm-proxy` — Unsloth Desktop's API key (Desktop > API keys). Only keyed callers auto-switch models; `litellm/unsloth_guard.py` strips Unsloth's tool, permission and egress fields from every request. |
+| `UNSLOTH_PC_URL` | `litellm-proxy` — every `local-*` chat route. Value MUST be `http://host.docker.internal:8888/v1` (§7). `host-exporter` reads the same value for Unsloth's read-only status API. |
+| `UNSLOTH_PC_API_KEY` | `litellm-proxy` — Unsloth Desktop's API key (Desktop > API keys). Only keyed callers auto-switch models; `litellm/unsloth_guard.py` strips Unsloth's tool, permission and egress fields from every request. `host-exporter` sends it on its two status calls. |
+| `GATEWAY_RUNTIME_DIR` | `host-exporter` (optional) — the gateway app runtime folder it bind-mounts read-only for per-app usage; defaults to this machine's `%APPDATA%\gateway app Runtime`. On a machine without Gateway, point it at an empty folder (the overview then reads the source as DOWN). |
 | `ANTHROPIC_API_KEY` `OPENAI_API_KEY` `GEMINI_API_KEY` `MISTRAL_API_KEY` `PERPLEXITY_API_KEY` `COHERE_API_KEY` `XAI_API_KEY` `VENICE_API_KEY` `OPENROUTER_API_KEY` | `litellm-proxy` provider credentials |
 | `GROQ_API_KEY`, `HUGGINGFACE_API_KEY`, `MERCURY_API_KEY` | `litellm-proxy` (sat orphaned for 14 days once — in `.env` but not in the compose whitelist, so three provider lanes 401'd) |
 | `TYPESAFE_API_KEY` | `litellm-proxy` — the Jev classifier, judge and local front (`litellm/jev_gate.py`) and LiteLLM's native `/typesafe/{path}` route (v1.104.0+; open to every virtual key, spend lands as `typesafe/<model>`). Empty = Jev declines and LiteLLM's heuristic routes. The optional `JEV_*` knobs are passed as `${VAR:-}` and are not in the template; unset means the code default. |
@@ -150,20 +151,20 @@ Then confirm the wrapper did its job — this MUST fail with `ModuleNotFoundErro
 docker exec praxen-litellm python -c "import hiredis"
 ```
 
-Expected `docker compose ps`: 11 `praxen-*` containers `running`; 8 show `(healthy)`; `praxen-tempo`, `praxen-loki` and `praxen-alloy` show plain `Up` — no healthcheck (tempo and loki are distroless; the alloy service simply defines none), their liveness is the Prometheus `tempo`/`loki`/`alloy` jobs.
+Expected `docker compose ps`: 12 `praxen-*` containers `running` (host-exporter since compose v1.7.23); 9 show `(healthy)`; `praxen-tempo`, `praxen-loki` and `praxen-alloy` show plain `Up` — no healthcheck (tempo and loki are distroless; the alloy service simply defines none), their liveness is the Prometheus `tempo`/`loki`/`alloy` jobs.
 
 **7. Firewall rules (§1)** if this is a new Windows install.
 
-**8. Provision teams + keys — FULL RUN ON A FRESH BOX ONLY.** `provision-keys.sh` is idempotent for teams/keys but **rebuilds `.virtual-keys.env` from scratch on every run** (`mv` overwrite — existing keys come back as empty placeholders). NEVER run it on the live box to add one key; add the spec line for the record and mint via direct `/key/generate`. Two facts about the script's roster: it is the 2026-06-20 cut (teams sum $N, six keys, some since deleted) — after a fresh run, reconcile teams (`/team/update`) and keys (`/key/generate`, `/key/delete`) to the live roster (`docs/STATE.md`, and the DB tables themselves; three of the script's six keys no longer exist there, checked 2026-10-03); and it does NOT mint `front-go-winpc`, which `verify-stack.py` gate 5 reads from `.virtual-keys.env` as `VKEY_FRONT_GO_WINPC`.
+**8. Provision teams + keys — FULL RUN ON A FRESH BOX ONLY.** `provision-keys.sh` is idempotent for teams/keys but **rebuilds `.virtual-keys.env` from scratch on every run** (`mv` overwrite — existing keys come back as empty placeholders). NEVER run it on the live box to add one key; add the spec line for the record and mint via direct `/key/generate`. Two facts about the script's roster: it is the 2026-06-20 cut (teams sum $N, six keys, some since deleted) — after a fresh run, reconcile teams (`/team/update`) and keys (`/key/generate`, `/key/delete`) to the live roster (`docs/STATE.md`, and the DB tables themselves; three of the script's six keys no longer exist there, checked 2026-10-03); and it does NOT mint `front-go-winpc`, which `verify-stack.py` gate 5 reads from `.virtual-keys.env` as `VKEY_front_GO_WINPC`.
 
 ```bash
 ./provision-keys.sh
 ```
 
-Mint any key outside the script with `budget_duration` set — a key minted without it never resets (the `front-go-imac` lesson):
+Mint any key outside the script with `budget_duration` set — a key minted without it never resets (the `front-go-mac` lesson):
 
 ```bash
-curl -sS -X POST http://localhost:4000/key/generate -H "Authorization: Bearer $(grep -E '^LITELLM_MASTER_KEY=' .env | cut -d= -f2-)" -H 'Content-Type: application/json' -d '{"key_alias":"<alias>","team_id":"<team>","max_budget":10.0,"budget_duration":"1mo","models":["fast"]}' | jq -r '"VKEY_<ALIAS_UPPER_SNAKE>=" + .key' >> .virtual-keys.env && chmod 600 .virtual-keys.env
+curl -sS -X POST http://localhost:4000/key/generate -H "Authorization: Bearer $(grep -E '^LITELLM_MASTER_KEY=' .env | cut -d= -f2-)" -H 'Content-Type: application/json' -d '{"key_alias":"<alias>","team_id":"<team>","max_budget":<cap>,"budget_duration":"1mo","models":["fast"]}' | jq -r '"VKEY_<ALIAS_UPPER_SNAKE>=" + .key' >> .virtual-keys.env && chmod 600 .virtual-keys.env
 ```
 
 The token is returned exactly ONCE by `/key/generate`; the pipe above writes it straight into `.virtual-keys.env` (the file the gate reads) without it ever reaching stdout — substitute the real `<ALIAS_UPPER_SNAKE>` before running, and never echo it.
@@ -210,7 +211,7 @@ Logs — the proxy (add `-f` to follow; any other service by compose key: `docke
 docker logs --tail 200 praxen-litellm
 ```
 
-Logs — verbose/historical: Grafana board `praxen-command`, row **08 VERBOSE LOGS // Loki + Alloy** — `$logcontainer` picks the container, `$logq` is a free regex; Succinct panel = error/warn deduped. Loki keeps 7 days.
+Logs — verbose/historical: Grafana board `praxen-command` (the OVERVIEW), collapsed section **LOGS & REQUEST LOG** (open it; it runs no query while closed) — `$logcontainer` picks the container, `$logq` is a free regex; the warn/error panel is deduped. FORENSICS holds the correlated per-request log window. Loki keeps 7 days.
 
 **Grafana** `http://localhost:3200` (also `http://198.51.100.10:3200` from the tailnet) — `admin` / `GRAFANA_ADMIN_PASSWORD`; root lands on `praxen-command`. **Dashboards and datasources are file-provisioned: disk is the only author surface.** Edit `grafana/dashboards/*.json`, Grafana re-polls within 30s. UI "Save" is rejected by design (`Cannot save provisioned dashboard`); the API/MCP `update_dashboard` path rejects likewise. New board = drop a JSON with a stable `uid` and NO top-level `id`. Datasource edits = edit the YAML, then recreate grafana (`up -d grafana`); a DB-side datasource save would recreate the exact fossil class §9 warns about. Alert-rule edits = edit or add a file in `grafana/provisioning/alerting/`, then `docker compose --profile observe restart grafana` (never the provisioning reload API); `python scripts/verify-praxen-boards.py` proves the three rule uids loaded. The boards default to TRAFFIC = clients, which hides the health gate's own calls (`docs/rules/grafana.md`). Text panels never use `body.theme-*` classes (Grafana 13 hardcodes `theme-dark` in the served HTML).
 
@@ -274,7 +275,7 @@ Then prove every name resolves (`/v1/models` lists a name even when the router h
 curl -sS http://localhost:4000/v1/chat/completions -H "Authorization: Bearer $(grep -E '^LITELLM_MASTER_KEY=' .env | cut -d= -f2-)" -H 'Content-Type: application/json' -d "{\"model\":\"<route>\",\"max_tokens\":16,\"messages\":[{\"role\":\"user\",\"content\":\"Reply OK. nonce=$(date +%s)\"}]}" | jq '{model, system_fingerprint, content: .choices[0].message.content}'
 ```
 
-A removed name must **400/403 loudly** — probe the dead name too. Routable count is upstream-driven; the gate checks ≥500 and that every `local-*` name is registered (the `imac-*` tier is retired), never a fixed number.
+A removed name must **400/403 loudly** — probe the dead name too. Routable count is upstream-driven; the gate checks ≥500 and that every `local-*` name is registered (the `mac-*` tier is retired), never a fixed number.
 
 **7. Regenerate the chain reference** at every routing change. Rung the old one first (`backup/litellm-config/chains-reference.md.bak.pre-v4.X.Y`); `extract_chains.py` prints to stdout — author the new `fallback-chains/chains-reference.md` around the dump (banner with version/date/backup path + the deltas + the dump). `PYTHONUTF8=1` is required — comments carry non-ASCII.
 
@@ -334,15 +335,15 @@ python scripts/verify-stack.py
 
 ## §7 — Client bindings
 
-- **Other devices** (the phone, any LAN or tailnet client; the iMac's clients before that tier was retired) → the PC's **host tailnet node** `http://198.51.100.10:4000/v1`, Grafana `:3200`, SearXNG `:8080`. MagicDNS is ON tailnet-wide (verified 2026-09-30, `docs/rules/compose.md`), so the node's name resolves too, and `tailscale serve` publishes Paperclip, Studio Web and Gateway under it on HTTPS, tailnet only. The retired sidecar node (`praxen-litellm` @ `198.51.100.11`) is bound by nothing — expire it in the console when convenient.
-- **PC clients** (Msty Studio/Go/Gateway on pc-host, Coder Code) → `http://localhost:4000/v1`.
-- **Msty Gateway fronts LiteLLM on ONE key** (`front-gateway-winpc`, deliberately allowlist-free; per-app attribution lives in Gateway client tokens, not LiteLLM). Gateway provider base URL is the BARE root `http://localhost:4000` (`/v1/v1` 404s). Gateway is a CLIENT of the proxy — LiteLLM stays sole vendor-facing egress; no vendor keys in Gateway except the ruled Venice-direct exception. **Coder Code stays on the LiteLLM lane permanently.** Gateway 0.5.x locks legacy admin-role client tokens on Free — tokens must be Inference-role.
-- Every client rebind list must cover EVERY service the client touches (`:4000`, `:8080`, `:3200`) — SearXNG was missed at the Branch B cutover and darked the iMac MCP for two weeks.
+- **Other devices** (the phone, any LAN or tailnet client; the Mac's clients before that tier was retired) → the PC's **host tailnet node** `http://198.51.100.10:4000/v1`, Grafana `:3200`, SearXNG `:8080`. MagicDNS is ON tailnet-wide (verified 2026-09-30, `docs/rules/compose.md`), so the node's name resolves too, and `tailscale serve` publishes Paperclip, web chat app and Gateway under it on HTTPS, tailnet only. The retired sidecar node (`praxen-litellm` @ `198.51.100.11`) is bound by nothing — expire it in the console when convenient.
+- **PC clients** (desktop chat apps and the gateway on pc-host, Coder Code) → `http://localhost:4000/v1`.
+- **The gateway app fronts LiteLLM on ONE key** (`front-gateway-winpc`, deliberately allowlist-free; per-app attribution lives in Gateway client tokens, not LiteLLM). Gateway provider base URL is the BARE root `http://localhost:4000` (`/v1/v1` 404s). Gateway is a CLIENT of the proxy — LiteLLM stays sole vendor-facing egress; no vendor keys in Gateway except the ruled Venice-direct exception. **Coder Code stays on the LiteLLM lane permanently.** Gateway 0.5.x locks legacy admin-role client tokens on Free — tokens must be Inference-role.
+- Every client rebind list must cover EVERY service the client touches (`:4000`, `:8080`, `:3200`) — SearXNG was missed at the Branch B cutover and darked the Mac MCP for two weeks.
 - Break-glass keys (`front-studio-pc`, `front-go-*`, `coder-code-windows`) bind DIRECT to LiteLLM so a wedged Gateway does not darken every app at once.
 
 **Local `api_base` from inside the proxy netns:**
 - `UNSLOTH_PC_URL` **MUST be `http://host.docker.internal:8888/v1`.** The PC's Tailscale IP is unreachable from the container (8s timeout) while the host reaches it fine — host-side probes prove nothing. That misbinding killed the terminal local rung of every fallback chain for a week in July 2026 with green healthchecks throughout.
-- Embeddings never leave the Docker network: `local-embed-qwen3` points at `http://praxen-embed:8080/v1`. Never give a client a direct Unsloth provider (`:8888`): it would bypass `litellm/unsloth_guard.py`. The iMac tier and its URL were retired on 2026-09-30 (config v4.20.0).
+- Embeddings never leave the Docker network: `local-embed-qwen3` points at `http://praxen-embed:8080/v1`. Never give a client a direct Unsloth provider (`:8888`): it would bypass `litellm/unsloth_guard.py`. The Mac tier and its URL were retired on 2026-09-30 (config v4.20.0).
 - **Any new local binding is probed from INSIDE `praxen-litellm` before it is trusted.** Send it unkeyed: a fast `401` proves the route exists, a timeout proves it does not (probed 2026-10-02: 401 in 0.03 s; the keyed `/v1/models` takes about 6 s, so a short timeout on it reads as a false failure):
 
 ```bash
@@ -469,10 +470,10 @@ If any row appears: export it to `backup/db/` as a rung, `DELETE` the row(s), re
 
 ## §10 — What this playbook replaced, and what must never return
 
-v1.1.0 (2026-04-09) described a **Mac** running an 8GB Docker VM with MLflow as the trace backend, an `init-db.sh` that created the MLflow database, a `master-playground` directory, and a 54-tool Msty MCP wiring guide. None of it survived: the directory became `the-array` with `COMPOSE_PROJECT_NAME=praxen` locked (2026-05-24); **MLflow was purged** the same day (OTel → Tempo replaced it, `init-db.sh` and the pip install went with it); the **Tailscale sidecar was retired** 2026-07-28 (parked at `profiles: ["retired"]` — the proxy owns its own netns and publishes `:4000` itself, which deleted the netns-cascade gotcha class); and the whole stack moved to pc-host in the **Branch B cutover** (2026-07-17/18) — iMac volumes are a dead cold rollback, 12 iMac-era vendor keys were revoked, every secret was re-minted. The iMac came back as an inference node on 2026-08-06 and was retired for good on 2026-09-30 (config v4.20.0).
+v1.1.0 (2026-04-09) described a **Mac** running an 8GB Docker VM with MLflow as the trace backend, an `init-db.sh` that created the MLflow database, a `master-playground` directory, and a 54-tool Front MCP wiring guide. None of it survived: the directory became `the-array` with `COMPOSE_PROJECT_NAME=praxen` locked (2026-05-24); **MLflow was purged** the same day (OTel → Tempo replaced it, `init-db.sh` and the pip install went with it); the **Tailscale sidecar was retired** 2026-07-28 (parked at `profiles: ["retired"]` — the proxy owns its own netns and publishes `:4000` itself, which deleted the netns-cascade gotcha class); and the whole stack moved to pc-host in the **Branch B cutover** (2026-07-17/18) — Mac volumes are a dead cold rollback, 12 Mac-era vendor keys were revoked, every secret was re-minted. The Mac came back as an inference node on 2026-08-06 and was retired for good on 2026-09-30 (config v4.20.0).
 
 Deprecations that must never return:
-- **A bare `local` alias** (as `model_group_alias` key or fallbacks key) — it never registers as a model group; the name is `windows-local`-class local routes called by their `local-*` names. Likewise `localwin-*`, `win-fast`/`win-vision`/`win-titan`, the three dead iMac MLX entry names, the whole `imac-*` tier and any port-1234 local `api_base`.
+- **A bare `local` alias** (as `model_group_alias` key or fallbacks key) — it never registers as a model group; the name is `windows-local`-class local routes called by their `local-*` names. Likewise `localwin-*`, `win-fast`/`win-vision`/`win-titan`, the three dead Mac MLX entry names, the whole `mac-*` tier and any port-1234 local `api_base`.
 - **PyPI install of LiteLLM** — permanent prohibition since the March 2026 security incident; `litellm/Dockerfile` tag-lock is the only path.
 - **Floating image tags** (`:latest`, `16-alpine`, `7-alpine`) — a moving tag re-resolves only on an explicit `docker pull`; `up -d` reuses the local image, so floating delivered no patches and no rollback target. Pin everything; `check-image-updates.py` is the automated check.
 - Also dead: a `venice/*` or `inception/*` wildcard with `api_base` override (phantom-catalog bug — those namespaces stay explicit, `api_base`-pinned per entry); a bare `"*"` catch-all; UI/API-saved Grafana dashboards or datasources; UI-saved LiteLLM config; exec-form healthchecks on distroless images.

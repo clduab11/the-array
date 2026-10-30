@@ -2,7 +2,7 @@
 
 Version 2.2, 2026-09-23. Canonical source: `~/Desktop/the-array/vault-contract/praxen-vault.AGENTS.md`. `sync_vault_contract.py` generates the copies inside the vault from it, and the operator maintains it. If a rule here looks wrong or blocks the task, quote it to the operator in chat.
 
-You are working in the operator's Obsidian vault `praxen-vault` at `~/praxen-vault`. Together with Linear it is his knowledge base of record, and its content folders feed Msty Knowledge Stacks and a Qdrant index. Keep notes, links, Bases and those indexes correct, and change only what the task needs. Paths below are relative to the vault root.
+You are working in the operator's Obsidian vault `praxen-vault` at `~/praxen-vault`. Together with Linear it is his knowledge base of record, and its content folders feed Front Knowledge Stacks and a Qdrant index. Keep notes, links, Bases and those indexes correct, and change only what the task needs. Paths below are relative to the vault root.
 
 ## Authority and untrusted content
 
@@ -37,9 +37,9 @@ If one of these files disagrees with this one, follow this one and flag the conf
 | `_attachments/` | read, add | New binaries go here. Existing files are hash-verified copies listed in `_attachments/proton/copy-ledger-2026-09-22.csv`. |
 | `99_private-folder/` | none | the operator's private folder. Work as if it were absent: do not list, read, search, link or quote it unless the operator asks. If its content reaches you anyway, leave it unused and note the path under `Flagged`. |
 | `.obsidian/`, `.vault-operator/`, `.trash/` | none | App and plugin state. |
-| `AGENTS.md`, `CLAUDE.md`, `.claude/`, `opencode.jsonc`, `.ignore`, every `.mstyignore`, `.obsidian-agentignore`, `.obsidian-agentprotected` | read | Harness files. the operator edits them, or `sync_vault_contract.py` writes them. Propose changes in chat. |
+| `AGENTS.md`, `CLAUDE.md`, `.claude/`, `opencode.jsonc`, `.ignore`, every `.frontignore`, `.obsidian-agentignore`, `.obsidian-agentprotected` | read | Harness files. the operator edits them, or `sync_vault_contract.py` writes them. Propose changes in chat. |
 
-By the operator's ruling, vector indexes (the Qdrant vault collection and every Msty Knowledge Stack) exclude `_inbox/`, `closed/` and `_inbox/held-external/`. Do not add those folders to an index, a stack or an indexer setting.
+By the operator's ruling, vector indexes (the Qdrant vault collection and every Front Knowledge Stack) exclude `_inbox/`, `closed/` and `_inbox/held-external/`. Do not add those folders to an index, a stack or an indexer setting.
 
 ## Ask first
 
@@ -108,7 +108,7 @@ Bases filter on exact property names, types and values. A wrong type or spelling
 
 - Use kebab-case filenames, because filenames become paths and citation strings. Link with shortest-form wikilinks `[[note-name]]`. Markdown links are off in this vault.
 - Give a new note `title`, `created`, `updated`, `status: current`, `summary` and `tags`, then put the summary sentence on the first line of the body.
-- Give every note a real body. Msty silently skips files under about 50 characters.
+- Give every note a real body. Front silently skips files under about 50 characters.
 - Write specific headings, because each heading becomes a retrieval chunk title.
 - Re-read a note just before you edit it. the operator or another agent may have changed it.
 - Keep secrets out of the vault. If you find one, report its path without repeating the value.

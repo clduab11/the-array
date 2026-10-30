@@ -7,9 +7,11 @@ WHY THIS EXISTS (2026-09-09 currency sweep): every prior op re-derived the same 
 by hand (readiness, routable count, a chain 200, an allowlist 403, embedder dims,
 6/6 prometheus targets, provisioned dashboards/datasources, searxng json). Hand-derived
 gates drift and get skipped under time pressure; a script does not. Reads secrets from
-.env / .virtual-keys.env and NEVER prints them. Every call it makes is tagged `health-gate` (header
-x-litellm-tags; body metadata.tags on gate 5, whose auth-time 403 row never sees headers), so the
-boards' TRAFFIC picker can leave gate traffic out of the client view (OP FAILED-REQUESTS, 2026-10-07).
+.env / .virtual-keys.env and NEVER prints them. Every LiteLLM call it makes is tagged `health-gate` (header
+x-litellm-tags) AND carries User-Agent `praxen-health-gate/1`, so the boards' TRAFFIC picker can leave
+gate traffic out of the client view (OP FAILED-REQUESTS, 2026-10-07). Gate 5's 403 is raised at key
+lookup: since LiteLLM v1.106.5 (10-28) its SpendLogs row keeps no tag from any carrier (header, body
+tags, metadata.tags; probed 2026-10-30, C3) but keeps metadata.user_agent, which the boards match.
 
 USAGE
   python scripts/verify-stack.py            # full gate
@@ -27,6 +29,7 @@ GRAFANA = "http://localhost:3200"
 SEARXNG = "http://localhost:8080"
 PROM_UID, TEMPO_UID, LOKI_UID, PG_UID = "afimxbo42ap6oe", "dfipt8nyznn5sc", "praxen-loki", "praxen-litellm-pg"
 GATE_TAG = "health-gate"   # SpendLogs request_tags marker for gate traffic (same tag as scripts/route-resolve.py)
+GATE_UA = "praxen-health-gate/1"   # metadata.user_agent marker; SQL_SYNTH in build-praxen-boards.py matches 'praxen-health-gate%'
 # Config v4.29.0 / jev_gate v6 (OP JEV-LANES, 2026-10-28): the lane routers decline to their primary (classifier_fallback
 # default_model), every other router to LiteLLM's heuristic. Same names as jev_gate.py LANE_ROUTERS_DEFAULT; move both together.
 LANE_ROUTERS = {"array/reasoning", "array/fast", "array/coding"}
@@ -67,8 +70,8 @@ def main():
 
     master = env(".env", "LITELLM_MASTER_KEY")
     gpw = env(".env", "GRAFANA_ADMIN_PASSWORD")
-    go_key = env(".virtual-keys.env", "VKEY_FRONT_GO_WINPC") if (ROOT / ".virtual-keys.env").exists() else None
-    H = {"Authorization": f"Bearer {master}", "Content-Type": "application/json", "x-litellm-tags": GATE_TAG}
+    go_key = env(".virtual-keys.env", "VKEY_front_GO_WINPC") if (ROOT / ".virtual-keys.env").exists() else None
+    H = {"Authorization": f"Bearer {master}", "Content-Type": "application/json", "x-litellm-tags": GATE_TAG, "User-Agent": GATE_UA}
     G = {"Authorization": "Basic " + b64encode(f"admin:{gpw}".encode()).decode()}
 
     print("\nPRAXEN stack gate\n")
@@ -94,7 +97,7 @@ def main():
     gate("cost map remote + daily reload", s == 200 and cm.get("source") == "remote" and bool(rl.get("scheduled")),
          f"source={cm.get('source')} models={cm.get('model_count')} reload_every_h={rl.get('interval_hours')}")
 
-    # 3. routable catalog + every local-* registered (the imac-* tier left the config at v4.20.0, 2026-09-30)
+    # 3. routable catalog + every local-* registered (the mac-* tier left the config at v4.20.0, 2026-09-30)
     s, b = http(f"{LITELLM}/v1/models", H)
     ids = {m["id"] for m in (jbody(b) or {}).get("data", [])}
     yaml_locals = sorted(set(re.findall(r"^\s*-\s*model_name:\s*(local-[\w.\-]+)", (ROOT / "litellm_config.yaml").read_text(encoding="utf-8"), re.M)))
@@ -150,8 +153,9 @@ def main():
     else:
         gate("chain probe (fast) 200", True, "SKIPPED (--no-llm)")
 
-    # 5. allowlist enforcement (Go key must be refused a frontier model). The 403 is raised at key lookup, before LiteLLM
-    #    reads headers, so only body metadata.tags reaches its SpendLogs row (probed 2026-10-07). The same 403 must also move
+    # 5. allowlist enforcement (Go key must be refused a frontier model). The 403 is raised at key lookup: on v1.106.5 its
+    #    SpendLogs row keeps no tag from any carrier (body metadata.tags worked until 10-28) but keeps the User-Agent, so
+    #    GATE_UA is what marks it as gate traffic (C3, 2026-10-30). The same 403 must also move
     #    litellm_proxy_failed_requests_metric: that proves `prometheus` sits in litellm_settings.callbacks (config v4.25.1),
     #    the only list the proxy's request-level failure hook walks (it is awaited before the response, so no race).
     def proxy_failed():
@@ -162,11 +166,12 @@ def main():
         body = json.dumps({"model": "claude-opus-4-8", "max_tokens": 1, "messages": [{"role": "user", "content": "x"}],
                            "metadata": {"tags": [GATE_TAG]}}).encode()
         f0 = proxy_failed()
-        s, b = http(f"{LITELLM}/v1/chat/completions", {"Authorization": f"Bearer {go_key}", "Content-Type": "application/json"}, body, timeout=30)
+        s, b = http(f"{LITELLM}/v1/chat/completions", {"Authorization": f"Bearer {go_key}", "Content-Type": "application/json",
+                                                        "User-Agent": GATE_UA}, body, timeout=30)
         moved = proxy_failed() - f0
         gate("allowlist 403 (front-go-winpc)", s in (401, 403) and moved >= 1, f"HTTP {s} · request-level failure metric +{moved:g}")
     else:
-        gate("allowlist 403 (front-go-winpc)", False, ".virtual-keys.env / VKEY_FRONT_GO_WINPC not found")
+        gate("allowlist 403 (front-go-winpc)", False, ".virtual-keys.env / VKEY_front_GO_WINPC not found")
 
     # 6. embedder dimension (verify by DIMENSION, never by echoed name)
     body = json.dumps({"model": "legacy/embed", "input": "dimension probe"}).encode()
@@ -357,7 +362,7 @@ def main():
     s, b = http(f"{GRAFANA}/api/datasources/proxy/uid/{TEMPO_UID}/api/echo", G)
     gate("tempo echo", s == 200 and b.strip() == b"echo", f"HTTP {s}")
 
-    # 10. searxng json path (Msty SearXNG MCP rides this)
+    # 10. searxng json path (Front SearXNG MCP rides this)
     s, b = http(f"{SEARXNG}/search?q=grafana+release+notes&format=json", timeout=40)
     n = len((jbody(b) or {}).get("results", []))
     gate("searxng format=json", s == 200 and n > 0, f"{n} results")

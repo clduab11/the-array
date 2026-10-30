@@ -3,15 +3,15 @@
 strip-mtp-tensors.py — remove `mtp.*` (multi-token-prediction draft-head) tensors from an
 MLX safetensors repo whose strict engine loader refuses them.
 
-BORN 2026-08-08 for imac-qwen3.5-9b (qwen3.5-9b-optiq): the OptiQ export ships qwen3.5 MTP
-draft-head tensors (mtp.layers.0.*, mtp.norm, ...) and the iMac's MLX engine (confirmed
+BORN 2026-08-08 for mac-qwen3.5-9b (qwen3.5-9b-optiq): the OptiQ export ships qwen3.5 MTP
+draft-head tensors (mtp.layers.0.*, mtp.norm, ...) and the Mac's MLX engine (confirmed
 2026-08-08) rejected them in strict load_weights on the mlx_vlm path (the repo
 declares a vision config, which forces that path). MTP is a self-speculative-decode head; it
 is INFERENCE-INERT under an engine that can't map it, so stripping loses nothing that works
 today. (A future engine that learns qwen3.5 MTP would want the original back — re-pull from
 HF to restore; this script also keeps .bak files until you delete them.)
 
-RUN ON THE BOX THAT HOLDS THE REPO (the iMac tier is retired; kept for any MLX box):
+RUN ON THE BOX THAT HOLDS THE REPO (the Mac tier is retired; kept for any MLX box):
 
     # unload the model in the serving app first (unloaded, not deleted)
     pip3 install mlx                       # if not already present (Apple silicon)

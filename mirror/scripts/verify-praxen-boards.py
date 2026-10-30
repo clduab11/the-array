@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
-verify-praxen-boards.py — validation gate for the three PRAXEN boards (COMMAND / ROUTING / FORENSICS).
+verify-praxen-boards.py — validation gate for the PRAXEN boards (OVERVIEW praxen-command / ROUTING stub / FORENSICS).
+Panels inside collapsed sections (row["panels"], the OVERVIEW since 2026-10-30) are checked like top-level ones.
 
 Static: JSON parses · expected uid per file · no top-level id · unique panel ids · every datasource uid exists
         on the live Grafana · dashboard links keep time + variables.
@@ -8,7 +9,7 @@ Live:   every PromQL / SQL / LogQL / TraceQL target is executed through Grafana'
         (POST /api/ds/query) with the dashboard variables set to their defaults (All => `.*`, textboxes empty,
         TRAFFIC = its default) and reported as HTTP status + frames/rows; a target that uses TRAFFIC runs a second
         time with TRAFFIC = all. Panels that return nothing are listed so an unexpected "No data" cannot hide.
-        Also checks provisioned=true per uid and that the three alert rules still load.
+        Also checks provisioned=true per uid and that the five alert rules still load.
 
 USAGE
     python scripts/verify-praxen-boards.py                 # boards under grafana/dashboards
@@ -126,13 +127,14 @@ def main():
         if board.get("uid") != uid: fails.append(f"{fname}: uid {board.get('uid')} != {uid}")
         if "id" in board: fails.append(f"{fname}: top-level id present")
         if board.get("schemaVersion") != 42: fails.append(f"{fname}: schemaVersion {board.get('schemaVersion')}")
-        ids = [p["id"] for p in board["panels"]]
+        panels = board["panels"] + [c for r in board["panels"] for c in r.get("panels", [])]   # + collapsed-section children
+        ids = [p["id"] for p in panels]
         if len(ids) != len(set(ids)): fails.append(f"{fname}: duplicate panel ids {[i for i in ids if ids.count(i) > 1]}")
         for lk in board.get("links", []):
             if lk.get("type") == "link" and lk.get("url", "").startswith("/d/") and not (lk.get("keepTime") and lk.get("includeVars")):
                 fails.append(f"{fname}: link {lk.get('title')} lacks keepTime/includeVars")
         used = set()
-        for p in board["panels"]:
+        for p in panels:
             for t in p.get("targets", []):
                 ds = t.get("datasource") or p.get("datasource")
                 if ds: used.add(ds["uid"])
@@ -160,7 +162,7 @@ def main():
         t_default = tv["current"]["value"]
         t_all = next(o["value"] for o in tv["options"] if o["text"] == "all")
         print(f"  TRAFFIC: default={t_default!r} all={t_all!r}")
-        for p in board["panels"]:
+        for p in panels:
             if p["type"] in ("row", "text"):
                 continue
             runs = [(t, v, lbl) for t in p.get("targets", [])
@@ -189,7 +191,8 @@ def main():
     if not a.skip_live:
         s, b = http(f"{GRAFANA}/api/v1/provisioning/alert-rules", hdr)
         rules = {r["uid"] for r in json.loads(b)} if s == 200 else set()
-        need = {"praxen-key-over-watch", "praxen-total-over-plan", "praxen-fallback-served"}
+        need = {"praxen-key-over-watch", "praxen-total-over-plan", "praxen-fallback-served", "praxen-host-ram-low",
+                "praxen-provider-out-of-credit"}
         print(f"\n  alert rules: {sorted(rules)}")
         if not need <= rules: fails.append(f"alert rules missing: {sorted(need - rules)}")
 
