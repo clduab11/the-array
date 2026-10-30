@@ -99,8 +99,9 @@ cp .env.template .env
 | `UI_USERNAME`, `UI_PASSWORD` | `litellm-proxy` admin UI login at `:4000/ui` |
 | `RENDERER_AUTH_TOKEN` | `grafana` (`GF_RENDERING_RENDERER_TOKEN`) + `grafana-image-renderer` (`AUTH_TOKEN`). Grafana 13 **boot-fails** without a non-default value. |
 | `GRAFANA_ADMIN_USER`, `GRAFANA_ADMIN_PASSWORD` | `grafana`; `verify-stack.py` |
-| `UNSLOTH_PC_URL` | `litellm-proxy` — every `local-*` chat route. Value MUST be `http://host.docker.internal:8888/v1` (§7). |
-| `UNSLOTH_PC_API_KEY` | `litellm-proxy` — Unsloth Desktop's API key (Desktop > API keys). Only keyed callers auto-switch models; `litellm/unsloth_guard.py` strips Unsloth's tool, permission and egress fields from every request. |
+| `UNSLOTH_PC_URL` | `litellm-proxy` — every `local-*` chat route. Value MUST be `http://host.docker.internal:8888/v1` (§7). `host-exporter` reads the same value for Unsloth's read-only status API. |
+| `UNSLOTH_PC_API_KEY` | `litellm-proxy` — Unsloth Desktop's API key (Desktop > API keys). Only keyed callers auto-switch models; `litellm/unsloth_guard.py` strips Unsloth's tool, permission and egress fields from every request. `host-exporter` sends it on its two status calls. |
+| `GATEWAY_RUNTIME_DIR` | `host-exporter` (optional) — the gateway app runtime folder it bind-mounts read-only for per-app usage; defaults to this machine's `%APPDATA%\gateway app Runtime`. On a machine without Gateway, point it at an empty folder (the overview then reads the source as DOWN). |
 | `ANTHROPIC_API_KEY` `OPENAI_API_KEY` `GEMINI_API_KEY` `MISTRAL_API_KEY` `PERPLEXITY_API_KEY` `COHERE_API_KEY` `XAI_API_KEY` `VENICE_API_KEY` `OPENROUTER_API_KEY` | `litellm-proxy` provider credentials |
 | `GROQ_API_KEY`, `HUGGINGFACE_API_KEY`, `MERCURY_API_KEY` | `litellm-proxy` (sat orphaned for 14 days once — in `.env` but not in the compose whitelist, so three provider lanes 401'd) |
 | `TYPESAFE_API_KEY` | `litellm-proxy` — the Jev classifier, judge and local front (`litellm/jev_gate.py`) and LiteLLM's native `/typesafe/{path}` route (v1.104.0+; open to every virtual key, spend lands as `typesafe/<model>`). Empty = Jev declines and LiteLLM's heuristic routes. The optional `JEV_*` knobs are passed as `${VAR:-}` and are not in the template; unset means the code default. |
@@ -150,7 +151,7 @@ Then confirm the wrapper did its job — this MUST fail with `ModuleNotFoundErro
 docker exec praxen-litellm python -c "import hiredis"
 ```
 
-Expected `docker compose ps`: 11 `praxen-*` containers `running`; 8 show `(healthy)`; `praxen-tempo`, `praxen-loki` and `praxen-alloy` show plain `Up` — no healthcheck (tempo and loki are distroless; the alloy service simply defines none), their liveness is the Prometheus `tempo`/`loki`/`alloy` jobs.
+Expected `docker compose ps`: 12 `praxen-*` containers `running` (host-exporter since compose v1.7.23); 9 show `(healthy)`; `praxen-tempo`, `praxen-loki` and `praxen-alloy` show plain `Up` — no healthcheck (tempo and loki are distroless; the alloy service simply defines none), their liveness is the Prometheus `tempo`/`loki`/`alloy` jobs.
 
 **7. Firewall rules (§1)** if this is a new Windows install.
 
@@ -163,7 +164,7 @@ Expected `docker compose ps`: 11 `praxen-*` containers `running`; 8 show `(healt
 Mint any key outside the script with `budget_duration` set — a key minted without it never resets (the `front-go-mac` lesson):
 
 ```bash
-curl -sS -X POST http://localhost:4000/key/generate -H "Authorization: Bearer $(grep -E '^LITELLM_MASTER_KEY=' .env | cut -d= -f2-)" -H 'Content-Type: application/json' -d '{"key_alias":"<alias>","team_id":"<team>","max_budget":10.0,"budget_duration":"1mo","models":["fast"]}' | jq -r '"VKEY_<ALIAS_UPPER_SNAKE>=" + .key' >> .virtual-keys.env && chmod 600 .virtual-keys.env
+curl -sS -X POST http://localhost:4000/key/generate -H "Authorization: Bearer $(grep -E '^LITELLM_MASTER_KEY=' .env | cut -d= -f2-)" -H 'Content-Type: application/json' -d '{"key_alias":"<alias>","team_id":"<team>","max_budget":<cap>,"budget_duration":"1mo","models":["fast"]}' | jq -r '"VKEY_<ALIAS_UPPER_SNAKE>=" + .key' >> .virtual-keys.env && chmod 600 .virtual-keys.env
 ```
 
 The token is returned exactly ONCE by `/key/generate`; the pipe above writes it straight into `.virtual-keys.env` (the file the gate reads) without it ever reaching stdout — substitute the real `<ALIAS_UPPER_SNAKE>` before running, and never echo it.
@@ -190,7 +191,7 @@ Stop everything, keep data (`down -v` destroys volumes — never without an expl
 docker compose --profile observe down
 ```
 
-Status: `docker compose --profile observe ps` (11 running; tempo, loki + alloy without a health column). Readiness: `curl -s http://localhost:4000/health/readiness` → `status: healthy`, `db: connected`.
+Status: `docker compose --profile observe ps` (12 running; tempo, loki + alloy without a health column). Readiness: `curl -s http://localhost:4000/health/readiness` → `status: healthy`, `db: connected`.
 
 Restart the proxy after a `litellm_config.yaml` edit — the YAML is bind-mounted, a restart is enough:
 
@@ -210,13 +211,13 @@ Logs — the proxy (add `-f` to follow; any other service by compose key: `docke
 docker logs --tail 200 praxen-litellm
 ```
 
-Logs — verbose/historical: Grafana board `praxen-command`, row **08 VERBOSE LOGS // Loki + Alloy** — `$logcontainer` picks the container, `$logq` is a free regex; Succinct panel = error/warn deduped. Loki keeps 7 days.
+Logs — verbose/historical: Grafana board `praxen-command` (the OVERVIEW), collapsed section **LOGS & REQUEST LOG** (open it; it runs no query while closed) — `$logcontainer` picks the container, `$logq` is a free regex; the warn/error panel is deduped. FORENSICS holds the correlated per-request log window. Loki keeps 7 days.
 
 **Grafana** `http://localhost:3200` (also `http://198.51.100.10:3200` from the tailnet) — `admin` / `GRAFANA_ADMIN_PASSWORD`; root lands on `praxen-command`. **Dashboards and datasources are file-provisioned: disk is the only author surface.** Edit `grafana/dashboards/*.json`, Grafana re-polls within 30s. UI "Save" is rejected by design (`Cannot save provisioned dashboard`); the API/MCP `update_dashboard` path rejects likewise. New board = drop a JSON with a stable `uid` and NO top-level `id`. Datasource edits = edit the YAML, then recreate grafana (`up -d grafana`); a DB-side datasource save would recreate the exact fossil class §9 warns about. Alert-rule edits = edit or add a file in `grafana/provisioning/alerting/`, then `docker compose --profile observe restart grafana` (never the provisioning reload API); `python scripts/verify-praxen-boards.py` proves the three rule uids loaded. The boards default to TRAFFIC = clients, which hides the health gate's own calls (`docs/rules/grafana.md`). Text panels never use `body.theme-*` classes (Grafana 13 hardcodes `theme-dark` in the served HTML).
 
 **LiteLLM admin UI** `http://localhost:4000/ui` — `praxen-admin` with its own DB password on `default_user_id` (since config v4.26.3, 2026-10-08: `general_settings.disable_env_credential_login: true`, so `UI_USERNAME` / `UI_PASSWORD` no longer sign in and the env-credential banner is gone). Set or reset it with `python scripts/set-ui-admin-password.py` (master key; signs out every UI session; the first sign-in forces a change at `/ui/change-password`, which works only from a session opened with the DB password: type it by hand, browser autofill supplies stale passwords). No restart needed for a reset. Read-only use. **Never save config through the UI's config-update path**: `STORE_MODEL_IN_DB=True` means a UI save writes `LiteLLM_Config` rows that MERGE over the YAML at every boot and shadow it silently (§9). Keys/teams/budgets DO live in the DB and are edited via `/key/update`, `/team/update` — that is the sanctioned DB-side surface.
 
-Prometheus targets `http://127.0.0.1:9090/targets` (7/7 UP is the baseline); Tempo API on `127.0.0.1:3210`; SearXNG `http://localhost:8080/search?q=test&format=json`.
+Prometheus targets `http://127.0.0.1:9090/targets` (8/8 UP is the baseline, `host` included since compose v1.7.23); Tempo API on `127.0.0.1:3210`; SearXNG `http://localhost:8080/search?q=test&format=json`.
 
 Image currency audit (report only; `python scripts/verify-stack.py --no-llm` is the free gate without the paid chat probe):
 
@@ -334,9 +335,9 @@ python scripts/verify-stack.py
 
 ## §7 — Client bindings
 
-- **Other devices** (the phone, any LAN or tailnet client; the Mac's clients before that tier was retired) → the PC's **host tailnet node** `http://198.51.100.10:4000/v1`, Grafana `:3200`, SearXNG `:8080`. MagicDNS is ON tailnet-wide (verified 2026-09-30, `docs/rules/compose.md`), so the node's name resolves too, and `tailscale serve` publishes Paperclip, Studio Web and Gateway under it on HTTPS, tailnet only. The retired sidecar node (`praxen-litellm` @ `198.51.100.11`) is bound by nothing — expire it in the console when convenient.
-- **PC clients** (desktop chat app/Go/Gateway on pc-host, Coder Code) → `http://localhost:4000/v1`.
-- **gateway app fronts LiteLLM on ONE key** (`front-gateway-winpc`, deliberately allowlist-free; per-app attribution lives in Gateway client tokens, not LiteLLM). Gateway provider base URL is the BARE root `http://localhost:4000` (`/v1/v1` 404s). Gateway is a CLIENT of the proxy — LiteLLM stays sole vendor-facing egress; no vendor keys in Gateway except the ruled Venice-direct exception. **Coder Code stays on the LiteLLM lane permanently.** Gateway 0.5.x locks legacy admin-role client tokens on Free — tokens must be Inference-role.
+- **Other devices** (the phone, any LAN or tailnet client; the Mac's clients before that tier was retired) → the PC's **host tailnet node** `http://198.51.100.10:4000/v1`, Grafana `:3200`, SearXNG `:8080`. MagicDNS is ON tailnet-wide (verified 2026-09-30, `docs/rules/compose.md`), so the node's name resolves too, and `tailscale serve` publishes Paperclip, web chat app and Gateway under it on HTTPS, tailnet only. The retired sidecar node (`praxen-litellm` @ `198.51.100.11`) is bound by nothing — expire it in the console when convenient.
+- **PC clients** (desktop chat apps and the gateway on pc-host, Coder Code) → `http://localhost:4000/v1`.
+- **The gateway app fronts LiteLLM on ONE key** (`front-gateway-winpc`, deliberately allowlist-free; per-app attribution lives in Gateway client tokens, not LiteLLM). Gateway provider base URL is the BARE root `http://localhost:4000` (`/v1/v1` 404s). Gateway is a CLIENT of the proxy — LiteLLM stays sole vendor-facing egress; no vendor keys in Gateway except the ruled Venice-direct exception. **Coder Code stays on the LiteLLM lane permanently.** Gateway 0.5.x locks legacy admin-role client tokens on Free — tokens must be Inference-role.
 - Every client rebind list must cover EVERY service the client touches (`:4000`, `:8080`, `:3200`) — SearXNG was missed at the Branch B cutover and darked the Mac MCP for two weeks.
 - Break-glass keys (`front-studio-pc`, `front-go-*`, `coder-code-windows`) bind DIRECT to LiteLLM so a wedged Gateway does not darken every app at once.
 

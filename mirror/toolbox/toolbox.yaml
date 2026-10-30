@@ -1,4 +1,4 @@
-# Sanitized structural mirror of the-array/toolbox/toolbox.yaml (2026-10-29). Comments and identity values
+# Sanitized structural mirror of the-array/toolbox/toolbox.yaml (2026-10-30). Comments and identity values
 # removed or replaced; budgets are placeholders. See mirror/README.md before restoring from it.
 version: 1
 updated: 2026-10-08
@@ -53,11 +53,11 @@ secrets:
   CONTEXT7_API_KEY: {status: present, for: context7}
   FIRECRAWL_API_KEY: {status: present, for: firecrawl}
   HF_TOKEN: {status: present, for: huggingface, note: use a read-only token}
-  GITHUB_MCP_PAT: {status: present, for: github, note: "validated 2026-10-08 on /mcp/readonly (26 tools). OpenCode and Coder keep their own PATs clientside (OPENCODE_GITHUB_MCP_PAT, CODER_JSONC_GITHUB_PAT), which the toolbox cannot express"}
+  GITHUB_MCP_PAT: {status: present, for: github, note: "validated 2026-10-08 on /mcp/readonly (26 tools). OpenCode and Coder keep their own PATs client side (OPENCODE_GITHUB_MCP_PAT, CODER_JSONC_GITHUB_PAT), which the toolbox cannot express"}
   TAVILY_API_KEY: {status: present, for: tavily, note: paid through 2026-10-30, then free tier (1,000 credits/month)}
   LINEAR_API_KEY: {status: optional, for: linear, note: "only for a header-only client; every rendered client signs in with OAuth instead"}
   PRAXEN_SPEND_RO_DSN: {status: present, for: dbhub, note: "set 2026-09-17: role spend_reader, SELECT on LiteLLM_SpendLogs only, default_transaction_read_only; toml at ~/.config/praxen-toolbox/dbhub.toml"}
-  GO_MCP_TOKEN: {status: present, for: front-go, note: "lives only inside desktop chat app's Toolbox entry / Go's Settings > Tools; Studio-only tool, no other client reads it"}
+  GO_MCP_TOKEN: {status: present, for: front-go, note: "lives only inside desktop chat app's Toolbox entry / the task app's Settings > Tools; chat-app-only tool, no other client reads it"}
 
 tools:
   - id: searxng
@@ -304,7 +304,7 @@ tools:
     tier: role
     profiles: [plan-triage]
     clients_only: [front-studio]
-    what: Drive task app from a Studio chat - create/stop agents, enqueue prompts, read conversations, answer approvals, connect channels (29 tools on Go 0.16.0)
+    what: Drive task app from a desktop chat - create/stop agents, enqueue prompts, read conversations, answer approvals, connect channels (29 tools on the task app0.16.0)
     transport: http
     url: http://127.0.0.1:6274/mcp
     auth: {type: header, header: Authorization, secret: GO_MCP_TOKEN}

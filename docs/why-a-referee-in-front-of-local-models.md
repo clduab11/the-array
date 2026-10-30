@@ -78,7 +78,7 @@ My local tier map is the one everybody with an 8 GB card ends up with:
       tiers:
         SIMPLE:    local-ministral-3b        # 3B, non-reasoning, answers instantly
         MEDIUM:    local-qwen3.5-4b          # 4B reasoning + vision
-        COMPLEX:   mac-gemma4-12b           # dense 12B on the second machine
+        COMPLEX:   local-gemma4-12b          # dense 12B, quantization-aware
         REASONING: local-gemma4-uncensored   # 26B-A4B MoE, CPU expert offload, ~13 tok/s
 ```
 

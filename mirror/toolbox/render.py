@@ -237,7 +237,7 @@ def render_grok(manifest, tools):
 
 
 def render_paperclip(manifest, tools):
-    # Paperclip's company connector is an approved stdio template, not a clientimport file.
+    # Paperclip's company connector is an approved stdio template, not a client import file.
     light = next((tool for tool, _ in tools if tool.get("command_runtime") == "mempalace_light"), None)  # id is "mempalace" since 2026-10-08
     if light is None:
         raise ValueError("Paperclip profile is missing the MemPalace light-server entry")
@@ -312,7 +312,7 @@ def render_front_go(manifest, tools):
         else:
             auth = (tool.get("auth") or {}).get("type")
             how = f"Remote URL: `{tool['url']}` · " + ("OAuth" if auth == "oauth" else "no auth" if auth == "none" else
-                                                     "OAuth if offered; header auth did not save on Go 0.15.4")
+                                                     "OAuth if offered; header auth did not save on the task app0.15.4")
         rows.append(f"- [ ] **{tool['name']}** — {how}")
     return {"CHECKLIST.md": "\n".join(["# task app — tools to add by hand (Settings > Tools)", "",
                                         "Go has no import. Use `npx.cmd`, not `npx`. Type keys into Go's secure fields.", "", *rows, ""])}
