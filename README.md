@@ -1,394 +1,244 @@
-# the-array: Own the front door to your AI.
-
+# the-array: own the front door to your AI
 
 ![Every device in the building sends its requests through one dark gateway arch; from there the light splits toward distant cloud servers and toward a small desk machine in the same room, while a ribbon of ledger entries runs to a wall of dashboards. One red strand is the request that was diverted.](docs/images/the-array-hero.jpg)
 
-the-array is a front door you run for all the AI your business uses. Every
-request passes through it and is written to a ledger with its cost, and the
-front door is built to enforce whatever rules you set about who may spend
-what. This repository is the reference build: a worked example you copy and
-adapt. It is published so the patterns, and the mistakes, are available to
-anyone who wants the same thing.
+the-array is a private AI gateway with a local model tier that you run
+yourself. Every request from the people and tools you connect passes through
+one front door. That front door writes the cost of each call to a ledger and
+enforces the budgets and model lists you set. A small referee model checks the
+answers, and when a cloud vendor fails, the question goes to a model running
+on your own hardware.
 
-If you have never run a server, read the first three sections and the
-questions at the end. If you have, skip to "What is in this repository".
+This is the build **Praxen Development & Engineering** runs every day. It is
+published so prospective clients can see how it works before any
+conversation starts. To talk about a deployment of your own, start at
+[cld-dev.io](https://cld-dev.io).
 
-## The short version
+If you want a chat model and nothing else, a subscription is the right
+product. This is for an organisation that wants to see and control what its
+AI use costs, where its text goes, and what happens when a vendor fails.
 
-A seat subscription works like cable television: a fixed fee per person, a
-fixed menu, one number on the bill, and no way to see what happened between
-"I typed a question" and "I got an answer".
+## Why run AI this way
 
-the-array replaces that with something closer to owning the front door.
-Every request from every person and every tool in your organisation passes
-through one gateway you run. A gateway is the front door in software terms,
-the one place every request goes in and every answer comes out. It decides
-which AI model answers (a model is one AI engine, the kind of thing behind the
-chat assistants you already know) and records exactly what the answer cost.
-It is built to refuse further requests once a budget is used up, and when
-the outside vendor is unavailable it is built to hand the question to a model
-running on a machine in your own office so the answer can still arrive. Which
-parts of that have been seen working on real traffic is set out below.
-
-The AI companies still get paid, per use instead of per seat, through
-accounts you hold. What you own is the front door. Whether per-use comes to
-less than seats depends on how much your people use. Vendors price by the
-volume of text that goes in and comes out, the way a print shop charges by
-the page, so a one-line question costs pennies at most and a long document
-pasted in costs more. Light users usually pay less per use than a seat costs.
-A team asking questions all day can pay more. This README gives no figure of
-its own; after a month behind the gateway the ledger replaces any estimate
-with the real one. The software is free and the vendors are paid per use. A
-computer in your office for the local model is optional. Somebody's time to
-run it all is the one cost you cannot skip. A seat subscription never exposed
-you to any of the hazards described below; they come with paying per use, and
-the gateway is what makes them visible once you do.
-
-The bill is the first thing that changes. Every call is recorded: who made
-it, which model answered, how many words went in and out, and the cost to a
-fraction of a cent.
-
-Each tool then gets its own key, a password-like code the gateway uses to
-know who is asking. A key can have a budget and a short list of models it
-may use; anything outside the list is refused. A private lane can be limited
-to vendors you chose for their privacy terms plus the machine in your office.
-Cheap questions can go to a cheap model. The gateway can only count a model
-it knows the price of, so the budget is only as accurate as that price
-table. The section on prices below shows what happens
-when the table is wrong.
-
-Vendors also reprice, retire models and go down. Behind one gateway, moving a
-route to a different vendor is a small edit to one file once you hold an
-account there. A route is one line in the gateway's rulebook: when a tool
-asks for this, send it there, and if that fails, try these. When a vendor is
-down, the answer is meant to still arrive from further down that list. The
-next section says what has and has not been watched working.
-
-The price of all this is that it is yours to run. That part gets its own
-section.
-
-## What you can see from behind your own gateway
-
-Once you pay per use, each vendor sends one monthly total. Everything below
-sat underneath one of those totals and was invisible until the gateway's own
-ledger was laid beside it. Each of these happened on the reference deployment.
-
-### The double charge nobody asked for
-
-A vendor account was billing roughly double on every request through a
-"priority" processing tier that nothing in this system had requested. It was
-a default, set on the vendor's side, applied to every call that did not say
-otherwise.
-
-A monthly total does not tell you this. It surfaced during a routine check of
-the vendor's endpoints: a request sent with no tier at all came back tagged
-"priority". The gateway's per-call ledger then showed which routes had been
-paying the premium, and it showed something worse. On three routes a price
-override we had written ourselves was recording only half of what the vendor
-actually charged. The vendor was charging double; our ledger was recording
-standard.
-
-The fix was one line of configuration on every route to that vendor, plus a
-few deliberately separate "priority" routes with their own small budgets for
-the rare prompt that needs the fast lane. After the change, the gateway
-confirmed the standard route was billed at the standard rate and the priority
-route at the premium, on identical inputs. The ledger now records the tier on
-every call, and the dashboard flags any premium-tier call on a route that did
-not ask for it. The premium varies by model family, so the dashboard shows the
-ratio per route.
-
-### The same default, at a second vendor, by a different road
-
-Fixing the first vendor is what turned up the second one. This time nothing
-on the vendor's side was misconfigured. The gateway software itself was doing
-the translating: a neutral "choose for me" value, which sounds like a
-reasonable default, is converted on the way out into *that* vendor's premium
-tier. Nobody wrote "premium" anywhere. It was the honest reading of a word
-that means something different at each vendor.
-
-That lane had been running unpinned for months, and it is the one behind the
-everyday image-and-document route, so it saw real traffic. The fix was the
-same one line, on eleven routes and the catch-all beneath them, and a probe
-afterward confirmed the vendor now reports the standard tier back. The general
-lesson is worth more than the fix: words like "auto", "priority" and "fast"
-do not survive translation between vendors, and a gateway that speaks to all
-of them has to pin the meaning at every door.
-
-### Prices move under you, in both directions
-
-Vendors reprice constantly. On 2026-07-30 one vendor cut prices across a whole model family, one model by 80 percent and another by 20 percent. A price table you copied once can change in a day, and nothing tells you. The vendor's invoice was right both times; it was our own ledger that was wrong, and that matters because budgets stop spending based on the ledger. A price override written by hand over-counted one model five-fold for nine days after the cut. One mistake was a number we wrote; the other was a number we inherited. The ledger shows the drift, and the fix is a text edit checked against the vendor's published rate card.
-
-### The ceiling that isn't one
-
-There is a single setting that reads like the obvious way to cap monthly
-spend, and it is the wrong place to put your real number. Reading the
-gateway's source at the pinned version, and again at its current code, shows
-what it arms: a counter that lives in the running process and is reset by
-nothing but a restart. Set it to the figure you actually intend to spend and,
-some weeks later, the gateway simply stops serving — with no month boundary
-to release it.
-
-The companion setting, the one that is supposed to warn instead of block,
-turned out to do nothing at all. It accepts the value, reports success, and
-stores none of it.
-
-So the working arrangement puts the real limits on the team budgets, which do
-reset each month, leaves the global figure far above anything intended as a
-runaway backstop, and moves the warning to the dashboard, where a query over
-the gateway's own ledger emails when a lane passes its share. A number that
-looks like a ceiling, a number that silently isn't a warning, and a reset that
-only a restart performs — none of that is visible from the setting names.
-
-### A rule saying no
-
-A rule only counts if it binds. On the reference deployment an access key
-limited to a short list of models was asked for a model outside that list.
-The gateway refused, and the same key's own list kept answering. No monthly
-budget has yet been reached on real traffic here, so the budget stop has not
-been watched firing on a real person mid-task. It is the same mechanism, a
-key the gateway turns away, applied to a running total instead of a list.
-
-### The answer still arrives when the vendor is down
-
-When a vendor returns an error, the request walks down a list of
-alternatives, a cheaper cloud model first, then a local one, and the person
-who asked still gets an answer. That list is called a fallback chain, and
-every fallback chain in this configuration ends at a model running on
-hardware in the room. Routes that pass a vendor's whole catalog straight
-through have no chain of their own and fail loudly instead. The reference
-configuration has more than 80 fallback chains across roughly 190 named
-routes and 10 vendor-wide pass-throughs, and can currently reach about 1,070
-model ids. That last figure moves with the vendors' catalogs.
-
-So far the only failure watched walking the list on real traffic is an account
-being turned away. A vendor said no
-to a newly released model this account could not yet use, and the next model
-on the list answered; the ledger showed which one. An outage walks the same
-list. One has not yet been watched happening on real traffic.
-
-### A refusal that looks like an empty answer
-
-Models sometimes decline a request. The gateway treated that as a success: it
-returned a normal-looking reply with nothing in it and did not try the next
-model on the list. A route built to fall back to a second model simply went
-quiet.
-
-The same behavior hid a second problem for ten weeks. A test of the discount
-vendors give for re-sending the same instructions showed one model paying the
-surcharge for storing them and never receiving the discount, so the feature
-was switched off for that model. The test prompts had been declined. A
-declined request still pays to store the instructions and never reads them
-back, which looks exactly like a discount that does not work. On ordinary text
-it worked, and it was switched back on.
-
-The configuration now names the routes that should move on when a model
-declines, and a small module in `litellm/` does the same for replies that
-arrive word by word. In testing, both kinds of reply moved to the next model
-and normal answers were untouched; it has not yet been watched happening on
-real traffic. One gap remains in the ledger: a declined request and the answer
-that replaced it share an identifier, and the ledger keeps one row per
-identifier, so one of the two calls goes unrecorded while the vendor bills
-both.
-
-### A referee that costs less than the reply
-
-The fix above only fires when the model says, in the protocol, that it
-declined. Most declines do not arrive that way. They arrive as a polite
-sentence with a normal status, or as filler, and the gateway counts them as
-answers. So the reference build now asks a second, much smaller model to
-referee. TypeSafe's Jev is not a chat model: it takes the request and the reply
-and returns one typed verdict, answered, refused or non-answer, with a
-probability, in about half a second, for a few hundredths of a cent. A
-confident decline is then treated exactly like a protocol-level refusal and the
-gateway moves to the next model on the list. Empty replies are caught without
-asking anyone. The same model can pick the tier on the cost-aware router, with
-a rule in code that long prompts never get the cheapest model; when the referee
-is unreachable the built-in scorer decides, as it did before.
-
-On the reference deployment the referee agreed with a labelled set 15 times out
-of 15, including two replies written to argue for their own grade, and the tier
-picker 16 of 16; the median round trip was 531 ms and the whole test cost a
-tenth of a cent. It is a paid, early-access service with open-ended retention,
-so the private routes are excluded and every use is opt-in per route. Knobs,
-access rules and the caveats are in `docs/jev-decision-layer.md`.
-
-### Privacy is a routing decision
-
-The private lane is a list, and the list is the whole guarantee. The lane
-still begins at a vendor; what the route guarantees is the set of places a
-request can ever go. In this configuration that set is: vendors chosen for
-their privacy terms, then your own machine. If the chosen vendor is down the
-question is answered locally, and if that is down too the request is refused.
-It is never quietly retried against a vendor that logs prompts, because no
-such vendor is on the list. The list lives in `litellm_config.example.yaml`
-under the private chain, where anyone can read it.
-
-## What it costs you
-
-The first start-up is an afternoon. Getting the metering right took months;
-the fallbacks and the dashboards took about as long. Every finding above was
-preceded by a period in which the system was confidently wrong.
-
-A subscription's failure mode is "the service is down". A self-run gateway
-has more of them. A software update can break the database. The "all good"
-light can be wrong. The thing that runs the components can freeze when the
-machine runs out of memory. A fallback can end at a model someone deleted
-from disk. The technical names for those are in `DEPLOYMENT.md`, with the
-fixes.
-
-Dead models do not reliably say so. Three separate vendors, a local model
-server, a frontier API vendor and a privacy-focused reseller, have each
-returned a normal-looking success while serving a different model than the
-one requested. Status code and reply looked exactly like success. The rule
-this deployment runs on is to check the name of the model that actually
-answered; the success code proves nothing.
-
-Some failures cannot be caught by a fallback at all. One kind of AI request
-turns your documents into numbers so they can be searched. Two different
-models produce numbers of different shapes that cannot be mixed, so those
-routes deliberately have no fallback. Swapping models silently would corrupt
-the search without any error. Refusing is the only safe behaviour.
-
-There is also the recurring maintenance: version pins to review, price
-tables to re-check against rate cards, model ids that vendors retire without
-notice, and health checks to re-validate whenever a component changes.
-
-If you want a model and nothing else, a subscription is the right product. If
-you want to lay the vendor's monthly total beside your own ledger and see what
-is underneath it, this is the price of finding out.
-
----
-
-## Questions people ask
-
-**Is this a product I can buy?** 
-- *No. It is a reference build under an open license. You can run it or adapt it, or pay someone to.*
-
-**Do I need my own hardware?** 
-- *Only for the "still answers when a vendor is down" and "private lane" properties. Metering and budgets work with cloud vendors alone; the local model is what makes the fallback and the closed private lane possible. On the reference deployment that hardware is an ordinary desktop computer with a consumer graphics card. Without it the gateway still meters and caps, but the last step of every fallback list would have to be a cloud model or a refusal.*
-
-**Will my existing AI tools work with it?** 
-- *Most tools that let you type in a server address and a key will work. In the tool's settings this is usually labelled "OpenAI-compatible" or "custom endpoint". Many desktop AI assistants and coding tools have that setting; check yours before assuming.*
-
-**How much does the gateway itself cost to run?** 
-- *The software is free. You still pay the AI vendors for usage; that is the bill the gateway meters and caps. The reference deployment runs on one workstation, and the components together are limited to a few gigabytes of memory. The rest of the cost is the time described above.*
-
-**Will it warn me before a budget runs out?** 
-- *Only if you connect a chat webhook; alerting ships switched off in the example configuration. The budget itself is built to refuse requests whether or not a webhook is connected. "A rule saying
-no" above says what has and has not been observed.*
-
-**Who maintains this?** 
-- *One operator, for the operator's own use, published as-is. There is no support promise and no release schedule. Issues that describe a real failure are more useful than issues that ask for features.*
-
----
-
-## What is in this repository
-
-Everything here is a template or a tool, built to be read and adapted. It is
-the reference build with the operator's specifics removed.
-
-| Piece | What it is |
+| What you get | How it works |
 |---|---|
-| `docker-compose.yml` | The whole stack as one file: the gateway (LiteLLM), its database (Postgres) and cache (Redis), metrics (Prometheus), dashboards (Grafana), traces (Tempo), logs (Loki and Alloy), and a private web-search engine (SearXNG). Every component is pinned to an exact version. |
-| `litellm/Dockerfile` | The gateway's image, pinned to one release, with one deliberate change explained in the file. |
-| `litellm/refusal_fallback.py` | A small module that lets a reply delivered word by word move to the next model when the first one declines the request, as described above. |
-| `litellm/jev_gate.py` | The decision layer: a router classifier plugin and a soft-refusal judge backed by TypeSafe Jev, both opt-in, both declining gracefully without a key. Metrics and one log line per decision included. |
-| `docs/jev-decision-layer.md` | What Jev is, how the three uses are wired, how to grant a key access, the measured numbers and the caveats. |
-| `litellm_config.example.yaml` | The routing rules shown as patterns: vendor pass-throughs, a standard-rate route beside an opt-in priority route with its own budget, a privacy-preserving route pinned to its endpoint, local models, a fail-closed private chain, and an embedding route with deliberately no fallback. |
-| `prometheus.yml`, `tempo-config.yaml`, `loki-config.yaml`, `alloy-config.alloy` | The observability configuration, including the liveness pattern for components that ship without a shell. |
-| `grafana/` | Dashboards and data sources provisioned from disk. Edits made in the Grafana web interface are rejected by design, so these files are the single source of truth. The example dashboard includes the billed-tier detector described above. Three further boards (COMMAND, ROUTING, FORENSICS — see `docs/dashboards.md`) split the questions "is anything wrong now", "why" and "which request". The alert rules that email when spend passes its share of the plan live here too. |
-| `provision-keys.example.sh` | Creates teams and per-tool access keys with budgets that reset monthly. |
-| `scripts/check-image-updates.py` | Reports which pinned components are behind upstream. It applies nothing. |
-| `scripts/verify-stack.py` | A health gate that checks 15 specific things and stops at the first one that fails. It read 15 of 15 on the reference deployment on the day the fifteenth probe was added; that probe skips itself when the decision layer's key is absent. |
-| `scripts/probe-typesafe.py`, `scripts/jev-bench.py` | Prove a Jev key directly and through the gateway, and reproduce the referee and tier-picker numbers above on labelled sets and on your own local models' replies. |
-| `scripts/leak-gate.py` | Scans the tree, including the insides of spreadsheets and documents, for anything that must not be published. |
-| `toolbox/` | One list of MCP tools rendered into each client's own config format (Claude Code, VS Code, Zed, OpenCode, Codex) with environment-variable references only, plus a handshake script that reports each hosted tool's real tool count. The rendered files never hold a key. |
-| `DEPLOYMENT.md` | The step-by-step guide: first start-up, connecting a client, changing routes, updating components, rolling back. |
-| `.github/` | Automation that opens pull requests and files reports. A human merges. |
+| A bill you can read | Every call goes into a ledger: who asked, which model answered, how much text went in and out, and the cost to a fraction of a cent. Local calls go in the same ledger at zero vendor cost, next to the cloud ones. |
+| Rules that bind | Each tool can get its own key with a budget and a list of models it may use. A request for a model outside the list is refused. |
+| Answers when a vendor is down | Each chat route has a fallback list: if one model fails, the next is tried, and every list ends at a model on your own hardware. Embedding routes and whole-catalog pass-throughs have none, on purpose; they fail loudly instead. |
+| A private lane | One route can reach only the vendors you chose for their privacy terms, then your own machine. If both are down, the request is refused, never retried somewhere else. |
+| A referee | TypeSafe's Jev, a paid cloud service, catches polite non-answers and rates how hard each question is. A check takes about half a second and costs a few thousandths of a cent. |
+
+## The local tier, and why it holds up
+
+Most local AI setups are one desktop app talking to one model. Nothing checks
+whether a reply really answers. A question too hard for the loaded model stays
+with it. The local work never appears next to the cloud bill. the-array puts
+the local models behind the same front door as the cloud ones. They get the
+same ledger, rules and fallbacks, plus the following.
+
+**Unsloth Desktop serves the models.** It runs models in the GGUF format, a
+single-file format for running models on your own machine, on llama.cpp, the
+open-source engine behind most local AI. It downloads them from its Model
+Hub and saves a launch setup for each one. On the reference deployment, each
+setup was sized to the machine's full memory, not to whatever happened to be
+free at the time. The smaller models sit entirely on the 8 GB graphics card.
+The larger ones are built from many specialist parts ("experts"), and only a
+few of those work on any one word, so the experts sit in ordinary memory
+while the rest stays on the card. A dense model too big for the card keeps
+as many layers on it as fit. Each
+model's context window (how much text it can hold at once) is set to what was
+measured to fit. The difference was measured. Unsloth's automatic setting was
+given a long context for a 4-billion-parameter model, and llama.cpp moved part
+of the model off the graphics card to make room. It fell to about 20 tokens
+per second (a token is roughly three quarters of a word). Pinned whole to the
+card, with a slightly smaller context measured to fit, it runs at about 62.
+
+As of 2026-10-29 there are 15 local routes on one 8 GB card and 48 GB of
+memory: 14 chat routes, with one model loaded at a time, and an embedding
+route. They include a 35-billion-parameter coding model at about 22 tokens
+per second that holds 114,688 tokens at once. A 30-billion-parameter model
+holds 655,360 tokens and runs at about 14 tokens per second. Those two need
+about 20 GB of the 48 GB free, so they load only when other work is stopped.
+
+**Jev chooses, Unsloth answers.** On the local routers, Jev rates each
+question by difficulty, and each difficulty level points to a local model:
+easy questions go to a fast one, hard ones to a stronger one. Sometimes a
+request names a small local model directly and Jev rates the question harder
+than that model can handle. The request then moves up to a stronger local
+model, never down. Jev also records a verdict on local answers (answered,
+refused or non-answer), so the dashboards show which local models dodge which
+questions. The next step is already collecting data: a picker that weighs
+difficulty, task and content policy across the local roster. For now it
+records what it would have chosen and routes nothing, until its records are
+reviewed and it is switched on.
+
+Jev runs in TypeSafe's cloud. To rate a question, the gateway sends the
+question's text to TypeSafe, and to record a verdict it sends the reply as
+well. So on any route where Jev is on, a local answer still involves one
+outside service. On the reference deployment Jev is on for most routes,
+the local ones included. The private lane never uses it, and without a
+TypeSafe key it does nothing at all.
+
+**A guard sits between the apps and the model server.** Unsloth Desktop will
+run its built-in tools on your machine whenever a request asks, for anyone
+holding its key. A small gateway module (`litellm/unsloth_guard.py`, on by
+default in this kit) removes those requests and forces the tools off. No
+client can switch them on through the front door, and no app is given the
+model server's own address.
+
+**Embeddings stay out of the way.** Embeddings are the step that turns
+documents into numbers for search. Unsloth keeps one chat model loaded at a
+time, and an embedding call there would unload it. Embeddings therefore run
+in a small separate container, and the chat model stays loaded.
+
+**Msty Studio and Msty Nexus sit on the desk.** Msty Studio is the desktop
+workspace people use: chat, knowledge stacks (your own documents, indexed for
+search) and tools. Msty Nexus sits between the desktop apps and the gateway.
+It gives the apps one address and the full list of routes, and it can issue
+each app its own token, so one app's access can be revoked without touching
+the others. Nexus is a client
+of the gateway, not a replacement: the gateway is still where spend is
+counted and rules are applied. Coding tools connect the same way, or
+straight to the gateway with a key of their own.
+
+**The trade-offs are real.** Only one local model is loaded at a time, and
+switching to another takes 10 to 40 seconds. The largest models compete with
+everything else for memory. Someone has to run all of it: version pins, price
+tables, retired model names and health checks all need regular attention.
+
+## What leaves the building
+
+- **Cloud routes:** the request goes to the vendor that route names, through
+  an account you hold.
+- **Routes with Jev switched on (most of them on the reference
+  deployment):** the question's text goes to TypeSafe, and the reply too
+  when Jev records a verdict.
+- **The private lane:** only the vendors it lists, then your own machine.
+- **Local routes without Jev:** nothing leaves the machine.
+- **The ledger, dashboards, traces and logs:** these stay on your machine.
+
+## What has been measured
+
+- **The referee (2026-09-18, small labelled sets).** Jev matched a labelled
+  set of answers 15 times out of 15, including two replies written to argue
+  for their own grade, and picked the right difficulty tier 16 times out of
+  16. The median check took 531 ms, and the whole test cost a tenth of a
+  cent. Details: [`docs/jev-decision-layer.md`](docs/jev-decision-layer.md)
+  and
+  [`docs/why-a-referee-in-front-of-local-models.md`](docs/why-a-referee-in-front-of-local-models.md).
+- **What the ledger turned up.** A vendor's default priority tier billed
+  every call at between about 1.3 and 2.5 times the standard rate, depending
+  on the model family. A price table we wrote ourselves over-counted
+  one model five-fold for nine days. A spending cap turned out to be a
+  counter that only a restart resets. Refusals arrived looking like empty
+  answers. Each story, and what fixed it, is in
+  [`docs/field-notes.md`](docs/field-notes.md).
+- **What has not been watched yet.** No real vendor outage has yet been seen
+  walking a fallback list on live traffic, and no monthly budget has yet been
+  seen stopping a real person in the middle of a task. The mechanisms for
+  both have been tested.
 
 ## How it fits together
 
 ```
- people and tools ---> the gateway (one front door, one key per tool, one budget per key)
-                            |
-              +-------------+------------------+
-              v             v                  v
-        cloud vendor A  cloud vendor B   local model server (your hardware)
-              |             |                  ^
-              +---- on error, walk the list ---+   <- every fallback list ends here
+ people and tools (Msty Studio, editors, agents)
+          |
+          v
+ Msty Nexus  (one address, one token per app)                  optional
+          |
+          v
+ the gateway: LiteLLM + Jev (TypeSafe cloud)
+ (ledger, budgets, model lists, fallbacks, referee, Unsloth guard)
+          |
+   +------+--------------------+----------------------------+
+   v                           v                            v
+ cloud vendor A          cloud vendor B          Unsloth Desktop on your GPU
+   |                           |                            ^
+   +-------- on error, walk the fallback list --------------+   <- every chat list ends here
 
-        every call ---> spend ledger ---> dashboards and budgets (alerts optional)
+ embeddings ---> a small separate embedding container
+ every call ---> ledger ---> Grafana dashboards, budgets, alerts
 ```
 
-The gateway speaks the same protocol most AI tools already use, so existing
-applications connect to it by changing one address and one key. Nothing about
-the tools has to change.
+The gateway speaks the OpenAI-compatible API that many AI tools support, so
+an existing tool connects to it by changing one address and one key.
+
+## What is in this repository
+
+| Path | What it is |
+|---|---|
+| `docker-compose.yml` | The whole stack: the LiteLLM gateway, Postgres, Redis, Prometheus, Grafana, Tempo, Loki with Alloy, and SearXNG for private web search. Each component is pinned to an exact version tag; the live deployment also pins the gateway image by digest (`mirror/litellm/Dockerfile`). |
+| `litellm_config.example.yaml` | The routing rules as patterns: vendor pass-throughs, a standard route beside an opt-in priority route, a private chain that refuses rather than leaks, local routes, and an embedding route with deliberately no fallback. |
+| `litellm/` | The gateway image, the Jev decision layer (`jev_gate.py`: the referee and the difficulty picker), the refusal-fallback module and the Unsloth guard. |
+| `grafana/`, [`docs/dashboards.md`](docs/dashboards.md) | Dashboards provisioned from disk: COMMAND (is anything wrong now), ROUTING (why) and FORENSICS (which request), plus an example overview board. |
+| `scripts/` | The health gate (`verify-stack.py`), the image-currency report, the leak gate, the dashboard checker, and the Jev probes and benchmark. |
+| `toolbox/` | One list of MCP tools (the plug-ins that give AI apps search, files and other abilities) rendered into each client's own config file, with environment-variable references only. |
+| `mirror/` | A cleaned-up copy of the live deployment: the current gateway config and compose file, the Jev plugin with the local routing and the recording picker, and the per-model setup tool for Unsloth Desktop. |
+| [`DEPLOYMENT.md`](DEPLOYMENT.md) | The step-by-step guide: first start-up, connecting a client, changing routes, updating, rolling back. |
 
 ## Quick start
 
-`DEPLOYMENT.md` has the full procedure and the reasoning behind each step.
-The short version, for someone comfortable with a terminal:
+[`DEPLOYMENT.md`](DEPLOYMENT.md) has the full procedure. The short version:
 
-1. Copy `.env.example` to `.env` and fill in the vendor API keys you hold, a
-   master key for the gateway, and passwords for the database and dashboards.
-2. Copy `litellm_config.example.yaml` to `litellm_config.yaml`, keep the
-   patterns you need, and remove any vendor you do not have a key for.
-3. If you run a local model server, point the local routes at it and confirm
-   the model names match what the server actually loads.
-4. Start the stack with `docker compose --profile observe up -d`. A bare
-   `docker compose up` starts nothing, because every component sits behind a
-   named profile.
-5. Run `python scripts/verify-stack.py`. Do not continue until it passes.
-6. Open the dashboards, confirm the data sources are present, and open the
-   example dashboard.
-7. Create one access key with a budget, point one tool at the gateway with
-   that key, and send one request.
-8. Read that request back from the spend ledger. Confirm the model named
-   there is the one you expected and the cost is not zero. If the cost is
-   zero, the price for that model is missing and needs an override.
+1. Copy `.env.example` to `.env`. Fill in the vendor keys you hold, a master
+   key for the gateway, and passwords for the database and dashboards.
+2. Copy `litellm_config.example.yaml` to `litellm_config.yaml`. Keep the
+   patterns you need, and remove any vendor you have no key for.
+3. If you run Unsloth Desktop, set `UNSLOTH_PC_URL` and `UNSLOTH_PC_API_KEY`,
+   make sure the local route names match the models it serves, and point
+   `LOCAL_EMBED_URL` at a separate embedding server. The Unsloth guard is
+   already switched on.
+4. Start the stack with `docker compose --profile observe up -d`.
+5. Run `python scripts/verify-stack.py`, and do not go further until it
+   passes.
+6. Create one key with a budget, point one tool at the gateway, send one
+   request, and read it back from the ledger. If it shows the model you
+   expected at a cost above zero, metering works.
 
-Not comfortable with a terminal? That is normal. This is a build guide. Hand
-it to whoever runs your computers, or to whoever you would hire to.
+## Questions people ask
 
-## How updates work here
+**Is this a product I can buy?** It is a reference build under the MIT
+license. You can run it yourself or adapt it. For help with a deployment of
+your own, contact Praxen Development & Engineering at
+[cld-dev.io](https://cld-dev.io).
 
-Every component is pinned to an exact version. A floating tag such as
-`postgres:16-alpine` does not keep you patched: the engine only re-checks a
-moving tag when explicitly asked, and a routine restart reuses whatever is
-already downloaded. Floating buys unpredictable timing and no way back.
+**Do I need my own hardware?** Only for the fallbacks and the private lane.
+Metering and budgets work with cloud vendors alone. The reference deployment
+runs on one ordinary desktop with a consumer graphics card.
 
-`scripts/check-image-updates.py` reads every pinned version and asks the
-upstream registries what is newer. It prints a table and applies nothing. A
-database must not restart itself, and a gateway update walks database
-migrations forward, which needs a backup first. On the day this README was
-written the checker reported, before that day's updates, three components
-behind: the gateway one patch release behind, the dashboard software one
-minor version behind, and the search engine two days behind its latest
-date-stamped build. The gateway was updated after its database backup was
-taken. The search engine was left alone, since no advisory stood against the
-build it runs. The dashboard software was held on purpose; `DEPLOYMENT.md`
-explains why that version changes how data sources are pinned. The same run
-exposed a bug in the checker itself: a version-line policy had been hiding an
-entire minor line of the trace store and reporting it current. The policy was
-fixed and the trace store updated the same day. Policy lines get reviewed for
-that reason.
+**Will my existing AI tools work with it?** Most tools that let you set a
+server address and a key will work. In the tool's settings this is usually
+called "OpenAI-compatible" or "custom endpoint".
 
-Dependabot opens pull requests; the scheduled image-currency workflow files a
-rolling issue. A human merges and updates. The automation in this repository
-cannot reach a live stack, so it only checks that the files parse, the compose
-file renders, the scripts compile and the leak gate is clean.
+**What does it cost to run?** The code here is free (MIT). Jev and the cloud
+vendors bill per use through accounts you hold. Msty and Unsloth have their
+own terms. The local tier needs a machine with a graphics card. The main
+cost is the time it takes to run it.
 
-This public repository has templates and tooling. A live deployment updates
-from its own private configuration, with its own backups, using the same
-checker and the same gate.
+## Terms used here
+
+- **Gateway:** the one program every AI request passes through. Here it is
+  LiteLLM.
+- **Route:** one entry in the gateway's rules: "a request for this name goes
+  there".
+- **Fallback list:** the models a route tries next, in order, when one fails.
+- **Key:** a password-like code that tells the gateway which tool is asking.
+- **Token:** a piece of text about three quarters of a word long. Models are
+  priced and measured in tokens.
+- **Context window:** how many tokens a model can hold at once.
+- **Embeddings:** numbers a model makes from text so the text can be searched
+  by meaning.
+- **Container:** a packaged program that Docker runs in isolation, one per
+  component.
+- **Grafana:** the dashboard software. Prometheus, Tempo and Loki store the
+  metrics, traces and logs it shows.
 
 ## Disclaimer
 
-This project is not affiliated with or endorsed by any vendor named in this
-document or in the configuration. Product names belong to their owners. The
-prices and model ids cited above were true on the dates given and will
-drift.
+This project is not affiliated with or endorsed by any vendor named here or
+in the configuration. Product names belong to their owners. Prices, speeds
+and model names were true on the dates given and will drift.
 
 ## License
 
-MIT. See `LICENSE`.
+MIT. See [`LICENSE`](LICENSE).

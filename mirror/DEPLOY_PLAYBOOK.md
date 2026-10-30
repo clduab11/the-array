@@ -4,7 +4,7 @@
 **Stack epoch at writing:** compose v1.7.8 (tempo 2.9.5 → 2.10.8, 2026-09-10) · LiteLLM base v1.100.1 (`litellm/Dockerfile` pin, bumped 2026-09-10 from v1.100.0 — one-fix patch, no schema change) · litellm_config.yaml v4.13.1 · gate `scripts/verify-stack.py` 14/14 before, between and after the day's bumps (v1.100.1 + tempo 2.10.8)
 
 CHANGELOG
-- **2.0.0 (2026-09-10, OP REPO-READY / Phase India rewrite)** — full rewrite for the stack as it runs on pc-host since the Branch B cutover (2026-07-17/18). Replaces the banner-deprecated v1.1.0 (2026-04-09, M1 iMac). Prior file preserved at `backup/ops/DEPLOY_PLAYBOOK.md.bak.pre-india-rewrite-2026-09-10`.
+- **2.0.0 (2026-09-10, OP REPO-READY / Phase India rewrite)** — full rewrite for the stack as it runs on pc-host since the Branch B cutover (2026-07-17/18). Replaces the banner-deprecated v1.1.0 (2026-04-09, M1 iMac). The prior file's rung left `backup/ops/` on 2026-10-02 under the two-rung rule (staged in `to-be-deleted/`).
 - **1.1.0 (2026-04-09)** — a Mac, Docker 8GB VM, MLflow, init-db.sh, 54-tool MCP wiring. Deprecated 2026-05-24; every phase in it is dead (§10).
 
 ---
@@ -19,20 +19,20 @@ CHANGELOG
 
 ## §1 — Prerequisites
 
-**Host.** Windows 11 Pro on pc-host, 48GB RAM. LM Studio and Docker Desktop share that RAM through the WSL cap — see the wedge signature in §9 before loading large models during any pull/build.
+**Host.** Windows 11 Pro on pc-host, 48GB RAM. Unsloth Desktop's loaded model shares that RAM with Docker Desktop's WSL cap — see the wedge signature in §9 before loading large models during any pull/build.
 
-**Docker Desktop 4.90.0** (engine 29.7.2, compose 5.5.1), WSL2 backend, `AutoStart=False` **deliberately** — the operator spins the stack down himself; never propose enabling autostart.
+**Docker Desktop** (engine 29.8.0 since the operator's 2026-09-23 update, compose 5.5.1; probed 2026-10-03), WSL2 backend, `AutoStart=False` **deliberately** — the operator spins the stack down himself; never propose enabling autostart.
 - Settings → Advanced → **"Allow the default Docker socket to be used" stays ON.** `praxen-alloy` bind-mounts `/var/run/docker.sock` for container-log collection; without it the Loki row on the board goes dark.
 - Settings → Resources → check Resource Saver after any Desktop bump (4.83 changed it to stop the engine on WSL after idle — a stopped engine after idle is not a wedge).
 - New `docker desktop` CLI exists (`status`, `logs`, `update`, `restart`). Do **not** run `docker desktop restart` while the engine is still starting (§9).
 
 **`.wslconfig`** at `~\.wslconfig`: `memory=28GB` (was 35.9GB; cut 2026-08-05 after wedge #2). Rollback copy: `backup/current/wslconfig.bak.2026-08-05-pre-28gb`. This cap is a **shared budget with the local models Unsloth has loaded**; exceeding host RAM terminates the `docker-desktop` distro.
 
-**Unsloth Desktop** on the PC serves every local chat route on `127.0.0.1:8888` (keyed; it auto-updates freely, gate after). From inside the proxy container it is reachable ONLY as `http://host.docker.internal:8888/v1` (§7), and every Unsloth deployment passes `litellm/unsloth_guard.py`. Embeddings run in the `praxen-embed` container (llama.cpp CPU, no host port). LM Studio left the stack at config v4.20.0 (2026-09-30) and remains only as the Locally phone host; the iMac tier is retired. Current routes and per-model rows: `docs/STATE.md` and the config's LOCAL TIER block.
+**Unsloth Desktop** on the PC serves every local chat route on `127.0.0.1:8888` (keyed; it auto-updates freely, gate after). From inside the proxy container it is reachable ONLY as `http://host.docker.internal:8888/v1` (§7), and every Unsloth deployment passes `litellm/unsloth_guard.py`. Embeddings run in the `praxen-embed` container (llama.cpp CPU, no host port). Local GGUFs come from Unsloth's Hub (HF cache); the iMac tier is retired. Current routes and per-model rows: `docs/STATE.md` and the config's LOCAL TIER block.
 
 **Tooling on PATH:** `docker`, `git` (set `core.autocrlf=false` before first checkout — `provision-keys.sh`, YAML and the Alloy River config are LF-sensitive), `python` (3.x; `verify-stack.py` and `check-image-updates.py` are stdlib-only; `extract_chains.py` needs PyYAML), `jq` 1.8.2 (hard dependency of `provision-keys.sh`), `curl`.
 
-**Firewall (Private profile, inbound, elevated PowerShell).** Three published ports are LAN/tailnet-exposed for the iMac; each is gated by a named rule. Create any that are missing:
+**Firewall (Private profile, inbound, elevated PowerShell).** Three published ports are LAN/tailnet-exposed (opened for the iMac's clients; any LAN or tailnet device reaches them); each is gated by a named rule. Create any that are missing:
 
 ```bash
 # elevated PowerShell
@@ -59,7 +59,7 @@ Everything else (postgres 5432, redis 6379, prometheus 9090, tempo 3210, parked 
 | `litellm/Dockerfile` | Tag-lock wrapper: `FROM ghcr.io/berriai/litellm:v1.100.1` + a `RUN` that removes hiredis 3.4.0 (open segfault; the tag still ships it). **The LiteLLM version lives HERE, not in compose.** |
 | `litellm_config.yaml` | v4.22.0. Bind-mounted read-only into the proxy. 211 entries (201 named + 10 provider wildcards), 114 fallback chains, 45 content-policy chains, 39 aliases (`router_settings.model_group_alias`). The ONLY authoritative routing surface (§5). Counts move with every config version: the header of the file is the record. |
 | `litellm/jev_gate.py` / `litellm/refusal_fallback.py` / `litellm/unsloth_guard.py` | Bind-mounted plugins, loaded through `litellm_settings.callbacks`. The proxy does not start without all three. |
-| `prometheus.yml` | v1.8.0 scrape config: litellm-proxy, tempo, grafana, loki, alloy, self. Carries Tempo/Loki/Alloy liveness (none of the three defines a healthcheck). |
+| `prometheus.yml` | v1.8.0 scrape config: litellm-proxy, tempo, grafana, loki, alloy, embed, self (7 jobs). Carries Tempo/Loki/Alloy liveness (none of the three defines a healthcheck). |
 | `tempo-config.yaml` / `loki-config.yaml` / `alloy-config.alloy` / `searxng_settings.yml` | Runtime bind-mounts. Never move them out of root — compose paths are relative. |
 | `grafana/provisioning/dashboards/praxen.yaml` | Dashboard provider: `allowUiUpdates:false`, `disableDeletion:true`, 30s poll. |
 | `grafana/provisioning/datasources/praxen-datasources.yaml` | Datasources, `editable:false`. uids `afimxbo42ap6oe` (prometheus), `dfipt8nyznn5sc` (tempo), `praxen-loki`, `praxen-litellm-pg`, `sibling-project-b-infinity` are LOAD-BEARING — never change. |
@@ -67,15 +67,15 @@ Everything else (postgres 5432, redis 6379, prometheus 9090, tempo 3210, parked 
 | `provision-keys.sh` | v2.0.0 team + virtual-key minting (§3 step 8). Rebuilds `.virtual-keys.env` on every run. |
 | `.env` / `.virtual-keys.env` / `.env.template` | Secrets + virtual-key tokens (gitignored) / sanitised template. Never `cat` the first two into a transcript. |
 | `scripts/verify-stack.py` | 21-probe gate (2026-10-02), exit 1 on any FAIL. Run before and after every change. `--no-llm`, `--no-local` and `--no-routes` skip the paid, local-model and name-sweep probes. |
-| `scripts/route-resolve.py` | Proves every model_name and alias reaches a live deployment (gate 3a runs it; run it alone after a swap + restart). |
+| `scripts/route-resolve.py` | Proves every model_name and alias reaches a live deployment (gate 3a runs it; run it alone after a swap + restart). Every call is tagged `health-gate`; a rejection by the proxy itself fails as AUTH. |
 | `scripts/check-image-updates.py` | Reports which pins are behind upstream. Reports only, never applies. |
 | `scripts/extract_chains.py` / `scripts/sync-venice-pricing.py` | Stdout dumper of aliases/chains/terminal tally (`fallback-chains/chains-reference.md` is authored around it) / re-injects per-entry Venice pricing from the live vendor API — run it on the staged copy (`--config litellm_config.yaml.next`), then swap + restart (§5). |
 | `fallback-chains/chains-reference.md` / `docs/litellm-config-changelog-archive.md` | Chain snapshot regenerated at every routing bump / verbatim rolled-out config changelogs (§5). |
-| `CLAUDE.md` / `docs/STATE.md` | Doctrine + ledger / continuity page (§0). |
+| `AGENTS.md` + `docs/rules/` / `docs/STATE.md` | Contract and durable rules / continuity page (§0). `CLAUDE.md` only imports `AGENTS.md`. |
 | `tailscale-serve.json` | Sidecar serve config — sidecar retired 2026-07-28, file kept for the parked service. |
 | `backup/`, `to-be-deleted/`, `handoffs/` | Rollback ladder / visible soft-delete staging / active handoffs — doctrine below. `deliverables/`, `Claude outputs/`, `.firecrawl/`, `.worktrees/` are gitignored working dirs. |
 
-**backup/ doctrine.** Every destructive pass gets a rung FIRST: `<file>.bak.<stage>` in `backup/<class>/` — `compose/`, `litellm-config/`, `db/` (pg dumps, `grafana.db`), `dashboards/`, `grafana-provisioning/`, `prometheus/`, `claude-md/`, `ops/`, `keys/`, `lmstudio-config/`, `current/<date>/` (full operative snapshots incl. `.env`). `backup/archive-pre-v4.12.0/` is archaeology, not a rollback path. Never delete a rung without an explicit go. The ladder IS the rollback path — git exists but the ladder is what every rollback command below reads.
+**backup/ doctrine.** Every destructive pass gets a rung FIRST: `<file>.bak.<stage>` in `backup/<class>/` — `compose/`, `litellm-config/`, `db/` (pg dumps, `grafana.db`), `dashboards/`, `grafana-provisioning/`, `prometheus/`, `claude-md/`, `ops/`, `keys/`, `current/<date>/` (full operative snapshots incl. `.env`); the full class list is in `docs/rules/workspace.md`. Never delete a rung without an explicit go. The ladder IS the rollback path — git exists but the ladder is what every rollback command below reads.
 
 **to-be-deleted/ doctrine.** Nothing is hard-deleted. Cleanup candidates move to `./to-be-deleted/` (visible, gitignored) with a `MANIFEST.md` line per file (origin path, reason, UTC date), reference-checked first. the operator empties it manually. Never auto-purge.
 
@@ -85,7 +85,7 @@ Everything else (postgres 5432, redis 6379, prometheus 9090, tempo 3210, parked 
 
 **1. Port the tree.** `git config --global core.autocrlf false` BEFORE the clone/copy (LF-sensitive files). Secrets, a fresh `pg_dump`, and `.virtual-keys.env` travel side-channel — never through the repo or a sync folder.
 
-**2. Create `.env` from the template and fill EVERY variable.** `.env.template` is reconciled to the live file (last on 2026-09-30, when the Unsloth variables replaced the LM Studio ones); its v1.1.0 predecessor had drifted 8 names behind for months and anyone following it got a dead stack (no UI login, no renderer token, three provider lanes 401ing, no iMac URL). The consumer map below is authoritative whenever the two disagree again — diff `grep -oE '^[A-Z_]+=' .env .env.template` before every bring-up.
+**2. Create `.env` from the template and fill EVERY variable.** `.env.template` is reconciled to the live file (last on 2026-09-30, when the Unsloth variables went in); its v1.1.0 predecessor had drifted 8 names behind for months and anyone following it got a dead stack (no UI login, no renderer token, three provider lanes 401ing, no iMac URL). The consumer map below is authoritative whenever the two disagree again — diff `grep -oE '^[A-Z_]+=' .env .env.template` before every bring-up.
 
 ```bash
 cp .env.template .env
@@ -103,13 +103,13 @@ cp .env.template .env
 | `UNSLOTH_PC_API_KEY` | `litellm-proxy` — Unsloth Desktop's API key (Desktop > API keys). Only keyed callers auto-switch models; `litellm/unsloth_guard.py` strips Unsloth's tool, permission and egress fields from every request. |
 | `ANTHROPIC_API_KEY` `OPENAI_API_KEY` `GEMINI_API_KEY` `MISTRAL_API_KEY` `PERPLEXITY_API_KEY` `COHERE_API_KEY` `XAI_API_KEY` `VENICE_API_KEY` `OPENROUTER_API_KEY` | `litellm-proxy` provider credentials |
 | `GROQ_API_KEY`, `HUGGINGFACE_API_KEY`, `MERCURY_API_KEY` | `litellm-proxy` (sat orphaned for 14 days once — in `.env` but not in the compose whitelist, so three provider lanes 401'd) |
-| `TYPESAFE_API_KEY` | `litellm-proxy` — the Jev classifier and judge (`litellm/jev_gate.py`) and the `/typesafe` pass-through. Empty = Jev declines and LiteLLM's heuristic routes. The optional `JEV_*` knobs are passed as `${VAR:-}` and are not in the template; unset means the code default. |
+| `TYPESAFE_API_KEY` | `litellm-proxy` — the Jev classifier, judge and local front (`litellm/jev_gate.py`) and LiteLLM's native `/typesafe/{path}` route (v1.104.0+; open to every virtual key, spend lands as `typesafe/<model>`). Empty = Jev declines and LiteLLM's heuristic routes. The optional `JEV_*` knobs are passed as `${VAR:-}` and are not in the template; unset means the code default. |
 | `SEARXNG_SECRET` | `searxng` — overrides `server.secret_key` (the settings file is not interpolated). Compose refuses to start the service without it. |
 | `GRAFANA_SMTP_ENABLED`, `GRAFANA_SMTP_HOST`, `GRAFANA_SMTP_USER`, `GRAFANA_SMTP_PASSWORD`, `GRAFANA_SMTP_FROM` | `grafana` — alert email (`GF_SMTP_*`); disabled when unset. |
 | `GATEWAY_ADMIN_TOKEN` | **NOT consumed by compose.** Read by `scripts/sync-gateway-models.py` when it registers routes in Gateway. |
 | `N8N_PASSWORD` (`N8N_USER` optional) | `n8n` — agents/full/dev profiles only, never run |
 | `TS_AUTHKEY` | `tailscale-litellm` — `retired` profile, parked; keep the variable, the sidecar reads it if ever revived |
-| `VERTEX_API_KEY`, `REDIS_HOST`, `REDIS_PORT` | **NOT consumed by compose.** `litellm_config.yaml` does read `os.environ/REDIS_HOST` + `REDIS_PORT` (cache block, ~line 405), but the container gets those from compose's hardcoded `REDIS_HOST: redis` / `REDIS_PORT: 6379`, never from `.env`; `VERTEX_API_KEY` is referenced by nothing (gemini rides `GEMINI_API_KEY`). FLAG — keep them so `.env` and the template agree; do not delete. A `vertex_ai/*` entry or a Redis relocation means wiring them through the proxy `environment:` block first. |
+| `REDIS_HOST`, `REDIS_PORT` | **NOT consumed by compose.** `litellm_config.yaml` does read `os.environ/REDIS_HOST` + `REDIS_PORT` (cache block, ~line 405), but the container gets those from compose's hardcoded `REDIS_HOST: redis` / `REDIS_PORT: 6379`, never from `.env`; `VERTEX_API_KEY` is referenced by nothing (gemini rides `GEMINI_API_KEY`). FLAG — keep them so `.env` and the template agree; do not delete. A `vertex_ai/*` entry or a Redis relocation means wiring them through the proxy `environment:` block first. |
 
 **Rule that follows from this table:** the proxy has NO `env_file:`. A new provider key added to `.env` is invisible until it is also added to the `litellm-proxy` `environment:` block, and that is a recreate (`up -d`), not a restart.
 
@@ -150,11 +150,11 @@ Then confirm the wrapper did its job — this MUST fail with `ModuleNotFoundErro
 docker exec praxen-litellm python -c "import hiredis"
 ```
 
-Expected `docker compose ps`: 10 `praxen-*` containers `running`; 7 show `(healthy)`; `praxen-tempo`, `praxen-loki` and `praxen-alloy` show plain `Up` — no healthcheck (tempo and loki are distroless; the alloy service simply defines none), their liveness is the Prometheus `tempo`/`loki`/`alloy` jobs.
+Expected `docker compose ps`: 11 `praxen-*` containers `running`; 8 show `(healthy)`; `praxen-tempo`, `praxen-loki` and `praxen-alloy` show plain `Up` — no healthcheck (tempo and loki are distroless; the alloy service simply defines none), their liveness is the Prometheus `tempo`/`loki`/`alloy` jobs.
 
 **7. Firewall rules (§1)** if this is a new Windows install.
 
-**8. Provision teams + keys — FULL RUN ON A FRESH BOX ONLY.** `provision-keys.sh` is idempotent for teams/keys but **rebuilds `.virtual-keys.env` from scratch on every run** (`mv` overwrite — existing keys come back as empty placeholders). NEVER run it on the live box to add one key; add the spec line for the record and mint via direct `/key/generate`. Two facts about the script's roster: it is the 2026-06-20 cut (teams sum $N, six keys, some since deleted) — after a fresh run, reconcile teams (`/team/update`) and keys (`/key/generate`, `/key/delete`) to the live ledger in `CLAUDE.md` `<deployed_state>`; and it does NOT mint `front-go-winpc`, which `verify-stack.py` gate 5 reads from `.virtual-keys.env` as `VKEY_MSTY_GO_WINPC`.
+**8. Provision teams + keys — FULL RUN ON A FRESH BOX ONLY.** `provision-keys.sh` is idempotent for teams/keys but **rebuilds `.virtual-keys.env` from scratch on every run** (`mv` overwrite — existing keys come back as empty placeholders). NEVER run it on the live box to add one key; add the spec line for the record and mint via direct `/key/generate`. Two facts about the script's roster: it is the 2026-06-20 cut (teams sum $N, six keys, some since deleted) — after a fresh run, reconcile teams (`/team/update`) and keys (`/key/generate`, `/key/delete`) to the live roster (`docs/STATE.md`, and the DB tables themselves; three of the script's six keys no longer exist there, checked 2026-10-03); and it does NOT mint `front-go-winpc`, which `verify-stack.py` gate 5 reads from `.virtual-keys.env` as `VKEY_FRONT_GO_WINPC`.
 
 ```bash
 ./provision-keys.sh
@@ -168,7 +168,7 @@ curl -sS -X POST http://localhost:4000/key/generate -H "Authorization: Bearer $(
 
 The token is returned exactly ONCE by `/key/generate`; the pipe above writes it straight into `.virtual-keys.env` (the file the gate reads) without it ever reaching stdout — substitute the real `<ALIAS_UPPER_SNAKE>` before running, and never echo it.
 
-**9. Gate.** Every probe must PASS (18 probes as of 2026-09-23; the count grows as gates are added). Anything less is not a finished bring-up.
+**9. Gate.** Every probe must PASS (21 probes as of 2026-10-02; the count grows as gates are added). Anything less is not a finished bring-up.
 
 ```bash
 python scripts/verify-stack.py
@@ -190,7 +190,7 @@ Stop everything, keep data (`down -v` destroys volumes — never without an expl
 docker compose --profile observe down
 ```
 
-Status: `docker compose --profile observe ps` (10 running; tempo, loki + alloy without a health column). Readiness: `curl -s http://localhost:4000/health/readiness` → `status: healthy`, `db: connected`.
+Status: `docker compose --profile observe ps` (11 running; tempo, loki + alloy without a health column). Readiness: `curl -s http://localhost:4000/health/readiness` → `status: healthy`, `db: connected`.
 
 Restart the proxy after a `litellm_config.yaml` edit — the YAML is bind-mounted, a restart is enough:
 
@@ -212,11 +212,11 @@ docker logs --tail 200 praxen-litellm
 
 Logs — verbose/historical: Grafana board `praxen-command`, row **08 VERBOSE LOGS // Loki + Alloy** — `$logcontainer` picks the container, `$logq` is a free regex; Succinct panel = error/warn deduped. Loki keeps 7 days.
 
-**Grafana** `http://localhost:3200` (also `http://198.51.100.10:3200` from the iMac) — `admin` / `GRAFANA_ADMIN_PASSWORD`; root lands on `praxen-command`. **Dashboards and datasources are file-provisioned: disk is the only author surface.** Edit `grafana/dashboards/*.json`, Grafana re-polls within 30s. UI "Save" is rejected by design (`Cannot save provisioned dashboard`); the API/MCP `update_dashboard` path rejects likewise. New board = drop a JSON with a stable `uid` and NO top-level `id`. Datasource edits = edit the YAML, then recreate grafana (`up -d grafana`); a DB-side datasource save would recreate the exact fossil class §9 warns about. Text panels never use `body.theme-*` classes (Grafana 13 hardcodes `theme-dark` in the served HTML).
+**Grafana** `http://localhost:3200` (also `http://198.51.100.10:3200` from the tailnet) — `admin` / `GRAFANA_ADMIN_PASSWORD`; root lands on `praxen-command`. **Dashboards and datasources are file-provisioned: disk is the only author surface.** Edit `grafana/dashboards/*.json`, Grafana re-polls within 30s. UI "Save" is rejected by design (`Cannot save provisioned dashboard`); the API/MCP `update_dashboard` path rejects likewise. New board = drop a JSON with a stable `uid` and NO top-level `id`. Datasource edits = edit the YAML, then recreate grafana (`up -d grafana`); a DB-side datasource save would recreate the exact fossil class §9 warns about. Alert-rule edits = edit or add a file in `grafana/provisioning/alerting/`, then `docker compose --profile observe restart grafana` (never the provisioning reload API); `python scripts/verify-praxen-boards.py` proves the three rule uids loaded. The boards default to TRAFFIC = clients, which hides the health gate's own calls (`docs/rules/grafana.md`). Text panels never use `body.theme-*` classes (Grafana 13 hardcodes `theme-dark` in the served HTML).
 
-**LiteLLM admin UI** `http://localhost:4000/ui` — `UI_USERNAME` / `UI_PASSWORD`. Read-only use. **Never save config through the UI's config-update path**: `STORE_MODEL_IN_DB=True` means a UI save writes `LiteLLM_Config` rows that MERGE over the YAML at every boot and shadow it silently (§9). Keys/teams/budgets DO live in the DB and are edited via `/key/update`, `/team/update` — that is the sanctioned DB-side surface.
+**LiteLLM admin UI** `http://localhost:4000/ui` — `praxen-admin` with its own DB password on `default_user_id` (since config v4.26.3, 2026-10-08: `general_settings.disable_env_credential_login: true`, so `UI_USERNAME` / `UI_PASSWORD` no longer sign in and the env-credential banner is gone). Set or reset it with `python scripts/set-ui-admin-password.py` (master key; signs out every UI session; the first sign-in forces a change at `/ui/change-password`, which works only from a session opened with the DB password: type it by hand, browser autofill supplies stale passwords). No restart needed for a reset. Read-only use. **Never save config through the UI's config-update path**: `STORE_MODEL_IN_DB=True` means a UI save writes `LiteLLM_Config` rows that MERGE over the YAML at every boot and shadow it silently (§9). Keys/teams/budgets DO live in the DB and are edited via `/key/update`, `/team/update` — that is the sanctioned DB-side surface.
 
-Prometheus targets `http://127.0.0.1:9090/targets` (6/6 UP is the baseline); Tempo API on `127.0.0.1:3210`; SearXNG `http://localhost:8080/search?q=test&format=json`.
+Prometheus targets `http://127.0.0.1:9090/targets` (7/7 UP is the baseline); Tempo API on `127.0.0.1:3210`; SearXNG `http://localhost:8080/search?q=test&format=json`.
 
 Image currency audit (report only; `python scripts/verify-stack.py --no-llm` is the free gate without the paid chat probe):
 
@@ -268,13 +268,13 @@ mv litellm_config.yaml.next litellm_config.yaml && docker compose restart litell
 
 Then prove every name resolves (`/v1/models` lists a name even when the router holds no deployment for it): `python scripts/route-resolve.py` must end `N/N names resolve`.
 
-**6. Probe — assert on the ECHOED model, never the status code.** Three upstreams (the local server, xAI, Venice) can return 200 serving a different model than requested. For local routes read `system_fingerprint`; for cloud read `model`. Nonce every re-probe: the Redis response cache echoes a byte-identical payload in ~0.1s without touching the upstream.
+**6. Probe — assert on the ECHOED model, never the status code.** Three upstreams (the local server, xAI, Venice) can return 200 serving a different model than requested. For cloud routes read `model`. For local routes the body proves nothing (probed 2026-10-03: `model` echoes the alias you asked for and Unsloth sets no `system_fingerprint`): read the `x-litellm-model-name` response header for the deployment that answered, and `python scripts/unsloth-model-config.py list` for the model Unsloth has loaded. Nonce every re-probe: the Redis response cache echoes a byte-identical payload in ~0.1s without touching the upstream.
 
 ```bash
 curl -sS http://localhost:4000/v1/chat/completions -H "Authorization: Bearer $(grep -E '^LITELLM_MASTER_KEY=' .env | cut -d= -f2-)" -H 'Content-Type: application/json' -d "{\"model\":\"<route>\",\"max_tokens\":16,\"messages\":[{\"role\":\"user\",\"content\":\"Reply OK. nonce=$(date +%s)\"}]}" | jq '{model, system_fingerprint, content: .choices[0].message.content}'
 ```
 
-A removed name must **400/403 loudly** — probe the dead name too. Routable count is upstream-driven; the gate checks ≥500 and that every `local-*` name is registered (the `imac-*` tier is retired; the gate's label still names it), never a fixed number.
+A removed name must **400/403 loudly** — probe the dead name too. Routable count is upstream-driven; the gate checks ≥500 and that every `local-*` name is registered (the `imac-*` tier is retired), never a fixed number.
 
 **7. Regenerate the chain reference** at every routing change. Rung the old one first (`backup/litellm-config/chains-reference.md.bak.pre-v4.X.Y`); `extract_chains.py` prints to stdout — author the new `fallback-chains/chains-reference.md` around the dump (banner with version/date/backup path + the deltas + the dump). `PYTHONUTF8=1` is required — comments carry non-ASCII.
 
@@ -294,7 +294,7 @@ Order for ANY bump: audit (`check-image-updates.py`, §4) → gate (`verify-stac
 cp docker-compose.yml backup/compose/docker-compose.yml.bak.pre-<stage>
 ```
 
-**Memory precondition** (both wedges happened mid-pull): read LM Studio's working set — if it holds more than `lms ps` shows loaded, restart the app first (`lms unload --all` does NOT release it). If free memory sinks mid-op:
+**Memory precondition** (both wedges happened mid-pull): free the native-Windows inference memory first. Unsloth keeps its last model resident (11–16 GB mapped after a 26B/35B call) until `python scripts/unsloth-model-config.py unload`. If free memory sinks mid-op:
 
 ```bash
 wsl -d docker-desktop sh -c 'sync; echo 3 > /proc/sys/vm/drop_caches'
@@ -318,28 +318,30 @@ docker cp praxen-grafana:/var/lib/grafana/grafana.db backup/db/grafana.db.bak.pr
 docker compose --profile observe up -d grafana
 ```
 
-Post-bump: `provisioned=true` on `praxen-command`, all datasource uids present (the gate checks both). **Grafana stays 13.1.5 — HELD on structure, not on CVE coverage** (13.1.5 IS a listed fixed version for CVE-2026-19475, advisory `>=13.1.5`, and 13.2.x core was never in the affected range): from 13.2 the postgres/prometheus/tempo/loki datasources become externalized catalog plugins, bundled at build time from an UNPINNED list and re-downloaded from grafana.com on every restart (`preinstall_auto_update=true`) — which collides with pin-everything doctrine — and the standalone postgres plugin's own CVE-2026-19475 fix (plugin 13.0.3) shipped after the 13.2.1 image was built. Preconditions for a future 13.2.x move (compose v1.7.8 changelog): `grafana.db` rung; pin `grafana-postgresql-datasource@13.0.3` and the other externalized datasources in `GF_PLUGINS_PREINSTALL_SYNC`; set `GF_PLUGINS_PREINSTALL_AUTO_UPDATE=false`; verify every provisioned datasource uid (§2) resolves post-boot. The schema-v2 dynamic engine is GA but disk stays classic `schemaVersion 42`.
+Post-bump: `provisioned=true` on `praxen-command`, all datasource uids present (the gate checks both). **Grafana is on 13.2.x since 2026-10-08 (13.2.3, compose v1.7.18).** From 13.2 the postgres/prometheus/tempo/loki datasources are externalized catalog plugins: they are PINNED in `GF_PLUGINS_PREINSTALL_SYNC` (postgres 13.0.4, prometheus 13.2.3, loki 13.2.1, tempo 13.2.4 on 10-08) and `GF_PLUGINS_PREINSTALL_AUTO_UPDATE=false` stops every restart re-downloading them (grafana/grafana#132528). At each Grafana bump: `grafana.db` rung plus a copy of the volume's `plugins/` directory; read the bundled versions (`docker run --rm --entrypoint sh grafana/grafana:<tag> -c 'grep -m1 version /usr/share/grafana/data/plugins-bundled/<id>/plugin.json'`) and pin each of the four to the newest compatible version (grafana.com `/api/plugins/<id>/versions` with header `grafana-version: <tag>`); after the recreate, `/api/plugins` must show the pinned versions and `verify-praxen-boards.py --trace <a recent Tempo trace id>` must pass (the FORENSICS waterfall needs a real id). The schema-v2 dynamic engine is GA but disk stays classic `schemaVersion 42`.
 
 **Distroless images kill exec-form healthchecks.** Tempo 2.9.4+ and Loki 3.7 ship no shell and no busybox; an in-container probe dies with an OCI exec error and pins the container UNHEALTHY while the service is fine. Their liveness rides the Prometheus scrape jobs. On ANY Grafana-family bump, check whether the image still ships a shell before trusting a `CMD` probe.
 
 **Tempo is on the 2.10 line** (2.10.8 — the LAST 2.x minor, patched to 2027-04-26; keeps `ingester`/`compactor`/local-blocks, so `tempo-config.yaml` was unchanged across the 2.9→2.10 move). 3.x removes those sections and the local-blocks processor, relocates `block_retention`, parses strictly (this config would fail to boot) and has no downgrade path — a gated op with a config rewrite (`tempo-cli migrate config`, target 3.1), never a tag edit. `check-image-updates.py` pins its policy to `^2\.10\.` so 3.x reports as "major exists", never "behind". Rungs from the move: `backup/tempo/tempo-config.yaml.bak.pre-v2.10.8`, `backup/tempo/tempodata.bak.pre-v2.10.8.tgz`, `backup/compose/docker-compose.yml.bak.pre-tempo-2.10.8`.
 
-**Postgres/Redis MAJOR** (16→17, 7→8) is a dump/restore migration, not a tag edit; the checker reports it as INFO. Patch-level bumps within the line are tag edits + `up -d <service>` (postgres: pg_dump rung first anyway; LiteLLM rides a postgres recreate without restart). **Prometheus** tag reverts are valid rollbacks (TSDB format unchanged through v3.14.0) — `docker cp praxen-prometheus:/prometheus backup/prometheus/prom-tsdb.bak.pre-<ver>` only if a release notes a format change. **SearXNG** is rolling (date-tagged): the risk is `settings.yml` schema drift — the gate's `format=json` probe covers it. **Docker Desktop** app bumps: pg_dump rung first (the engine restarts every container); the quiet installer leaves `com.docker.service` Stopped (§9).
+**Postgres/Redis MAJOR** (16→17, 7→8) is a dump/restore migration, not a tag edit; the checker reports it as INFO. Patch-level bumps within the line are tag edits + `up -d <service>` (postgres: pg_dump rung first anyway; LiteLLM rides a postgres recreate without restart). **Prometheus** tag reverts are valid rollbacks (TSDB format unchanged through v3.15.0; its XOR2 chunks and `st-storage` are opt-in) — `docker cp praxen-prometheus:/prometheus backup/prometheus/prom-tsdb.bak.pre-<ver>` only if a release notes a format change. **SearXNG** is rolling (date-tagged): the risk is `settings.yml` schema drift — the gate's `format=json` probe covers it. **Docker Desktop** app bumps: pg_dump rung first (the engine restarts every container); the quiet installer leaves `com.docker.service` Stopped (§9).
 
 ```bash
 python scripts/verify-stack.py
 ```
 
+**Image prune (the operator R13, 2026-10-06; narrowed 2026-10-08 to "the most recent backup + the current version"):** after a bump passes, keep the running tag plus the most recent prior (rollback) tag per service and `docker image rm` the rest one ref at a time (never `docker image prune -a`; never an image any container uses, running or stopped; the LiteLLM base pin in `litellm/Dockerfile` counts as running; fenced images are untouched). **SearXNG** pins the newest tag on bump day (the operator R12); `check-image-updates.py` ranks same-day builds by push time.
+
 ## §7 — Client bindings
 
-- **iMac clients** (Msty Studio/Go on the iMac, dashboards, SearXNG MCP) → the PC's **host tailnet node** `http://198.51.100.10:4000/v1`, Grafana `:3200`, SearXNG `:8080`. MagicDNS is OFF tailnet-wide, so IP bindings, not names. The retired sidecar node (`praxen-litellm` @ `198.51.100.11`) is bound by nothing — expire it in the console when convenient.
+- **Other devices** (the phone, any LAN or tailnet client; the iMac's clients before that tier was retired) → the PC's **host tailnet node** `http://198.51.100.10:4000/v1`, Grafana `:3200`, SearXNG `:8080`. MagicDNS is ON tailnet-wide (verified 2026-09-30, `docs/rules/compose.md`), so the node's name resolves too, and `tailscale serve` publishes Paperclip, Studio Web and Gateway under it on HTTPS, tailnet only. The retired sidecar node (`praxen-litellm` @ `198.51.100.11`) is bound by nothing — expire it in the console when convenient.
 - **PC clients** (Msty Studio/Go/Gateway on pc-host, Coder Code) → `http://localhost:4000/v1`.
 - **Msty Gateway fronts LiteLLM on ONE key** (`front-gateway-winpc`, deliberately allowlist-free; per-app attribution lives in Gateway client tokens, not LiteLLM). Gateway provider base URL is the BARE root `http://localhost:4000` (`/v1/v1` 404s). Gateway is a CLIENT of the proxy — LiteLLM stays sole vendor-facing egress; no vendor keys in Gateway except the ruled Venice-direct exception. **Coder Code stays on the LiteLLM lane permanently.** Gateway 0.5.x locks legacy admin-role client tokens on Free — tokens must be Inference-role.
 - Every client rebind list must cover EVERY service the client touches (`:4000`, `:8080`, `:3200`) — SearXNG was missed at the Branch B cutover and darked the iMac MCP for two weeks.
 - Break-glass keys (`front-studio-pc`, `front-go-*`, `coder-code-windows`) bind DIRECT to LiteLLM so a wedged Gateway does not darken every app at once.
 
 **Local `api_base` from inside the proxy netns:**
-- `UNSLOTH_PC_URL` **MUST be `http://host.docker.internal:8888/v1`.** The PC's Tailscale IP is unreachable from the container (8s timeout) while the host reaches it fine — host-side probes prove nothing. That misbinding (then on the LM Studio URL) killed the terminal local rung of every fallback chain for a week in July 2026 with green healthchecks throughout.
+- `UNSLOTH_PC_URL` **MUST be `http://host.docker.internal:8888/v1`.** The PC's Tailscale IP is unreachable from the container (8s timeout) while the host reaches it fine — host-side probes prove nothing. That misbinding killed the terminal local rung of every fallback chain for a week in July 2026 with green healthchecks throughout.
 - Embeddings never leave the Docker network: `local-embed-qwen3` points at `http://praxen-embed:8080/v1`. Never give a client a direct Unsloth provider (`:8888`): it would bypass `litellm/unsloth_guard.py`. The iMac tier and its URL were retired on 2026-09-30 (config v4.20.0).
 - **Any new local binding is probed from INSIDE `praxen-litellm` before it is trusted.** Send it unkeyed: a fast `401` proves the route exists, a timeout proves it does not (probed 2026-10-02: 401 in 0.03 s; the keyed `/v1/models` takes about 6 s, so a short timeout on it reads as a false failure):
 
@@ -349,7 +351,7 @@ try: print(urllib.request.urlopen('http://host.docker.internal:8888/v1/models', 
 except urllib.error.HTTPError as e: print(e.code, round(time.time()-t,2),'s')"
 ```
 
-- A 200 from a local route is NOT proof the requested model answered — LM Studio serves whatever is resident under an unresolvable id. Assert on `system_fingerprint`; check `lms ps` before reading any LM Studio 400.
+- A 200 from a local route is NOT proof the requested model answered. Through the proxy the body's `model` is the alias you asked for and Unsloth sets no `system_fingerprint` (probed 2026-10-03): read the `x-litellm-model-name` header and Unsloth's loaded model (`python scripts/unsloth-model-config.py list`). Unsloth answers a name it does not recognise with whatever model is resident.
 
 ## §8 — Rollback paths
 
@@ -363,7 +365,7 @@ cp backup/compose/docker-compose.yml.bak.pre-<stage> docker-compose.yml
 docker compose --profile observe up -d <service>
 ```
 
-**LiteLLM base + Postgres restore** (revert the Dockerfile FROM line first; restore the rung taken BEFORE the bump you are reverting — newest is `.pre-v1.100.1.sql`; `WITH (FORCE)` drops Grafana's open datasource connections):
+**LiteLLM base + Postgres restore** (revert the Dockerfile FROM line first; restore the rung taken BEFORE the bump you are reverting — newest is `.pre-v1.105.0-rc.2.sql` (2026-10-08, the v1.104.0 → v1.105.0-rc.2 bump; 6 forward-only migrations; the image `praxen-litellm-proxy:v1.104.0-rollback` is tagged); `WITH (FORCE)` drops Grafana's open datasource connections):
 
 ```bash
 docker compose --profile observe stop litellm-proxy
@@ -415,16 +417,16 @@ docker compose restart litellm-proxy
 cp backup/dashboards/praxen-command.json.bak.pre-<stage> grafana/dashboards/praxen-command.json
 ```
 
-Three older rungs (`.pre-advised-panel`, `.pre-go-lane`, `.pre-v14-retheme`, all taken on or before 2026-08-05) still sit inside `grafana/dashboards/` — Grafana ignores non-`.json` files there; every rung since (`.pre-tier-detector`, 2026-09-10, onward) lives in `backup/dashboards/` per the §2 doctrine.
+Every dashboard rung lives in `backup/dashboards/` per the §2 doctrine; none sit inside `grafana/dashboards/` any more (checked 2026-10-03; Grafana ignores non-`.json` files there anyway).
 
 **`.env` restore** — from `backup/current/<date>/.env`, then recreate the proxy (`up -d litellm-proxy`, §4). **Datasource YAML restore** — from `backup/grafana-provisioning/`, then `up -d grafana`. **Key/team state** is in Postgres — the pg_dump rung covers it. After every rollback: `verify-stack.py`.
 
 ## §9 — Known failure signatures and cures
 
-**Docker Desktop memory wedge.** Signature: engine API 500s, EVERY published port dark (`curl 000`), `wsl -l -v` shows `docker-desktop` Stopped, LM Studio (native Windows) still answers, a direct probe to LM Studio `:1234` succeeds while anything through Docker hangs. Cause: `.wslconfig` cap + loaded models > host RAM (twice: 2026-07-17/18, 2026-08-05). Cure, targeted — `wsl --shutdown` is heavier than needed and takes the Ubuntu distro with it:
+**Docker Desktop memory wedge.** Signature: engine API 500s, EVERY published port dark (`curl 000`), `wsl -l -v` shows `docker-desktop` Stopped, the native-Windows runtime still answers (Unsloth on `:8888`), so a direct probe to it succeeds while anything through Docker hangs. Cause: `.wslconfig` cap + loaded models > host RAM (twice: 2026-07-17/18, 2026-08-05). Cure, targeted — `wsl --shutdown` is heavier than needed and takes the Ubuntu distro with it. Unload the local model first:
 
 ```bash
-lms unload --all
+python scripts/unsloth-model-config.py unload
 ```
 
 ```bash
@@ -445,9 +447,7 @@ Relaunch Docker Desktop; engine back in ~10s, `unless-stopped` containers auto-r
 Start-Service com.docker.service
 ```
 
-**LM Studio holds ~16GB after unload.** Signature: `lms ps` empty yet the LM Studio process working set is 15+GB; a multi-pull then drives host free memory to ~3GB — the wedge precondition. `lms unload --all` does not release it; only an app restart does. Check before any pull/build op; `drop_caches` (§6) is the safe mid-op relief.
-
-**LM Link half-open.** Signature: PC `lms link status` reads peer `disconnected` while the iMac's own `/api/v0/models` still lists all PC models (up one way, down the other), MLX ids vanish from the PC catalog, `imac-*`-era relay routes 400. Diagnose by comparing BOTH boxes' `/api/v0/models`. Cure: PC-side LM Studio restart. The `imac-*` routes ride direct LAN since v4.12.23 and no longer depend on the link at all; a wedged iMac LM Studio (TCP-open, HTTP-silent on `:1234`) needs an iMac-side restart and costs each `imac-*` rung its full timeout before the fallback catch.
+**Unsloth keeps its last model mapped.** Keep-resident is deliberate: the last model stays mapped (11–16 GB after a 26B/35B call) until `python scripts/unsloth-model-config.py unload`, and loaded models plus the WSL cap above host RAM is the wedge precondition. Unload before any pull/build op; `drop_caches` (§6) is the safe mid-op relief.
 
 **Dark stack at session start may be a deliberate spin-down.** `AutoStart=False` is intentional. Diagnose first — free memory, `wsl -l -v`, engine log timestamps vs last boot, `docker desktop status` — and CONFIRM with the operator before launching. The wedge runbook applies only when its signature matches, never to a clean Stopped distro with free RAM. Never propose enabling autostart.
 
@@ -465,14 +465,14 @@ docker exec praxen-postgres sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c
 
 If any row appears: export it to `backup/db/` as a rung, `DELETE` the row(s), restart the proxy. Deleting only the Redis `litellm_config:param:*` cache key does nothing — it regenerates from the DB row.
 
-**Silent substitution (three vendors deep)**: LM Studio, xAI and Venice each return 200 under a substitute model for an unresolvable id; an embedder with an unresolvable id returns whatever embedder is resident. Assert on the echoed model / `system_fingerprint`; verify embedders by DIMENSION (the gate expects `legacy/embed` = 1024). Related green-lies: Grafana multi-query panels timing out while text panels render = memory-starved Grafana (1G since v1.7.2, check RSS first); counter panels reading zero after a restart = `increase()` needs two scraped samples.
+**Silent substitution (three vendors deep)**: a local runtime (one can answer an unrecognised name with the resident model; [UNVERIFIED] on Unsloth), xAI and Venice can each return 200 under a substitute model; an embedder with an unresolvable id returns whatever embedder is resident. Assert on the model that answered (§5 step 6 says where to read it per lane); verify embedders by DIMENSION (the gate expects `legacy/embed` = 1024). Related green-lies: Grafana multi-query panels timing out while text panels render = memory-starved Grafana (1G since v1.7.2, check RSS first); counter panels reading zero after a restart = `increase()` needs two scraped samples.
 
 ## §10 — What this playbook replaced, and what must never return
 
-v1.1.0 (2026-04-09) described a **Mac** running an 8GB Docker VM with MLflow as the trace backend, an `init-db.sh` that created the MLflow database, a `master-playground` directory, and a 54-tool Msty MCP wiring guide. None of it survived: the directory became `the-array` with `COMPOSE_PROJECT_NAME=praxen` locked (2026-05-24); **MLflow was purged** the same day (OTel → Tempo replaced it, `init-db.sh` and the pip install went with it); the **Tailscale sidecar was retired** 2026-07-28 (parked at `profiles: ["retired"]` — the proxy owns its own netns and publishes `:4000` itself, which deleted the netns-cascade gotcha class); and the whole stack moved to pc-host in the **Branch B cutover** (2026-07-17/18) — iMac volumes are a dead cold rollback, 12 iMac-era vendor keys were revoked, every secret was re-minted. The iMac is back only as an LM Studio inference node reached over LAN.
+v1.1.0 (2026-04-09) described a **Mac** running an 8GB Docker VM with MLflow as the trace backend, an `init-db.sh` that created the MLflow database, a `master-playground` directory, and a 54-tool Msty MCP wiring guide. None of it survived: the directory became `the-array` with `COMPOSE_PROJECT_NAME=praxen` locked (2026-05-24); **MLflow was purged** the same day (OTel → Tempo replaced it, `init-db.sh` and the pip install went with it); the **Tailscale sidecar was retired** 2026-07-28 (parked at `profiles: ["retired"]` — the proxy owns its own netns and publishes `:4000` itself, which deleted the netns-cascade gotcha class); and the whole stack moved to pc-host in the **Branch B cutover** (2026-07-17/18) — iMac volumes are a dead cold rollback, 12 iMac-era vendor keys were revoked, every secret was re-minted. The iMac came back as an inference node on 2026-08-06 and was retired for good on 2026-09-30 (config v4.20.0).
 
 Deprecations that must never return:
-- **A bare `local` alias** (as `model_group_alias` key or fallbacks key) — it never registers as a model group; the name is `windows-local`-class local routes called by their `local-*` names. Likewise `localwin-*`, `win-fast`/`win-vision`/`win-titan`, and the three dead iMac MLX entry names.
+- **A bare `local` alias** (as `model_group_alias` key or fallbacks key) — it never registers as a model group; the name is `windows-local`-class local routes called by their `local-*` names. Likewise `localwin-*`, `win-fast`/`win-vision`/`win-titan`, the three dead iMac MLX entry names, the whole `imac-*` tier and any port-1234 local `api_base`.
 - **PyPI install of LiteLLM** — permanent prohibition since the March 2026 security incident; `litellm/Dockerfile` tag-lock is the only path.
 - **Floating image tags** (`:latest`, `16-alpine`, `7-alpine`) — a moving tag re-resolves only on an explicit `docker pull`; `up -d` reuses the local image, so floating delivered no patches and no rollback target. Pin everything; `check-image-updates.py` is the automated check.
 - Also dead: a `venice/*` or `inception/*` wildcard with `api_base` override (phantom-catalog bug — those namespaces stay explicit, `api_base`-pinned per entry); a bare `"*"` catch-all; UI/API-saved Grafana dashboards or datasources; UI-saved LiteLLM config; exec-form healthchecks on distroless images.

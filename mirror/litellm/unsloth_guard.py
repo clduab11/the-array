@@ -11,7 +11,9 @@ only a direct request. For a deployment whose api_base is the Unsloth host it:
   - keeps only OpenAI chat-completion params, LiteLLM's own kwargs and `chat_template_kwargs`;
   - rebuilds extra_body as {chat_template_kwargs (if sent), enable_tools: False};
   - drops X-Unsloth-* request headers;
-  - refuses every non-chat call type (no embeddings, audio, image, rerank, file or batch traffic reaches :8888).
+  - refuses every non-chat call type, and any call type LiteLLM does not know (no embeddings, audio, image, rerank,
+    file, batch or compaction traffic reaches :8888), with a 400 (litellm.BadRequestError). Until 2026-10-07 it raised a bare ValueError, which the proxy answered as HTTP 500 with
+    LiteLLM's "bug in LiteLLM" banner and the router retried three times; a 400 is not retried and never cools a deployment.
 Stripped field NAMES (never values) are logged as `unsloth_guard` warnings.
 
 Loaded via litellm_settings.callbacks as `unsloth_guard.guard_instance`; mounted at /app/unsloth_guard.py.
@@ -31,6 +33,10 @@ try:
     from litellm import OPENAI_CHAT_COMPLETION_PARAMS as _OPENAI_PARAMS
 except Exception:  # noqa: BLE001
     _OPENAI_PARAMS = []
+try:
+    from litellm.exceptions import BadRequestError as _BadRequestError
+except Exception:  # noqa: BLE001 — without it the refusal falls back to ValueError (still refused, as a 500)
+    _BadRequestError = None
 
 # The 29 Unsloth request fields ALPHA saw forwarded (p17), minus chat_template_kwargs, denied even if a LiteLLM
 # registry ever grows a same-named entry.
@@ -63,6 +69,17 @@ def _unsloth_netlocs() -> set[str]:
     return locs
 
 
+def _refusal(message: str, kwargs: dict[str, Any]) -> Exception:
+    """The exception that blocks a call: a 400 when LiteLLM's BadRequestError can be built, else a ValueError. Either blocks."""
+    if _BadRequestError is not None:
+        try:
+            return _BadRequestError(message=message, model=str(kwargs.get("model") or ""),
+                                    llm_provider=str(kwargs.get("custom_llm_provider") or "openai"))
+        except Exception:  # noqa: BLE001 — a changed constructor must not turn the refusal into a pass
+            pass
+    return ValueError(message)
+
+
 def _is_unsloth(kwargs: dict[str, Any]) -> bool:
     bases = [kwargs.get("api_base"), kwargs.get("base_url")]
     lp = kwargs.get("litellm_params")
@@ -77,9 +94,11 @@ class UnslothGuard(CustomLogger):
         if not _is_unsloth(kwargs):
             return None
         ct = getattr(call_type, "value", call_type)
-        if ct is not None and str(ct) not in CHAT_CALL_TYPES:
+        # An unknown call type arrives as None (utils.async_pre_call_deployment_hook maps names missing from CallTypes, such
+        # as acompact_responses, to None): refuse it too. Every chat path resolves to a CallTypes member (2026-10-07).
+        if ct is None or str(ct) not in CHAT_CALL_TYPES:
             verbose_proxy_logger.warning("unsloth_guard: refused call_type=%s for an Unsloth deployment", ct)
-            raise ValueError(f"unsloth_guard: call type {ct!r} is not allowed on an Unsloth deployment")
+            raise _refusal(f"unsloth_guard: call type {ct!r} is not allowed on an Unsloth deployment", kwargs)
 
         out = dict(kwargs)
         dropped = sorted(k for k in out if k not in ALLOWED_TOP_LEVEL)

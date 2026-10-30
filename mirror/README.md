@@ -4,7 +4,7 @@ This folder is a **failsafe snapshot** of the configuration that runs the stack,
 and sanitized before it left the machine. It is not the showcase (that is the rest of this repository) and it is
 not directly deployable: identity values were replaced, so a restore needs them re-entered by hand.
 
-Generated 2026-10-02 by a private tool; every file passed the leak gate before commit.
+Generated 2026-10-29 by a private tool; every file passed the leak gate before commit.
 
 ## What is here
 
@@ -23,8 +23,9 @@ The dashboards are in `../grafana/dashboards/` (sanitized by their own port).
 ## What was changed on the way out
 
 - **Comments:** removed from the stack's YAML files (compose, the proxy config, Prometheus, Tempo, Loki, SearXNG) and the
-  Alloy config (they carried names, clients and figures). `toolbox/toolbox.yaml` is a manifest whose comments and notes are
-  its documentation: it keeps them and goes through the same substitutions as every other file.
+  Alloy config (they carried names, clients and figures), and the full-line comments of `toolbox/toolbox.yaml` (its
+  operating log); the manifest's `note:` fields stay and go through the same substitutions as every other file.
+  `DEPLOY_PLAYBOOK.md` leaves out §6b, the internal agent-fleet runbook.
 - **Budgets:** every `max_budget` / `soft_budget` value reads **1.0**, and team and key budgets in
   `provision-keys.sh` read **1**. Set your own before provisioning.
 - **Dollar figures** of two or more digits in prose read **$N**.

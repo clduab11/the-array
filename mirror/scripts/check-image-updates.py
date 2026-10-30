@@ -49,7 +49,13 @@ POLICY = {
     # With line=None (2026-08-05 .. 2026-09-09) the checker reported 3.0.3 as in-line and HID
     # the 2.9.5 patch that was actually actionable.
     "tempo":    {"line": r"^2\.10\.", "major_warn": "3.x is a config REWRITE (ingester/compactor/local_blocks removed, no downgrade) — gated op, target 3.1"},
+    # n8n publishes its beta line as plain semver (2.43.1 while 2.42.4 is stable): judge the pin against the version the
+    # Docker Hub `stable` tag points at, never against beta tags (2026-10-08).
+    "n8n":      {"channel_tag": "stable"},
 }
+
+# llama.cpp-style build tags (`server-b11459`): compare the build number, not semver (2026-10-08).
+BUILD = re.compile(r"^(?P<pfx>[a-z][a-z0-9-]*)-b(?P<n>\d+)$")
 
 # 2- OR 3-component: postgres ships `16.14`, not `16.14.0`. Demanding three silently
 # demoted every postgres tag to "MANUAL" and hid whether we were patched.
@@ -107,10 +113,44 @@ def parse_pins():
 
 
 def split_ref(ref):
+    ref = ref.split("@", 1)[0]          # a digest pin (tag@sha256:...) is judged by its tag
     repo, _, tag = ref.rpartition(":")
-    if not repo:
+    if not repo or "/" in tag:
         repo, tag = ref, "latest"
     return repo, tag
+
+
+def ghcr_tags(repo):
+    """Tag list from the anonymous GHCR registry API (paged via the Link header)."""
+    path = repo.split("/", 1)[1]
+    tok = http_json(f"https://ghcr.io/token?scope=repository:{path}:pull")
+    if "_err" in tok:
+        return tok
+    tags, url = [], f"https://ghcr.io/v2/{path}/tags/list?n=1000"
+    while url:
+        req = urllib.request.Request(url, headers={**UA, "Authorization": "Bearer " + tok["token"]})
+        try:
+            r = urllib.request.urlopen(req, timeout=30)
+        except (urllib.error.URLError, OSError, ValueError) as e:
+            return {"_err": f"{type(e).__name__}: {str(e)[:60]}"}
+        tags += json.load(r).get("tags", [])
+        m = re.search(r"<([^>]+)>", r.headers.get("Link", ""))
+        url = (m.group(1) if m.group(1).startswith("http") else "https://ghcr.io" + m.group(1)) if m else None
+    return tags
+
+
+def hub_channel_version(repo, channel):
+    """The version tag that shares a digest with a Docker Hub channel tag (n8n's `stable`), or None."""
+    ns, _, name = repo.partition("/")
+    if not name:
+        ns, name = "library", ns
+    d = http_json(f"https://hub.docker.com/v2/repositories/{ns}/{name}/tags?page_size=100&ordering=last_updated")
+    if "_err" in d:
+        return None
+    by_name = {r["name"]: r.get("digest") for r in d.get("results", [])}
+    want = by_name.get(channel)
+    hits = [n for n, dg in by_name.items() if dg == want and n != channel and SEMVER.match(n) and not HASH_SUFFIX.search(n[SEMVER.match(n).end():] or "-")]
+    return sorted(hits, key=lambda n: tuple(int(x) if x else 0 for x in SEMVER.match(n).groups()), reverse=True)[0] if hits else None
 
 
 def upstream_tags(repo):
@@ -125,6 +165,8 @@ def upstream_tags(repo):
             out += [r["tag_name"] for r in d]
         # drop pre-releases — we only ever pin the stable line
         return [t for t in out if not re.search(r"(dev|rc|nightly|stable)", t)]
+    if repo.startswith("ghcr.io/"):
+        return ghcr_tags(repo)
     ns, _, name = repo.partition("/")
     if not name:
         ns, name = "library", ns
@@ -152,6 +194,21 @@ def assess(ref):
     if isinstance(tags, dict):
         return {"image": repo, "current": tag, "status": "ERROR", "detail": tags["_err"], "newer": []}
 
+    bm = BUILD.match(tag)
+    if bm:
+        same = sorted({int(m.group("n")): t for t in tags if (m := BUILD.match(t)) and m.group("pfx") == bm.group("pfx")}.items(),
+                      reverse=True)
+        newer = [t for n, t in same if n > int(bm.group("n"))]
+        return {"image": repo, "current": tag, "status": "BEHIND" if newer else "CURRENT",
+                "detail": f"{len(newer)} newer builds -> {newer[0]}" if newer else "", "newer": newer[:5]}
+    if pol.get("channel_tag"):
+        ch = hub_channel_version(repo, pol["channel_tag"])
+        if ch:
+            behind = key_of(ch) > key_of(tag) if key_of(tag) else ch != tag
+            return {"image": repo, "current": tag, "status": "BEHIND" if behind else "CURRENT",
+                    "detail": f"`{pol['channel_tag']}` channel is {ch}" + ("" if behind else " (newer tags are a beta line)"),
+                    "newer": [ch] if behind else []}
+
     cur = key_of(tag)
     if cur is None:
         # date-based (searxng) or otherwise unparseable — report newest seen, judge by eye
@@ -166,10 +223,17 @@ def assess(ref):
 
     line = pol.get("line")
     in_line = [t for t in same_shape if (not line or re.match(line, t.lstrip("v")))]
-    newer = sorted({t for t in in_line if key_of(t) > cur}, key=key_of, reverse=True)
+    # `tags` is newest-push-first. Dedupe in that order (not through a set) and rely on sort stability, so tags that share
+    # a version key — searxng ships several builds a day, `2026.10.4-<hash>` — rank by push time: a set made the checker
+    # name an older same-day build as newest (2026-10-06). A same-day build pushed after our pin counts as newer too.
+    pushed_after = set(tags[:tags.index(tag)]) if tag in tags and HASH_SUFFIX.match(tag[SEMVER.match(tag).end():]) else set()
+    newer = sorted(dict.fromkeys(t for t in in_line if key_of(t) > cur or (key_of(t) == cur and t in pushed_after)),
+                   key=key_of, reverse=True)
     # A newer MAJOR is information, never "behind" — crossing it is a migration.
-    cross = sorted({t for t in same_shape if key_of(t)[0] > cur[0]}, key=key_of, reverse=True)
+    cross = sorted(dict.fromkeys(t for t in same_shape if key_of(t)[0] > cur[0]), key=key_of, reverse=True)
 
+    if re.search(r"-(rc|dev)", tag) and any(key_of(t) == cur for t in in_line if not re.search(r"-(rc|dev)", t)):
+        newer = [next(t for t in in_line if key_of(t) == cur and not re.search(r"-(rc|dev)", t))] + newer
     status = "BEHIND" if newer else "CURRENT"
     detail = ""
     if newer:

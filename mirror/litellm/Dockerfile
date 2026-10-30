@@ -1,59 +1,30 @@
 # =============================================================================
 # PRAXEN — LiteLLM Tag-Lock Image
-# Base: v1.100.0 (OP CURRENCY-SWEEP 2026-09-09; prior: v1.95.0 OP VERSION-TRUEUP 2026-08-05; v1.86.3 Phase Coder 2026-06-03)
-# NOTE on tag format: upstream retired -stable/-stable.patch suffixes at
-# v1.84.0 (PEP-440 SemVer — weekly MINOR bumps, PATCH = hotfix). Bare
-# v1.8x.y / v1.1xx.y tags ARE the load-tested stable line now.
-# Rollback: revert the FROM line + restore backup/db/litellm-db.bak.pre-v1.100.0.sql
-# (Prisma migrates the DB forward on first boot — tag revert alone is NOT
-# a complete rollback). EXTRA REASON as of v1.92.0: at-rest credential
-# encryption moved to AES-256-GCM with a versioned format and a re-encryption
-# migration, so stored credentials are REWRITTEN — a tag revert against a
-# migrated DB is not merely incomplete, it is unsupported.
-#
-# BUMPED v1.95.0 -> v1.100.0 on 2026-09-09 (OP CURRENCY-SWEEP, the operator "update as needed").
-# 9 stable releases (v1.95.1 … v1.100.0); 20 Prisma migrations apply on first
-# boot (141 -> 161), ALL additive (CREATE TABLE/ADD COLUMN IF NOT EXISTS; the only
-# non-additive statements touch the brand-new, empty LiteLLM_ShadowEvalJob table).
-# REASON TO MOVE — CVE-2026-84377 / GHSA-3cv6-jpf6-8222 (Medium 6.5, published
-# 2026-08-26): "Any authenticated LiteLLM proxy user could redirect an outbound
-# provider call to a destination they control and cause the proxy to send its own
-# configured provider credentials to that destination." v1.95.0 is in the affected
-# set; patched at 1.95.1 / 1.96.2 and carried forward. "Authenticated user" here
-# means ANY virtual-key holder — i.e. every app behind the allowlist-free
-# front-gateway-winpc key. Also in-window: wolfi-base refreshes (openssl 3.6.3-r5,
-# glibc 2.44), sqlparse 0.6.0, cryptography 50.0.0.
-# BEHAVIOUR CHANGES VERIFIED AGAINST THIS CONFIG (see handoffs/2026-09-09-op-currency-sweep.md):
-#  - v1.99.0 routes the Anthropic ADVISOR sub-call through the proxy router. PROBED AT
-#    CUTOVER (2026-09-09): NO metering change on this config — an advised call still logs
-#    ONE SpendLogs row at executor rate on merged tokens (haiku $0.001057 exact), no advisor
-#    row. The under-count caveat and Grafana panel 35 semantics are UNCHANGED. The
-#    STREAM x ADVISED $0 hole (config v4.12.13) also persists on this tag.
-#  - v1.100.0 validates complexity-router settings placement; both routers here nest
-#    tiers under complexity_router_config and pass.
-#  - hidden model_group_alias entries now resolve on explicit lookups but stay out of
-#    GET /v1/models (net positive for the 8 hidden bare aliases).
-#  - budget_duration parsing, /metrics auth gate, OTel, embedding routing: unchanged.
-# NEW OPTIONAL ENV (not set): ENFORCE_PRISMA_MIGRATION_CHECK (default enforce — a
-# failed migration now FAILS the boot loudly instead of limping), SMTP_TIMEOUT.
-# hiredis 3.4.0 is NEW in this image (redis-py picks it up automatically) and carries
-# an OPEN segfault report, BerriAI/litellm#39767 (exit 139 after Redis read timeouts;
-# reporter confirms fixed in hiredis 3.4.1, which v1.100.0 does not ship). The RUN
-# below REMOVES it so redis-py falls back to its pure-Python parser — no PyPI
-# install, no network, no new code; only a native parser we do not need at this
-# scale. Reversal trigger: delete the RUN line once an upstream tag ships hiredis
-# >= 3.4.1. Verify post-boot: `docker exec praxen-litellm python -c "import hiredis"`
-# must FAIL with ModuleNotFoundError.
-# This wrapper exists to lock the upstream tag in one place and reserve the
-# build context for future additions (ruflo OTel emitter deps, etc.).
-# Slimmed in compose v1.6.0 (2026-05-24): removed mlflow pip install.
+# Base: v1.106.5 (2026-10-28), pinned by OCI index digest; prior: v1.106.3 (2026-10-24).
+# Tag format: bare v1.x.y tags are the stable line; -rc.N / -dev.N are pre-releases.
+# Pin by digest since 2026-10-24: LiteLLM's release pipeline published a backdoored v1.107.0 (and repointed `latest`,
+# `main-latest`, `main-stable`) on 2026-10-21. A digest cannot be repointed; a tag can. Never float a tag.
+# Rollback rule: revert the FROM line AND restore the pg_dump rung taken before the bump. Prisma migrates the DB forward on
+# first boot and credentials are re-encrypted since v1.92.0, so a tag revert alone is never a rollback.
+# hiredis: every tag since v1.100.0 (v1.106.3 included) ships hiredis 3.4.0, which carries an open segfault report
+# (BerriAI/litellm#39767, exit 139 after Redis read timeouts; fixed in 3.4.1). The RUN below removes it so redis-py uses its
+# pure-Python parser. Reversal trigger: delete the RUN once a tag ships hiredis >= 3.4.1. Verify post-boot: `docker exec
+# praxen-litellm python -c "import hiredis"` must FAIL with ModuleNotFoundError. History before v1.106.0: git log.
 # =============================================================================
-# v1.100.1 (2026-09-10, OP REPO-READY): stable patch, ONE fix — router retry-breadcrumb memory
-# leak (per-request breadcrumbs capped at 4, proxy_server_request excluded). Relevant here:
-# num_retries 3 + deep fallback chains in a 1 GiB container. NO schema/migration change
-# (schema.prisma + 161-migration dir byte-identical to v1.100.0; litellm-proxy-extras 0.4.91
-# both tags) — a tag revert is a complete rollback this time; pg_dump rung taken anyway:
-# backup/db/litellm-db.bak.pre-v1.100.1.sql. Still ships hiredis 3.4.0 -> the RUN below stays.
-FROM ghcr.io/berriai/litellm:v1.100.1
+# CURRENT: v1.106.3 -> v1.106.5 on 2026-10-28 (the operator: "pushed to v1.106.5 after we check to make sure it's secure"). Fixes
+# GHSA-w4c7-34wj-hqm8 (CVSS 10; unauthenticated GCS-logger file read + exfil on Enterprise-LICENSED proxies only; this proxy
+# is unlicensed, LITELLM_LICENSE unset, no GCS callback, so it was never exposed). v1.106.4: remote cost-map boot ImportError
+# fix, emSign ECC root removed. 0 migrations; no hook API changed (16 commits, 27 files). Supply chain: index digest below; tag
+# commit 2569eb88 = image revision label = SLSA git_ref; signature verified by hand (ECDSA-P256 against cosign.pub sha256
+# e3fe3e08...c2c0, the post-incident key; cosign itself not installed). Offline scan before first run: litellm-1.106.5.dist-info
+# only, the same three .pth hooks, no sitecustomize, no cook.pth / 1.107.0 dist-info / loader lock. Not staged on :4001
+# (0 migrations: the rung + a FROM revert is a complete rollback). Evidence: deliverables/evidence/2026-10-28-op-litellm-v1065/.
+# ROLLBACK: FROM the v1.106.3 line below (image praxen-litellm-proxy:v1.106.3-rollback) AND restore
+# backup/db/litellm-db.bak.pre-v1.106.5.sql.
+# PRIOR: v1.106.0 -> v1.106.3 on 2026-10-24: first post-compromise release (new cosign key, eMudhra root removed), 0
+# migrations, staged on :4001 first (deliverables/evidence/2026-10-24-op-litellm-v1063/);
+# FROM ghcr.io/berriai/litellm:v1.106.3@sha256:74d0696a9f0afcc993c7659d246f0c542f003368298633e852228250779f1032
+# =============================================================================
+FROM ghcr.io/berriai/litellm:v1.106.5@sha256:7d6ae6c8d73d1b6aea4cb75d07c4a8a953f0809b0764522b8eab693734c5e905
 RUN rm -rf /app/.venv/lib/python3.13/site-packages/hiredis \
            /app/.venv/lib/python3.13/site-packages/hiredis-*.dist-info

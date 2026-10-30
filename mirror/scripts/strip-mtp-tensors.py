@@ -4,25 +4,25 @@ strip-mtp-tensors.py — remove `mtp.*` (multi-token-prediction draft-head) tens
 MLX safetensors repo whose strict engine loader refuses them.
 
 BORN 2026-08-08 for imac-qwen3.5-9b (qwen3.5-9b-optiq): the OptiQ export ships qwen3.5 MTP
-draft-head tensors (mtp.layers.0.*, mtp.norm, ...) and LM Studio's MLX engine — CONFIRMED
-CURRENT at v1.11.0 — still rejects them in strict load_weights on the mlx_vlm path (the repo
+draft-head tensors (mtp.layers.0.*, mtp.norm, ...) and the iMac's MLX engine (confirmed
+2026-08-08) rejected them in strict load_weights on the mlx_vlm path (the repo
 declares a vision config, which forces that path). MTP is a self-speculative-decode head; it
 is INFERENCE-INERT under an engine that can't map it, so stripping loses nothing that works
 today. (A future engine that learns qwen3.5 MTP would want the original back — re-pull from
 HF to restore; this script also keeps .bak files until you delete them.)
 
-RUN ON THE BOX THAT HOLDS THE REPO (for the 9B: the iMac — LM Link does not carry file ops):
+RUN ON THE BOX THAT HOLDS THE REPO (the iMac tier is retired; kept for any MLX box):
 
-    lms unload --all                       # free memory first (models unloaded, not deleted)
+    # unload the model in the serving app first (unloaded, not deleted)
     pip3 install mlx                       # if not already present (Apple silicon)
-    python3 strip-mtp-tensors.py ~/.lmstudio/models/<publisher>/<repo-dir>
+    python3 strip-mtp-tensors.py <models-dir>/<publisher>/<repo-dir>
     # dry run first (default). Then apply:
-    python3 strip-mtp-tensors.py ~/.lmstudio/models/<publisher>/<repo-dir> --apply
+    python3 strip-mtp-tensors.py <models-dir>/<publisher>/<repo-dir> --apply
 
 Needs free disk >= the largest shard (stripped copy is written alongside before the atomic
 swap; originals stay as *.bak.pre-mtp-strip until you delete them after a verified load).
 Subdirectories (e.g. an optiq/ vision-tower dir) are untouched — top-level shards only.
-After --apply: reload the model (lms load <id>, or one probe from the proxy) to verify,
+After --apply: reload the model (in the serving app, or one probe from the proxy) to verify,
 then delete the .bak files. If config.json declares MTP layers (any key containing 'mtp'
 or 'nextn'), the loader may EXPECT the tensors — the script reports such keys and removes
 them only with --fix-config (config.json gets its own .bak first).
@@ -131,7 +131,7 @@ def main() -> int:
     mode = "APPLIED" if args.apply else "DRY RUN (rerun with --apply)"
     print(f"\n{mode}: {len(stripped_keys)} tensors / {human(total_stripped)} across {len(shards)} shard(s).")
     if args.apply:
-        print("Next: reload the model (lms load <id> or one proxy probe); after a clean load,")
+        print("Next: reload the model (in the serving app or one proxy probe); after a clean load,")
         print("delete the *.bak.pre-mtp-strip files to reclaim disk.")
     return 0
 

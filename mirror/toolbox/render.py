@@ -6,6 +6,9 @@
 The output holds environment-variable REFERENCES in each client's syntax, never values. Nothing here edits a
 client's live settings: merge the rendered block by hand (or with that client's own CLI).
 
+Per-tool switches (2026-10-08): `enabled_for: [clients]` renders a tool on only for those clients, `disabled_for: [clients]` renders
+it off there; presence still follows `clients_only` and `profiles`, and a `setup:` line always renders it off.
+
 Per-client rules come from the 2026-09-16 format research (sources in the PDF):
   Claude Code   .mcp.json "mcpServers"; ${VAR}; Windows stdio via cmd /c npx
   VS Code       mcp.json "servers"; ${env:VAR} for stdio env; ${input:...} for HTTP headers (vscode#336232)
@@ -64,6 +67,10 @@ def selected(manifest, client):
             continue
         in_profile = bool(wanted & set(tool["profiles"]))
         enabled = in_profile and tool.get("default_enabled", True)
+        if client in (tool.get("disabled_for") or []):
+            enabled = False  # present for this client, switched off (2026-10-08)
+        if "enabled_for" in tool:
+            enabled = client in tool["enabled_for"]  # explicit per-client switch beats the profile rule (2026-10-08)
         if tool.get("setup"):
             enabled = False  # needs a one-time step first (see the tool's setup line)
         out.append((tool, enabled))
@@ -231,7 +238,7 @@ def render_grok(manifest, tools):
 
 def render_paperclip(manifest, tools):
     # Paperclip's company connector is an approved stdio template, not a clientimport file.
-    light = next((tool for tool, _ in tools if tool["id"] == "mempalace-light"), None)
+    light = next((tool for tool, _ in tools if tool.get("command_runtime") == "mempalace_light"), None)  # id is "mempalace" since 2026-10-08
     if light is None:
         raise ValueError("Paperclip profile is missing the MemPalace light-server entry")
     return {"CONNECTORS.md": "\n".join([
