@@ -959,7 +959,7 @@
                 "value": [
                   {
                     "title": "Select this request",
-                    "url": "/d/praxen-forensics/praxen-forensics?${__url_time_range}&${traffic:queryparam}&${key:queryparam}&${model:queryparam}&${team:queryparam}&${interval:queryparam}&var-request_id=${__data.fields.request_id}",
+                    "url": "/d/praxen-forensics/praxen-forensics?${__url_time_range}&${traffic:queryparam}&${key:queryparam}&${model:queryparam}&${team:queryparam}&${interval:queryparam}&${logcontainer:queryparam}&${logq:queryparam}&var-request_id=${__data.fields.request_id}",
                     "targetBlank": false
                   }
                 ]
@@ -981,7 +981,7 @@
                 "value": [
                   {
                     "title": "Select by call id",
-                    "url": "/d/praxen-forensics/praxen-forensics?${__url_time_range}&${traffic:queryparam}&${key:queryparam}&${model:queryparam}&${team:queryparam}&${interval:queryparam}&var-request_id=${__data.fields.call_id}",
+                    "url": "/d/praxen-forensics/praxen-forensics?${__url_time_range}&${traffic:queryparam}&${key:queryparam}&${model:queryparam}&${team:queryparam}&${interval:queryparam}&${logcontainer:queryparam}&${logq:queryparam}&var-request_id=${__data.fields.call_id}",
                     "targetBlank": false
                   }
                 ]
@@ -1122,7 +1122,7 @@
                 "value": [
                   {
                     "title": "Load in waterfall",
-                    "url": "/d/praxen-forensics/praxen-forensics?${__url_time_range}&${traffic:queryparam}&${key:queryparam}&${model:queryparam}&${team:queryparam}&${interval:queryparam}&var-request_id=${request_id}&var-trace_id=${__data.fields.traceID}",
+                    "url": "/d/praxen-forensics/praxen-forensics?${__url_time_range}&${traffic:queryparam}&${key:queryparam}&${model:queryparam}&${team:queryparam}&${interval:queryparam}&${logcontainer:queryparam}&${logq:queryparam}&var-request_id=${request_id}&var-trace_id=${__data.fields.traceID}",
                     "targetBlank": false
                   }
                 ]
