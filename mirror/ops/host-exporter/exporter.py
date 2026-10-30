@@ -25,6 +25,7 @@ import sqlite3
 import threading
 import time
 import urllib.request
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 
 BASE = os.environ.get("UNSLOTH_PC_URL", "http://host.docker.internal:8888").rstrip("/")
@@ -42,8 +43,15 @@ _gateway = {"t": 0.0, "lines": []}
 
 def fetch(path):
     req = urllib.request.Request(BASE + path, headers={"Authorization": f"Bearer {KEY}"} if KEY else {})
-    with urllib.request.urlopen(req, timeout=5) as r:
+    with urllib.request.urlopen(req, timeout=3) as r:   # 3 s, both calls in parallel: well inside Prometheus' 10 s scrape
         return json.loads(r.read())
+
+
+def fetch_or_none(path):
+    try:
+        return fetch(path)
+    except Exception:  # noqa: BLE001 — any failure is reported as source_up 0, never as a healthy zero
+        return None
 
 
 def num(v, scale=1.0):
@@ -74,7 +82,7 @@ def app_of(name, token_id):
     if name is None:
         return "bootstrap token" if (token_id or "").startswith("bootstrap") else "deleted token"
     n = name.lower()
-    if "web chat app" in n or "web chat app" in n:
+    if "web-chat-app" in n or "web chat app" in n:
         return "Web chat app"
     if n.startswith(("desktop chat app", "front-studio")):
         return "Desktop chat app"
@@ -169,12 +177,9 @@ def render():
     metric = lambda *a, **k: emit(out, *a, **k)  # noqa: E731
 
     t0 = time.time()
-    got = {}
-    for source, path in (("unsloth_system", "/api/system"), ("unsloth_status", "/api/inference/status")):
-        try:
-            got[source] = fetch(path)
-        except Exception:  # noqa: BLE001 — any failure is reported as source_up 0, never as a healthy zero
-            got[source] = None
+    sources = (("unsloth_system", "/api/system"), ("unsloth_status", "/api/inference/status"))
+    with ThreadPoolExecutor(max_workers=len(sources)) as pool:   # parallel: a hung Unsloth costs 3 s, not 2 x 3 s
+        got = dict(zip((s for s, _ in sources), pool.map(fetch_or_none, (p for _, p in sources))))
     up = {s: got[s] is not None for s in got}
     if GATEWAY_DIR:
         if time.time() - _gateway["t"] > GATEWAY_TTL:

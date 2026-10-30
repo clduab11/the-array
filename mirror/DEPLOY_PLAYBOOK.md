@@ -191,7 +191,7 @@ Stop everything, keep data (`down -v` destroys volumes — never without an expl
 docker compose --profile observe down
 ```
 
-Status: `docker compose --profile observe ps` (11 running; tempo, loki + alloy without a health column). Readiness: `curl -s http://localhost:4000/health/readiness` → `status: healthy`, `db: connected`.
+Status: `docker compose --profile observe ps` (12 running; tempo, loki + alloy without a health column). Readiness: `curl -s http://localhost:4000/health/readiness` → `status: healthy`, `db: connected`.
 
 Restart the proxy after a `litellm_config.yaml` edit — the YAML is bind-mounted, a restart is enough:
 
@@ -217,7 +217,7 @@ Logs — verbose/historical: Grafana board `praxen-command` (the OVERVIEW), coll
 
 **LiteLLM admin UI** `http://localhost:4000/ui` — `praxen-admin` with its own DB password on `default_user_id` (since config v4.26.3, 2026-10-08: `general_settings.disable_env_credential_login: true`, so `UI_USERNAME` / `UI_PASSWORD` no longer sign in and the env-credential banner is gone). Set or reset it with `python scripts/set-ui-admin-password.py` (master key; signs out every UI session; the first sign-in forces a change at `/ui/change-password`, which works only from a session opened with the DB password: type it by hand, browser autofill supplies stale passwords). No restart needed for a reset. Read-only use. **Never save config through the UI's config-update path**: `STORE_MODEL_IN_DB=True` means a UI save writes `LiteLLM_Config` rows that MERGE over the YAML at every boot and shadow it silently (§9). Keys/teams/budgets DO live in the DB and are edited via `/key/update`, `/team/update` — that is the sanctioned DB-side surface.
 
-Prometheus targets `http://127.0.0.1:9090/targets` (7/7 UP is the baseline); Tempo API on `127.0.0.1:3210`; SearXNG `http://localhost:8080/search?q=test&format=json`.
+Prometheus targets `http://127.0.0.1:9090/targets` (8/8 UP is the baseline, `host` included since compose v1.7.23); Tempo API on `127.0.0.1:3210`; SearXNG `http://localhost:8080/search?q=test&format=json`.
 
 Image currency audit (report only; `python scripts/verify-stack.py --no-llm` is the free gate without the paid chat probe):
 
