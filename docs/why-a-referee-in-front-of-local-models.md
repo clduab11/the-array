@@ -117,7 +117,7 @@ boundary — adversarial text can move the probabilities, we watched it happen.
 
 ## Receipts
 
-Everything lands in Grafana: a Jev row with calls by purpose, refusals caught, estimated spend, decision latency
+Everything lands in Grafana: the OVERVIEW's Jev sections with calls by purpose, refusals caught, estimated spend, decision latency
 p50/p95 (~0.5 s), the tier mix over time, and a verdict table by route. The FORENSICS board keys logs, the spend
 ledger and the Tempo trace on the same `litellm_call_id`, so a "why did this fall back?" is one paste.
 

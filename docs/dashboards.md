@@ -1,36 +1,62 @@
-# The three boards
+# The boards
 
-`grafana/dashboards/` ships three file-provisioned Grafana boards that split one question each. They are
-generated, not hand-drawn: every panel query was executed against a running stack before it was written down,
-and `scripts/verify-praxen-boards.py` re-executes every one of them through Grafana's own datasource path.
+`grafana/dashboards/` ships two file-provisioned PRAXEN boards: OVERVIEW, which puts the everyday questions on one
+screen and keeps every deeper panel one click away, and FORENSICS for a single request. (`gateway-overview.json`,
+titled "Gateway Overview", is a separate starter board.) The PRAXEN boards are generated, not hand-drawn: every panel
+query was executed against a running stack before it was written down, and `scripts/verify-praxen-boards.py`
+re-executes every one of them through Grafana's own datasource path, including the panels inside collapsed sections.
 
 | Board | uid | Question it answers |
 |---|---|---|
-| PRAXEN // COMMAND | `praxen-command` | Is anything broken, overspending, degraded or off-policy right now? |
-| PRAXEN // ROUTING | `praxen-routing` | Why are traffic, model choice, cost and policy behaving this way? |
+| PRAXEN // OVERVIEW | `praxen-command` | Is anything broken, what needs attention, what is it costing, is local inference used? |
 | PRAXEN // FORENSICS | `praxen-forensics` | What caused this specific request to fail, slow down, fall back or get judged? |
 
-Every panel's (i) bubble says in plain words what it shows and where the number comes from. The three boards share
-the same pickers (KEY, MODEL, TEAM, INTERVAL, LOG CONTAINER, LOG FILTER); the links in the top bar and the row links
-in the tables carry the time range and the pickers across.
+A third file, `praxen-routing.json`, is a signpost page that links to OVERVIEW, so bookmarks to the former ROUTING
+board still land somewhere useful.
 
-## COMMAND (fits in about one and a quarter 1440p screens)
+"Spend ledger" below means the gateway's `LiteLLM_SpendLogs` table (one row per request), which the panel bubbles
+call SpendLogs. Every panel's (i) bubble says in plain words what it shows and where the number comes from; ratio
+and money panels also name their window and denominator. The boards share the same pickers (TRAFFIC, KEY, MODEL,
+TEAM, INTERVAL, LOG CONTAINER, LOG FILTER). TRAFFIC defaults to client traffic: it leaves out calls made with the
+master key, calls tagged `health-gate`, and the `sandbox-probe` example key; choose `all` to see them.
+The links in the top bar and the row links in the tables carry the time range and the pickers across.
 
-Top row: active spend watches (from Grafana's own alert state), route success, provider error rate, end-to-end
-P95 latency, fallbacks fired, and off-tier calls (premium-tier billing nobody asked for — a route named `-priority`
-or the complexity router choosing a premium lane on purpose counts as opt-in). Second row: UP/DOWN for the gateway,
-Tempo, Grafana, Prometheus, Loki and Alloy, month-to-date spend, and that spend as a share of the plan and of the
-team hard stops read live from the gateway database. Then the provider→model flow, token throughput, requests and
-errors, a per-model table (requests, tokens, latency, first-token time, speed, cost, success) and the last 50
-requests with the warn/error and verbose log windows.
+## OVERVIEW
 
-## ROUTING
+The summary panels (everything above the collapsed sections) fit one 1080p screen; the section headers start just
+below them. Colour means one thing: green only for verified healthy, amber for needs a look, red for broken, grey
+for idle ("idle · no requests" is not the same as healthy), and steel for no data (a source that did not answer).
 
-Posture tiles (route success, fallback share, off-tier share, local share, prompt-cache read ratio, Jev refusals
-caught), the two Sankeys (provider→model, local↔cloud tokens), per-model telemetry with first-token heatmap and
-upstream P95, the billed service-tier table, cost by model, prompt-cache reads/writes/savings (computed from the
-price the gateway recorded on each call), advised-route spend, the Jev decision-layer row, the local watchdog and
-the team/key envelopes.
+- **Top:** a service strip (Prometheus `up` per job) and FRESHNESS (age of the newest spend-ledger row and of the
+  newest scrape: amber after 6 hours for the ledger, after one minute for the scrape, so stale data never reads as
+  quiet).
+- **Eight tiles:** SERVICE (answered ÷ routed; requests refused before routing are not service failures), REJECTED
+  (auth, allowlist, rate and budget refusals), FALLBACK (answered by a backup model instead of the one asked for),
+  LATENCY (P95/P50 of answered requests over the window), MTD $ with a month-end estimate at the last week's pace,
+  WINDOW $, LOCAL (share answered by local models) and ALERTS.
+- **NEEDS ATTENTION:** checks on the spend ledger over the window (the key watch-line check is month to date),
+  ranked BROKEN (failed after routing, out of credit) → LOOK (rejected, answered by a backup model, off-tier
+  billing, a key past its watch line) → INFO (unauthenticated management calls); one VERIFIED row when nothing
+  matches. A row click opens FORENSICS with the same window and pickers.
+- **Two trends:** requests by outcome and estimated cost by provider.
+- **Collapsed sections** (a collapsed section runs no queries until opened): models and local models (the per-model
+  table is built on the spend ledger: routed, success, fallback, tokens, P50/P95, first-token time and speed on
+  streamed answers, cost), flow, latency, cost/tier/cache, three Jev sections (decisions that changed routing,
+  observe-only recordings, operations), client key lanes, teams and routing posture, and logs with the last 50
+  requests.
+
+Money is the gateway's own estimate from its price map for logged requests, not a provider bill. Request counts
+come from the spend ledger; the Prometheus panels show rates, latency and throughput, and their counts can run a
+little low, because the gateway's counters restart from zero when the gateway restarts.
+
+Some panel bubbles describe routes and services of the live deployment copied in `mirror/` (the embedding
+container, the Go lanes, the `array/*` routers, the Jev Decisions classifier). On the example config those panels
+read empty; nothing is broken.
+
+**Changing the plan.** The monthly plan ($40) and the four example watch lines live in
+`grafana/provisioning/alerting/spend-watch.yaml`, and the boards repeat them: the MTD $ tile's amber/red lines and
+its "plan $40" label, the SPEND MTD and "vs PLAN" panels in the cost section, and the watch-line lists inside the
+NEEDS ATTENTION and key-lanes queries. Change all of them together, or the boards and the alerts will disagree.
 
 ## FORENSICS
 
