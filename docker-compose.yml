@@ -121,15 +121,18 @@ services:
       OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo:4318   # traces go straight to Tempo - no collector needed
       OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
       OTEL_SERVICE_NAME: praxen-litellm
-      # Local inference servers (OpenAI-compatible, e.g. LM Studio). The container sees
-      # ONLY the variables listed in this block - a key added to .env but not here is
+      # Local inference (Unsloth Desktop, or any OpenAI-compatible server). The container
+      # sees ONLY the variables listed in this block - a key added to .env but not here is
       # invisible to the proxy and its routes fail auth silently.
-      WINDOWS_LM_STUDIO_URL: ${WINDOWS_LM_STUDIO_URL:-http://host.docker.internal:1234/v1}
+      UNSLOTH_PC_URL: ${UNSLOTH_PC_URL:-http://host.docker.internal:8888/v1}
+      UNSLOTH_PC_API_KEY: ${UNSLOTH_PC_API_KEY:-not-needed}
+      # .invalid never resolves: an unset embedding server fails loudly instead of falling through to a cloud default.
+      LOCAL_EMBED_URL: ${LOCAL_EMBED_URL:-http://embeddings-not-configured.invalid/v1}
       # Pre-wired slot for an optional second inference box. NOT consumed by
       # litellm_config.example.yaml as shipped: nothing uses it until a route sets
-      # api_base: os.environ/SECOND_LM_STUDIO_URL - and probe the URL from INSIDE this
+      # api_base: os.environ/SECOND_LOCAL_URL - and probe the URL from INSIDE this
       # container before wiring one (a host-side probe proves nothing).
-      SECOND_LM_STUDIO_URL: ${SECOND_LM_STUDIO_URL:-}
+      SECOND_LOCAL_URL: ${SECOND_LOCAL_URL:-}
       # Provider keys - leave unset for providers you do not use.
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
@@ -158,6 +161,8 @@ services:
       - ./litellm/refusal_fallback.py:/app/refusal_fallback.py:ro
       # Jev decision layer: router classifier plugin + soft-refusal judge (same import rule as above).
       - ./litellm/jev_gate.py:/app/jev_gate.py:ro
+      # Unsloth guard: strips Unsloth's non-standard request fields and keeps its server-side tools off.
+      - ./litellm/unsloth_guard.py:/app/unsloth_guard.py:ro
     command:
       - "--config"
       - "/app/config.yaml"

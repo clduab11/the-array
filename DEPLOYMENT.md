@@ -33,8 +33,9 @@ what makes metering, budgets and the fail-closed private lane possible.
   pressure while everything native keeps running.
 - `python3` (3.10+) for the scripts. They are stdlib-only.
 - `curl` and `jq` for `provision-keys.example.sh`.
-- A local OpenAI-compatible model server if you want local rungs (LM Studio,
-  llama.cpp server, vLLM, Ollama with the OpenAI shim). From inside a
+- A local OpenAI-compatible model server if you want local rungs (Unsloth
+  Desktop on the reference deployment; llama.cpp server, vLLM, Ollama with the
+  OpenAI shim). From inside a
   container the host is `host.docker.internal` on Docker Desktop; on Linux add
   `extra_hosts: ["host.docker.internal:host-gateway"]` to the proxy service.
 

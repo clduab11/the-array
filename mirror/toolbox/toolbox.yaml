@@ -1,32 +1,21 @@
-# Praxen master toolbox — the ONE list of MCP tools, written once and rendered into every client.
-#
-#   python toolbox/render.py            -> toolbox/out/<client>/...  (configs with env references, never secrets)
-#
-# Built 2026-09-16 from Msty Studio's live tool store (36 tools across finalizedtools-v1, in-dev-wips and
-# default-tools) plus four research passes against each project's own repo, registry and docs.
-# Secrets policy: keys live in Windows USER environment variables (Msty: Base Environment). Configs only
-# ever hold the variable NAME. Nothing in this folder may contain a key.
+# Sanitized structural mirror of the-array/toolbox/toolbox.yaml (2026-10-29). Comments and identity values
+# removed or replaced; budgets are placeholders. See mirror/README.md before restoring from it.
 version: 1
-updated: 2026-09-29
+updated: 2026-10-08
 
 profiles:
   build-code: Build and ship code
   rnd-researcher: Research for Labs and the Institute (papers, models, the web)
   biz-ops: Business operations (LLC, tax, legal, HR)
   plan-triage: Portfolio, tickets, spend
-  desktop: Supervised Windows GUI automation (one client only)
+  desktop: Supervised Windows GUI automation (Msty Studio and Zed only)
 
-# Which profiles each client carries by default. Tools outside these profiles are rendered switched off
-# where the client has an on/off flag (Zed, OpenCode, Coder, Codex), and left out elsewhere.
 clients:
-  zed: {profiles: [build-code, rnd-researcher, plan-triage]}
+  zed: {profiles: [build-code, rnd-researcher, plan-triage, desktop]}
   opencode: {profiles: [build-code, rnd-researcher, plan-triage]}
-  coder: {profiles: [build-code]}
+  coder: {profiles: [build-code, rnd-researcher, plan-triage]}   # 2026-10-08: the opencode set; Coder Desktop runs the same engine and is the main driver
   vscode: {profiles: [build-code]}
   codex: {profiles: [build-code, rnd-researcher, plan-triage]}
-  # Codex runs inside WSL (Codex app: runCodexInWindowsSubsystemForLinux = true), and a Windows user variable is
-  # invisible there unless its NAME is listed in the user-scoped WSLENV variable (e.g. TAVILY_API_KEY/u:EXA_API_KEY/u:...).
-  # Set once, then fully quit and reopen the Codex app. Verified 2026-09-19 when the last literal keys left config.toml.
   claude-code: {profiles: [build-code, rnd-researcher, plan-triage, biz-ops]}
   front-studio: {profiles: [build-code, rnd-researcher, biz-ops, plan-triage, desktop]}
   front-go: {profiles: [biz-ops, plan-triage]}
@@ -42,10 +31,11 @@ runtimes:
   uvx: ~/.local/bin/uvx.exe
   mempalace_full: ~/.local/bin/mempalace-mcp.exe
   mempalace_light: ~/.local/bin/mempalace-light-mcp.exe
+  node: C:/Program Files/nodejs/node.exe          # 2026-10-08: path-runner tools that start a JS file (the guarded Playwright launch)
+  rvm_docs: C:/Praxen/Tools/rvm/rvm-docs-mcp.exe  # 2026-10-08: ruv stack, NOT installed yet; the rvm-docs tool is setup-gated
+  graphify_mcp: ~/AppData/Roaming/uv/tools/graphifyy/Scripts/graphify-mcp.exe  # 2026-10-08: uv tool graphifyy[mcp]==0.9.80 (python -m graphify.serve)
   mcp_remote: mcp-remote@0.14.2   # where a client cannot send an env-sourced header natively; in Zed for EVERY hosted tool,
-                                  # because Zed forwards context_servers to its ACP agents without its own OAuth session (2026-09-19)
 
-# Linux-native WSL commands. The MemPalace executables are Windows interop by design; the hub remains Windows-only.
 client_runtimes:
   claude-code-wsl: &wsl_runtimes
     npx: /usr/bin/npx
@@ -57,22 +47,19 @@ client_runtimes:
   grok: *wsl_runtimes
   paperclip: *wsl_runtimes
 
-# Environment variable NAMES the toolbox reads. status = what the 2026-09-16 scan of the Windows user
-# environment found (names only). "add" means create it before the tool will work.
 secrets:
   EXA_API_KEY: {status: present, for: exa}
   JINA_API_KEY: {status: present, for: jina}
   CONTEXT7_API_KEY: {status: present, for: context7}
   FIRECRAWL_API_KEY: {status: present, for: firecrawl}
   HF_TOKEN: {status: present, for: huggingface, note: use a read-only token}
-  GITHUB_MCP_PAT: {status: replace, for: github, note: "GitHub rejected the saved token (401) on 2026-09-16; make a new fine-grained, read-only token for named repos"}
+  GITHUB_MCP_PAT: {status: present, for: github, note: "validated 2026-10-08 on /mcp/readonly (26 tools). OpenCode and Coder keep their own PATs clientside (OPENCODE_GITHUB_MCP_PAT, CODER_JSONC_GITHUB_PAT), which the toolbox cannot express"}
   TAVILY_API_KEY: {status: present, for: tavily, note: paid through 2026-10-30, then free tier (1,000 credits/month)}
   LINEAR_API_KEY: {status: optional, for: linear, note: "only for a header-only client; every rendered client signs in with OAuth instead"}
   PRAXEN_SPEND_RO_DSN: {status: present, for: dbhub, note: "set 2026-09-17: role spend_reader, SELECT on LiteLLM_SpendLogs only, default_transaction_read_only; toml at ~/.config/praxen-toolbox/dbhub.toml"}
   GO_MCP_TOKEN: {status: present, for: front-go, note: "lives only inside Msty Studio's Toolbox entry / Go's Settings > Tools; Studio-only tool, no other client reads it"}
 
 tools:
-  # ---------------------------------------------------------------- CORE: every profile, every client
   - id: searxng
     name: SearXNG
     tier: core
@@ -90,9 +77,13 @@ tools:
     profiles: [build-code, rnd-researcher, biz-ops, plan-triage]
     what: AI web search and page fetch (2 tools on the hosted default)
     transport: http
-    url: https://mcp.exa.ai/mcp
+    url: https://mcp.exa.ai/mcp?tools=web_search_exa,web_fetch_exa
     auth: {type: header, header: x-api-key, secret: EXA_API_KEY}
-    note: Never put the key in the URL (?exaApiKey=).
+    default_enabled: false
+    note: >-
+      Never put the key in the URL (?exaApiKey=). 2026-10-08: the hosted default now also registers agent_run (paid agentic search);
+      the ?tools= filter keeps it to the two tools, as OpenCode and Coder already do. Policy 2026-10-03: research tier off by default,
+      switched on to extend or verify what SearXNG found.
     evidence: https://exa.ai/docs/reference/exa-mcp
   - id: jina
     name: Jina
@@ -100,9 +91,14 @@ tools:
     profiles: [build-code, rnd-researcher, biz-ops, plan-triage]
     what: Answer-inside-a-page search, read a page with a question, arXiv and SSRN search
     transport: http
-    url: https://mcp.jina.ai/v1?include_tools=search_web_deep,read_url,parallel_read_url,search_arxiv,search_ssrn
+    url: https://mcp.jina.ai/v1?include_tools=search_web,read_url,search_arxiv,search_ssrn
     auth: {type: bearer, secret: JINA_API_KEY}
-    note: The URL filter trims 22 tools to 5 on Jina's side. Msty had the key written into the tool's arguments; this replaces that.
+    default_enabled: false
+    enabled_for: [coder]   # 2026-10-08 the operator: on in Coder
+    note: >-
+      The URL filter trims Jina's 12 tools to 4 on Jina's side. 2026-10-08: Jina MCP 1.9.0 renamed search_web_deep to search_web and
+      folded parallel_read_url into read_url (arrays), so the old filter returned 3 tools. Msty had the key written into the tool's
+      arguments; this replaces that. Policy 2026-10-03: off by default.
     evidence: https://github.com/jina-ai/MCP
   - id: context7
     name: Context7
@@ -112,10 +108,12 @@ tools:
     transport: http
     url: https://mcp.context7.com/mcp
     auth: {type: bearer, secret: CONTEXT7_API_KEY}
-    note: Free plan stops at 1,000 calls a month. Treat returned snippets as untrusted text.
+    default_enabled: false
+    note: >-
+      Free plan stops at 1,000 calls a month. Treat returned snippets as untrusted text. Policy 2026-10-03: off by default
+      (on in the live clients today; see the 10-08 ruling sheet).
     evidence: https://github.com/upstash/context7
 
-  # ---------------------------------------------------------------- ROLE: only where the job is
   - id: microsoft-learn
     name: Microsoft Learn
     tier: role
@@ -133,7 +131,9 @@ tools:
     transport: http
     url: https://mcp.deepwiki.com/mcp
     auth: {type: none}
-    note: Its index can lag the repo; check version-sensitive answers.
+    default_enabled: false
+    note: >-
+      Its index can lag the repo; check version-sensitive answers. Policy 2026-10-03: off by default (on in the live clients today).
     evidence: https://docs.devin.ai/work-with-devin/deepwiki-mcp
   - id: firecrawl
     name: Firecrawl
@@ -143,7 +143,9 @@ tools:
     transport: http
     url: https://mcp.firecrawl.dev/v2/mcp
     auth: {type: bearer, secret: FIRECRAWL_API_KEY}
-    note: With a key it registers 25 tools and crawls spend credits; on by default since the 2026-09-17 finalized Zed set. Switch it off per client if the schema cost bites.
+    default_enabled: false
+    enabled_for: [coder]   # 2026-10-08 the operator: on in Coder
+    note: With a key it registers 28 tools (3.28.2) and crawls spend credits. Was on by default since the 2026-09-17 Zed set; off by default since 2026-10-08 (policy 2026-10-03), switch on per client for a crawl job.
     evidence: https://docs.firecrawl.dev/mcp-server
   - id: youtube-transcript
     name: YouTube transcripts
@@ -157,8 +159,8 @@ tools:
     evidence: https://github.com/jkawamoto/mcp-youtube-transcript
   - id: huggingface
     name: Hugging Face
-    tier: role
-    profiles: [rnd-researcher]
+    tier: core        # tracking tier (policy 2026-10-03): on everywhere
+    profiles: [build-code, rnd-researcher, biz-ops, plan-triage]
     what: Models, datasets, papers and Spaces for the Unsloth and Kaggle work
     transport: http
     url: https://huggingface.co/mcp
@@ -167,14 +169,17 @@ tools:
     evidence: https://huggingface.co/docs/hub/hf-mcp-server
   - id: github
     name: GitHub
-    tier: role
-    profiles: [build-code, plan-triage]
+    tier: core        # tracking tier (policy 2026-10-03): on everywhere
+    profiles: [build-code, rnd-researcher, biz-ops, plan-triage]
     what: Pull requests, issues and code search on GitHub, read-only with a trimmed tool list
     transport: http
-    url: https://api.githubcopilot.com/mcp/
+    url: https://api.githubcopilot.com/mcp/readonly
     auth: {type: bearer, secret: GITHUB_MCP_PAT}
-    headers: {X-MCP-Readonly: "true", X-MCP-Toolsets: "repos,issues,pull_requests"}
-    note: The default load is ~52 tools / ~30k tokens; the headers cut it down. Add a separate write-enabled entry only for a task that needs one.
+    headers: {X-MCP-Readonly: "true", X-MCP-Toolsets: "repos,issues,pull_requests,context"}
+    note: >-
+      The default load is ~52 tools / ~30k tokens; the toolsets header cuts it down (26 tools with context, verified 2026-10-08).
+      /mcp/readonly makes read-only a property of the URL, not of a header a client might drop (OpenCode and Coder already use it).
+      Add a separate write-enabled entry only for a task that needs one.
     evidence: https://github.com/github/github-mcp-server/blob/main/docs/remote-server.md
   - id: chrome-devtools
     name: Chrome DevTools
@@ -185,8 +190,33 @@ tools:
     runner: npx
     package: chrome-devtools-mcp@1.9.0
     args: ["--isolated", "--no-usage-statistics", "--no-performance-crux"]
-    note: Replaces Playwright. Add --slim (3 tools) for plain browsing. Never attach it to your signed-in Chrome profile.
+    disabled_for: [opencode]   # 2026-10-08 the operator: Coder runs Chrome DevTools beside the guarded Playwright
+    note: >-
+      Replaces Playwright in Zed. Add --slim (3 tools) for plain browsing. Never attach it to your signed-in Chrome profile.
+      2026-10-08: rendered off for OpenCode and Coder, which run the receipt-checked Playwright launch below (both had this entry
+      switched off behind a dead C:\Praxen\Tools path). the operator's call which one is the IDE browser tool.
     evidence: https://github.com/ChromeDevTools/chrome-devtools-mcp
+  - id: playwright
+    name: Playwright (guarded launch)
+    tier: role
+    profiles: [build-code]
+    clients_only: [opencode, coder]
+    what: Headless, isolated browser automation through the receipt-checked 0.0.80-r1 install under C:\Praxen\Tools (agentic-workbench release of 2026-09-08)
+    transport: stdio
+    runner: path
+    command_runtime: node
+    args: ['C:\Praxen\Tools\playwright\0.0.80-r1\playwright-mcp-launch-guard.mjs', '--contract', 'praxen-managed-tool-node-launch-guard-v1',
+           '--root', 'C:\Praxen\Tools\playwright\0.0.80-r1', '--receipt', 'C:\Praxen\Tools\playwright\0.0.80-r1\install-receipt.json',
+           '--receipt-sha256', '7b0d8b0cc4409c39a67d9b3a96158b4054411ad8a095939b3ad297793c407457',
+           '--target', 'C:\Praxen\Tools\playwright\0.0.80-r1\node_modules\@playwright\mcp\cli.js', '--',
+           '--headless', '--isolated', '--browser', 'chrome', '--executable-path', 'C:\Praxen\Tools\playwright\0.0.80-r1\browser\chrome.exe',
+           '--block-service-workers', '--image-responses', 'omit', '--output-dir', 'C:\Praxen\Runtime\playwright-mcp-output']
+    env: {NODE_EXTRA_CA_CERTS: "", NODE_OPTIONS: "", NODE_PATH: ""}
+    note: >-
+      Un-dropped 2026-10-08 for these two clients only: both run it today (connected in the 10-08 Coder probe; receipt SHA-256 re-verified).
+      The launch guard checks the install receipt before starting the pinned cli.js; the paths keep the exact backslash form the receipt
+      was written with. browser_evaluate stays available (the run-any-code concern behind the 09-17 drop).
+    evidence: https://github.com/microsoft/playwright-mcp
   - id: markitdown
     name: Markitdown
     tier: role
@@ -199,8 +229,8 @@ tools:
     evidence: https://github.com/microsoft/markitdown/tree/main/packages/markitdown-mcp
   - id: linear
     name: Linear
-    tier: role
-    profiles: [plan-triage]
+    tier: core        # tracking tier (policy 2026-10-03): on everywhere; read-only endpoint, OAuth
+    profiles: [build-code, rnd-researcher, biz-ops, plan-triage]
     what: Tickets and projects — read-only endpoint by default
     transport: http
     url: https://mcp.linear.app/mcp/readonly
@@ -260,13 +290,13 @@ tools:
     name: Windows-MCP
     tier: role
     profiles: [desktop]
-    clients_only: [front-studio]
-    what: Drive Windows apps that have no API, supervised, in one client
+    clients_only: [front-studio, zed, opencode, coder, codex]   # 2026-10-08: present in the IDE clients, off there (no desktop profile); Coder runs an unpinned copy ON today
+    what: Drive Windows apps that have no API, supervised, in Msty Studio or Zed
     transport: stdio
     runner: uvx
     args: ["windows-mcp==0.8.5", "serve", "--exclude-tools", "PowerShell,Registry,FileSystem,Process"]
     env: {ANONYMIZED_TELEMETRY: "false"}
-    note: Full user privileges and no undo, so UI tools only and one supervised client.
+    note: Full user privileges and no undo, so UI tools only. Zed was added 2026-10-01 so the agent can drive the desktop. This server is not part of any product repository.
     evidence: https://github.com/CursorTouch/Windows-MCP
 
   - id: front-go
@@ -302,7 +332,8 @@ tools:
     name: PDF Tools
     tier: role
     profiles: [biz-ops]
-    clients_only: [claude-code, front-studio]
+    clients_only: [claude-code, front-studio, zed, opencode, coder]
+    enabled_for: [claude-code, front-studio]   # 2026-10-08 policy host tier: present but off elsewhere (22 tools of schema)
     what: Create PDFs from Markdown, fill forms, merge, split, encrypt (the operator's Msty entry, kept by ruling 2026-09-16)
     transport: stdio
     runner: npx
@@ -313,7 +344,8 @@ tools:
     name: Desktop Commander
     tier: role
     profiles: [build-code, biz-ops]
-    clients_only: [claude-code]
+    clients_only: [claude-code, zed, opencode, coder, codex]
+    enabled_for: [claude-code]   # 2026-10-08 policy 2026-10-03 host tier: present but off in the IDE clients (Coder runs it ON today, unpinned @latest)
     what: Terminal, process and file control from a chat client that has no shell of its own
     transport: stdio
     runner: npx
@@ -329,19 +361,27 @@ tools:
     tier: role
     profiles: [build-code]
     clients_only: [claude-code, opencode, codex, zed, coder]
-    setup: In the repo run `uv tool install graphifyy==0.9.63` then `graphify extract . --code-only` (or /graphify) to build graphify-out/graph.json; enable this tool per repo.
-    what: Query a per-repo knowledge graph (tree-sitter AST, no vector store; 7 tools) instead of grepping; can also emit an Obsidian vault
+    what: Query a per-repo knowledge graph (tree-sitter AST, no vector store; 10 tools incl. PR impact) instead of grepping; can also emit an Obsidian vault
     transport: stdio
-    runner: uvx
-    args: ["--from", "graphifyy==0.9.63", "python", "-m", "graphify.serve", "graphify-out/graph.json"]
-    note: Per-repository, not a standing server - the graph path is relative to the repo. Not installed today (the old C:/Praxen/Tools/graphify path never existed). Verify the uvx launch form once at enable time.
+    runner: path
+    command_runtime: graphify_mcp
+    args: ["graphify-out/graph.json"]
+    note: >-
+      Installed 2026-10-08 as the uv tool graphifyy[mcp]==0.9.80 (venv at %APPDATA%/uv/tools/graphifyy; the [mcp] extra is required).
+      The default graph is graphify-out/graph.json relative to the client's working directory (Coder and OpenCode spawn local MCPs in
+      the workspace dir); the server starts even when that file is missing, and every tool takes project_path for other repos.
+      Build a graph with `graphify extract <repo> --code-only` (local AST, no LLM); `graphify cluster-only <repo>` names communities
+      and DOES call an LLM: it auto-detects a backend from env keys and falls back to the `claude` CLI (Max plan) when none is set,
+      so run it with `--backend openai` and OPENAI_BASE_URL pointed at LiteLLM, or skip it. Graphs built 2026-10-08: the-array,
+      qrc-thresher, jev-test (graphify-out/ is gitignored in each). Coder skill + /graphify command installed globally
+      (graphify install --platform coder).
     evidence: https://github.com/Graphify-Labs/graphify
 
   - id: memory
     name: Memory (knowledge graph)
     tier: role
     profiles: [build-code, rnd-researcher]
-    clients_only: [opencode, codex, claude-code]
+    clients_only: [opencode, coder, codex, claude-code]
     default_enabled: false
     what: Persistent entity/relation memory for chats driven by smaller models (the operator ruling 2026-09-17)
     transport: stdio
@@ -353,7 +393,7 @@ tools:
     name: Sequential Thinking
     tier: role
     profiles: [build-code, rnd-researcher]
-    clients_only: [opencode, codex, claude-code]
+    clients_only: [opencode, coder, codex, claude-code]
     default_enabled: false
     what: Step-by-step scratchpad tool for models that do not plan well on their own (the operator ruling 2026-09-17)
     transport: stdio
@@ -362,7 +402,107 @@ tools:
     note: In Zed this is provided by the mcp-server-sequential-thinking extension, so it is not rendered there. Off by default; on for less capable local models, off for frontier models that already plan.
     evidence: https://github.com/modelcontextprotocol/servers/tree/main/src/sequentialthinking
 
-  # ---------------------------------------------------------------- DECIDE: waiting on a ruling
+  - id: figma
+    name: Figma
+    tier: role
+    profiles: [build-code]
+    clients_only: [opencode, coder]
+    default_enabled: false
+    what: Read designs and generate code from Figma files (Figma's remote server, OAuth)
+    transport: http
+    url: https://mcp.figma.com/mcp
+    auth: {type: oauth}
+    note: >-
+      Both clients had it switched off. Needs a ruling: keep as an on-demand design tool, or drop (Claude Code reaches Figma
+      through its own connector).
+    evidence: https://developers.figma.com/docs/figma-mcp-server/
+  - id: neon
+    name: Neon
+    tier: role
+    profiles: [build-code, plan-triage]
+    clients_only: [opencode, coder]
+    default_enabled: false
+    what: Neon Postgres projects, branches and SQL through Neon's remote MCP (OAuth)
+    transport: http
+    url: https://mcp.neon.tech/mcp
+    auth: {type: oauth}
+    note: >-
+      Coder runs it ON today through `npx -y mcp-remote https://mcp.neon.tech/sse` with a cached OAuth grant; the native remote form
+      needs `coder mcp auth neon` once. OpenCode carries it switched off. Needs a ruling: is Neon in use at all? Nothing in the-array
+      uses it (the LiteLLM Postgres is local).
+    evidence: https://neon.com/docs/ai/neon-mcp-server
+  - id: ruflo-core
+    name: ruflo (orchestration)
+    tier: role
+    profiles: [build-code]
+    clients_only: [opencode, coder]
+    default_enabled: false
+    what: Agent-swarm orchestration MCP (358 tools on 3.55.0); off by default, 16 read-only tools allowed, 17 agent/task tools ask, the rest denied and hidden
+    transport: stdio
+    runner: path
+    command_runtime: node
+    args: ['C:\Praxen\Tools\ruflo\3.55.0-r1\launch-ruflo-mcp.mjs']
+    note: >-
+      Installed 2026-10-08 as a receipt-recorded release: ruflo@3.55.0 (pulls @claude-flow/cli 3.55.0) under C:/Praxen/Tools/ruflo/3.55.0-r1,
+      npm install --ignore-scripts --omit=dev --save-exact (611 packages, 49k files, 1.5 GB; the install-receipt.json lists every file's
+      SHA-256, but the per-launch closure check of the guard is impractical at this size, so the wrapper is launched directly). The wrapper
+      runs the CLI with cwd C:/Praxen/Runtime/ruflo so .swarm/memory.db and .claude-flow/ never land in a repo; Coder strips backend
+      credentials from the MCP environment. The allow/ask/deny map lives in the client config (Coder permission block; evidence
+      deliverables/evidence/2026-10-08-op-ruv-constellation/ruflo-3.55.0-tool-classification.md). Known: a status-line feature talks to
+      funnel.ruv.io and memory_store/agent_spawn/hooks_* mutate state; all denied or ask.
+    evidence: https://github.com/ruvnet/ruflo
+  - id: ruvector-memory
+    name: RuVector (read-only semantic memory)
+    tier: role
+    profiles: [build-code]
+    clients_only: [opencode, coder]
+    default_enabled: false
+    what: Semantic-memory and routing hooks in the read-only profile (15 tools - hooks_stats, hooks_route, hooks_recall, hooks_doctor, hooks_capabilities, hooks_suggest_context, metaharness_status, metaharness_route and friends)
+    transport: stdio
+    runner: path
+    command_runtime: node
+    args: ['C:\Praxen\Tools\ruvector\0.3.3-r1\launch-guard.mjs', '--contract', 'praxen-managed-tool-node-launch-guard-v1', '--root', 'C:\Praxen\Tools\ruvector\0.3.3-r1', '--receipt', 'C:\Praxen\Tools\ruvector\0.3.3-r1\install-receipt.json', '--receipt-sha256', '366d18ac497a70aec65ddd0df4b1847dc70bba174261e4f612c10ce02a7bd456', '--target', 'C:\Praxen\Tools\ruvector\0.3.3-r1\launch-ruvector-mcp.mjs', '--']
+    note: >-
+      Installed 2026-10-08 as a receipt-checked release: ruvector@0.3.3 under C:/Praxen/Tools/ruvector/0.3.3-r1 (161 packages, win32 NAPI
+      binaries present, no install scripts), launched through the reviewed launch guard (closure of 5,926 files verified on every start,
+      about 6 s warm / 17 s cold) into a wrapper that sets RUVECTOR_MCP_PROFILE=readonly and RUVECTOR_MCP_DENY=hooks_export and runs with
+      cwd C:/Praxen/Runtime/ruvector (ruvector.db lands there). On first start it downloads the all-MiniLM-L6-v2 ONNX model (23 MB) into
+      ~/.cache/chroma/onnx_models and spawns 15 worker threads. Reads return nothing until a writer exists (hooks_pretrain is a mutating
+      tool, off in this profile), so it is off by default; brain_*/edge_* (pi.ruv.io, Cloud Run) are outside the readonly profile.
+    evidence: https://github.com/ruvnet/RuVector
+  - id: ruview-operator
+    name: RuView (domain operator)
+    tier: role
+    profiles: [build-code]
+    clients_only: [opencode, coder]
+    setup: Same release; every network, OAuth, device and mutation tool starts at ask/deny per captured tool evidence (plan Task 5).
+    what: Domain operator MCP and native skill pack
+    transport: stdio
+    runner: npx
+    package: "@ruvnet/ruview@0.5.1"
+    args: ["mcp", "start"]
+    note: >-
+      Both clients carried a dead `C:\Praxen\Tools\ruview\ruview.exe mcp` entry (removed from Coder 2026-10-08). Review 2026-10-08: RuView is an
+      ESP32 WiFi-sensing platform (CSI presence/vitals/pose); its MetaHarness MCP needs a sensing server and hardware, and the project's own
+      notes say Windows whole-workspace runs fail. Tier C until ESP32 work starts (then @ruvnet/ruview@0.9.1, zero deps).
+    evidence: https://github.com/ruvnet/RuView
+  - id: rvm-docs
+    name: RVM docs (read-only)
+    tier: role
+    profiles: [build-code]
+    clients_only: [opencode, coder]
+    setup: Build from the RVM repo at commit 0973d77e5a9e99065376e8ef772a4a1d16e88c75 (userguide/mcp, npm ci --ignore-scripts, npm run build) into C:\Praxen\Tools\rvm; expected six docs_* tools (plan Task 5).
+    what: Read-only documentation MCP for RVM (docs_search, docs_navigate, docs_xref, docs_glossary, docs_api, docs_howto)
+    transport: stdio
+    runner: path
+    command_runtime: rvm_docs
+    args: ["serve"]
+    note: >-
+      No registry package; both clients carried a dead `C:\Praxen\Tools\rvm\rvm-docs-mcp.exe serve` entry (removed from Coder 2026-10-08).
+      Review 2026-10-08: six read-only docs tools, dist/ is committed (npm ci --ignore-scripts suffices); Tier C until RVM work starts.
+      The RVM isolation adapter is not an MCP and stays out of the toolbox.
+    evidence: https://github.com/ruvnet/rvm
+
   - id: tavily
     name: Tavily
     tier: role
@@ -371,8 +511,10 @@ tools:
     transport: http
     url: https://mcp.tavily.com/mcp/
     auth: {type: bearer, secret: TAVILY_API_KEY}
+    default_enabled: false
+    enabled_for: [coder]   # 2026-10-08 the operator: on in Coder
     note: >-
-      the operator 2026-09-16: one more paid month (9/24), then the account reverts to the free tier on 2026-10-30
+      Policy 2026-10-03: off by default (third call after SearXNG and Exa). the operator 2026-09-16: one more paid month (9/24), then the account reverts to the free tier on 2026-10-30
       (1,000 credits/month). It returned 433 (out of credit) on 9/16; works again once the 9/24 charge lands.
     evidence: https://github.com/tavily-ai/tavily-mcp
   - id: obsidian
@@ -387,14 +529,11 @@ tools:
     note: Enabled by the operator in Zed 2026-09-17 with the vault as-is (closed/ is readable to it - mcpvault has no folder exclude; split the vault if that ever matters). --read-only hides every mutating tool. 0.15.0 avoids a Windows npx issue reported on 0.16.0. .obsidian, dotfiles and non-note files are filtered automatically.
     evidence: https://github.com/bitbonsai/mcpvault
 
-  # ---------------------------------------------------------------- HOSTINGER: per-domain servers, off until a job needs them
-  # The all-in-one server is 386 tools / ~88K tokens of schema at 1.58.1 (140 at the old global 0.2.14), over every
-  # client's budget and over the 128-tool API cap. Add another domain (vps 64, domains 40, mail 38, billing 9) the same way.
   - id: hostinger-hosting
     name: Hostinger Hosting
     tier: role
     profiles: [build-code, biz-ops]
-    clients_only: [zed, front-studio, front-go]
+    clients_only: [zed, front-studio, front-go, opencode, coder]
     default_enabled: false
     what: Deploy and manage websites on the Hostinger hosting plan (static/JS/WordPress deploys, files, cache, redirects, databases, cron, PHP) - example.dev lives here
     transport: stdio
@@ -412,7 +551,7 @@ tools:
     name: Hostinger DNS
     tier: role
     profiles: [build-code, biz-ops]
-    clients_only: [zed, front-studio, front-go]
+    clients_only: [zed, front-studio, front-go, opencode, coder]
     default_enabled: false
     what: Read, validate, update, snapshot and restore DNS zones for domains on the Hostinger account (8 tools)
     transport: stdio
@@ -423,7 +562,6 @@ tools:
     note: 8 tools / ~1.8K tokens. Same OAuth credential as Hostinger Hosting. Take a DNS snapshot before any update.
     evidence: https://github.com/hostinger/api-mcp-server
 
-  # MemPalace's full server stays with Claude; other inline-schema clients use the compact server. The hub is the only writer.
   - id: mempalace
     name: MemPalace
     tier: role
@@ -434,7 +572,7 @@ tools:
     runner: path
     command_runtime: mempalace_full
     note: The Windows executable talks to the loopback-only hub. Claude is the only toolbox client assigned the full tool surface.
-  - id: mempalace-light
+  - id: mempalace          # 2026-10-08: was mempalace-light; every client (Zed, OpenCode, Coder) already names this server "mempalace"
     name: MemPalace (light)
     tier: role
     profiles: [build-code, rnd-researcher, biz-ops, plan-triage]
@@ -457,15 +595,14 @@ tools:
     auth: {type: none}
     note: Keep disabled. The container cannot reach the hub yet; never widen the hub's exposure as a workaround.
 
-# Removed from the toolbox, with what covers the job instead.
 dropped:
   - {name: Brave Search, why: "Already dropped; the Msty entry is the deprecated reference server", instead: "SearXNG, then Exa"}
   - {name: Kagi, why: "the operator 2026-09-16: dropped. kagimcp now exposes search + extract only (FastGPT and Summarizer removed), which SearXNG, Exa and Jina already cover; no OAuth, key only", instead: "SearXNG, then Exa; Jina read_url with a question for long pages"}
   - {name: SearXNG (second copy from GitHub), why: "Duplicate, unpinned, and probably cannot start", instead: SearXNG}
   - {name: Google Search, why: "Google closes its Custom Search API on 2027-01-01; SearXNG already includes Google results", instead: SearXNG}
-  - {name: Fetch Content, why: "No slot in the call order, and it can reach the PC's own LiteLLM, Grafana and LM Studio", instead: "Jina read; SearXNG's reader as the free fallback"}
+  - {name: Fetch Content, why: "No slot in the call order, and it can reach the PC's own LiteLLM and Grafana", instead: "Jina read; SearXNG's reader as the free fallback"}
   - {name: Git, why: "Coding apps run git themselves; the Msty entry mounts an old image with four known advisories", instead: "App terminals + GitHub"}
-  - {name: Playwright, why: "Duplicates Chrome DevTools at higher cost and loads a run-any-code tool by default (Zed extension removed 2026-09-17)", instead: Chrome DevTools}
+  - {name: Playwright, why: "Dropped for Zed 2026-09-17 (duplicates Chrome DevTools, browser_evaluate runs arbitrary code). Un-dropped 2026-10-08 for OpenCode and Coder only, as the receipt-checked 0.0.80-r1 launch (the playwright tool above)", instead: "Chrome DevTools in Zed; the guarded Playwright in OpenCode and Coder"}
   - {name: macOS Info, why: "This PC is Windows", instead: "Nothing needed"}
   - {name: Google Maps, why: "Deprecated package, used by no toolset", instead: "Google's Grounding Lite only for a maps job"}
   - {name: SQLite, why: "Stale package with drop-table tools pointed at a deleted Mac file", instead: DBHub}

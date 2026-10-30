@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Per-model configs for Unsloth Desktop (the-array, pc-host). Stdlib only.
 
-Gives each chosen model a pinned, persistent launch config (LM Studio per-model presets, the Unsloth way):
+Gives each chosen model a pinned, persistent launch config (per-model presets, the Unsloth way):
 the overrides Unsloth applies whenever a request names the model (auto-switch / API / LiteLLM loads).
 
   list                         models Unsloth can serve + stored overrides
@@ -18,7 +18,7 @@ the overrides Unsloth applies whenever a request names the model (auto-switch / 
   unload                       unload whatever is resident (by the status identifier) and confirm
   remove MODEL                 delete the stored override
 
-MODEL is the Unsloth id with quant, e.g. lmstudio-community/Ministral-3-3B-Instruct-2512-GGUF:Q6_K
+MODEL is the Unsloth id with quant, e.g. unsloth/Ministral-3-3B-Instruct-2512-GGUF:UD-Q4_K_XL
 (see `list`). The key is read from the-array/.env (UNSLOTH_PC_API_KEY) and never printed.
 
 Facts this tool relies on (OP UNSLOTH ALPHA, 2026-09-23; plan section 6):
@@ -45,7 +45,7 @@ from pathlib import Path
 BASE = os.environ.get("UNSLOTH_BASE", "http://127.0.0.1:8888")
 ENV = Path(__file__).resolve().parent.parent / ".env"
 HOME = Path(os.environ.get("USERPROFILE", str(Path.home())))
-SEARCH_ROOTS = [HOME / ".lmstudio" / "models", HOME / ".cache" / "huggingface" / "hub", HOME / ".unsloth" / "studio" / "models"]
+SEARCH_ROOTS = [HOME / ".cache" / "huggingface" / "hub", HOME / ".unsloth" / "studio" / "models"]
 MIB = 1024 * 1024
 
 
@@ -117,8 +117,37 @@ def gguf_meta(path: Path) -> dict:
             k = rstr()
             t, = struct.unpack("<I", f.read(4))
             meta[k] = rval(t)
+        # Tensor infos (name, dims, type, offset): sizes come from offset deltas, the last tensor running to the
+        # end of this file, so no ggml type table is needed. A split GGUF lists only its own shard's tensors.
+        offs = {}
+        for _ in range(n_tensors):
+            name = rstr()
+            nd, = struct.unpack("<I", f.read(4))
+            f.seek(8 * nd + 4, 1)
+            offs[name], = struct.unpack("<Q", f.read(8))
+        align = int(meta.get("general.alignment", 32))
+        data_bytes = path.stat().st_size - (f.tell() + align - 1) // align * align
+    ends = sorted(set(offs.values())) + [data_bytes]
+    nxt = dict(zip(ends, ends[1:]))
+    meta["_tensor_bytes"] = {n: nxt[o] - o for n, o in offs.items()}
     meta["_gguf_version"], meta["_n_tensors"] = version, n_tensors
     return meta
+
+
+INPUT_LAYER = ("token_embd.weight", "per_layer_token_embd.weight")
+
+
+def host_split(meta: dict) -> tuple:
+    """(MiB llama.cpp keeps in host RAM, MiB of a tied output copy it loads onto the GPU).
+
+    llama.cpp places the input layer on the CPU whatever -ngl says: token_embd, plus the per-layer embedding table
+    of Gemma 3n / Gemma 4 E-models, which is a third of such a file (Nemotron-3.5-Bolt-E4B UD-Q4_K_XL: 1,512 + 440
+    of 4,826 MiB; on 2026-10-29 it showed as ~2.2 GB of the process's shared GPU memory at full decode speed). A
+    file without output.weight ties the output layer to token_embd, which is then loaded a second time for the GPU."""
+    tb = meta.get("_tensor_bytes") or {}
+    host = sum(tb.get(n, 0) for n in INPUT_LAYER)
+    tied = tb.get("token_embd.weight", 0) if tb and "output.weight" not in tb else 0
+    return host // MIB, tied // MIB
 
 
 def is_drafter(p: Path) -> bool:
@@ -135,18 +164,15 @@ def find_drafter(model: str):
 
 
 def find_files(model: str):
-    """(weights .gguf, mmproj .gguf or None, weights bytes) for an Unsloth id, from LM Studio's folder or the HF cache."""
+    """(weights .gguf, mmproj .gguf or None, weights bytes) for an Unsloth id, from the HF cache Unsloth's Hub fills."""
     repo, quant = split_model(model)
     pub, _, name = repo.partition("/")
     cands = []
-    lm = SEARCH_ROOTS[0] / pub / name
-    if lm.is_dir():
-        cands += list(lm.glob("*.gguf"))
-    hf = SEARCH_ROOTS[1] / f"models--{pub}--{name}" / "snapshots"
+    hf = SEARCH_ROOTS[0] / f"models--{pub}--{name}" / "snapshots"
     if hf.is_dir():
         cands += list(hf.glob("*/**/*.gguf")) + list(hf.glob("*/*.gguf"))
     if not cands:
-        sys.exit(f"no local GGUF found for {repo} under {SEARCH_ROOTS[0]} or the HF cache")
+        sys.exit(f"no local GGUF found for {repo} under {SEARCH_ROOTS[0]} (pull it through Unsloth Desktop's Hub)")
     mmproj = next((c for c in cands if "mmproj" in c.name.lower()), None)
     weights = [c for c in cands if "mmproj" not in c.name.lower() and not is_drafter(c)
                and not re.search(r"(^|[._-])imatrix([._-]|$)", c.stem.lower())]
@@ -295,9 +321,12 @@ def cmd_list(_):
 
 def cmd_inspect(a):
     w, mm, total = find_files(a.model)
-    prof = kv_profile(gguf_meta(w))
+    meta = gguf_meta(w)
+    prof = kv_profile(meta)
+    host, tied = host_split(meta)
     dr = find_drafter(a.model)
-    prof.update({"weights_file": str(w), "weights_mib": total // MIB, "mmproj_file": str(mm) if mm else None,
+    prof.update({"weights_file": str(w), "weights_mib": total // MIB, "gpu_weights_mib": total // MIB - host + tied,
+                 "host_input_layer_mib": host, "tied_output_mib": tied, "mmproj_file": str(mm) if mm else None,
                  "mmproj_mib": mm.stat().st_size // MIB if mm else 0,
                  "drafter_file": str(dr) if dr else None, "drafter_mib": dr.stat().st_size // MIB if dr else 0})
     print(json.dumps(prof, indent=1))
@@ -306,12 +335,15 @@ def cmd_inspect(a):
 
 def cmd_plan(a):
     w, mm, total = find_files(a.model)
-    prof = kv_profile(gguf_meta(w))
+    meta = gguf_meta(w)
+    prof = kv_profile(meta)
+    host, tied = host_split(meta)
     used, cap, free = vram()
     s, st = call("GET", "/api/inference/status", timeout=30)
     if st.get("loaded"):
         print(f"note: {st.get('loaded')} is resident in Unsloth; free VRAM below excludes it, so plan with nothing loaded for accuracy")
-    weights, mmp = total // MIB, (mm.stat().st_size // MIB if mm else 0)
+    # GPU weights: the file minus the input layer llama.cpp keeps in host RAM, plus a tied output copy
+    weights, mmp = total // MIB - host + tied, (mm.stat().st_size // MIB if mm else 0)
     compute = a.compute
     fixed = prof["kv_fixed_bytes"][a.kv] // MIB  # sliding-window cache, independent of context
     dr = find_drafter(a.model)
@@ -321,8 +353,10 @@ def cmd_plan(a):
     kv = prof["kv_bytes_per_token"][a.kv]
     rec = {"model_id": a.model, "kv_cache_dtype": a.kv, "llama_extra_args": ["--threads", str(a.threads)]}
     lines = [f"card {cap} MiB, used now {used} MiB (desktop + anything resident), free {free} MiB",
-             f"weights {weights} MiB + mmproj/drafter {mmp} MiB + compute ~{compute} MiB + reserve {a.reserve} MiB"
-             + (f" + sliding-window KV {fixed} MiB" if fixed else "")]
+             f"weights {weights} MiB on GPU + mmproj/drafter {mmp} MiB + compute ~{compute} MiB + reserve {a.reserve} MiB"
+             + (f" + sliding-window KV {fixed} MiB" if fixed else ""),
+             f"input layer {host} MiB stays in host RAM (llama.cpp's CPU input layer)"
+             + (f"; output tied to token_embd, so {tied} MiB of it is also counted on the GPU" if tied else "")]
     ctx = min(int(budget * MIB / kv) // 1024 * 1024, int(prof["ctx_train"] or 1 << 20), a.max_ctx) if budget > 0 and kv else 0
     if ctx >= a.min_ctx:  # fits whole with at least the minimum context
         # No GPU-mode fields: Auto with a pinned context launches `-ngl -1 --fit off` when it fits (ALPHA).
@@ -383,7 +417,7 @@ def cmd_apply(a):
     if a.n_cpu_moe is not None:
         body.update({"n_cpu_moe": a.n_cpu_moe, "gpu_memory_mode": "manual", "gpu_layers": 999 if a.gpu_layers is None else a.gpu_layers})
         print(f"note: the experts placed on CPU live in host RAM ({_ram_mode()}). Check host Available against their "
-              "size (and LM Studio's residue) before verify.", file=sys.stderr)
+              "size (and other apps' residue) before verify.", file=sys.stderr)
     elif a.gpu_layers is not None:
         body.update({"gpu_memory_mode": "manual", "gpu_layers": a.gpu_layers})
     if a.parallel is not None:
@@ -403,11 +437,14 @@ def cmd_show(a):
     print("a load of", a.model, "applies key", d.get("resolved_key"), "->", json.dumps(d.get("resolved"), indent=1))
 
 
-def _toks(model, runs):
-    """Decode tok/s from a streamed response (Unsloth's plain chat path returns no engine timings)."""
+def _toks(model, runs, guard=None):
+    """Decode tok/s from a streamed response (Unsloth's plain chat path returns no engine timings). Stops once the RAM
+    watchdog has fired, since a request naming the model would reload it."""
     prompt = "Write a detailed, multi-paragraph essay (at least 450 words) on the history of the printing press. Do not use lists."
     rates = []
     for i in range(runs):
+        if guard is not None and guard.tripped:
+            break
         body = {"model": model, "messages": [{"role": "user", "content": prompt + f" ({i})"}], "max_tokens": 400,
                 "temperature": 0.7, "stream": True, "stream_options": {"include_usage": True}}
         req = urllib.request.Request(BASE + "/v1/chat/completions", data=json.dumps(body).encode(), method="POST",
@@ -434,9 +471,11 @@ def _toks(model, runs):
 def _ram_watchdog(floor_mib):
     """Background guard for loads that put weights in host RAM: if Available stays under the floor for 3 s, unload
     the resident model, and kill the llama-server child if a load is still in flight (unload cannot cancel a load).
-    Returns the Event that stops it."""
+    Returns the Event that stops it; its `tripped` flag says the floor fired. After a trip the caller must send no
+    further request naming the model: auto-switch reloads it (2026-10-29, gpt-oss reloaded to 237 MB available)."""
     import threading
     stop = threading.Event()
+    stop.tripped = False
 
     def watch():
         low = 0
@@ -450,8 +489,20 @@ def _ram_watchdog(floor_mib):
                     subprocess.run(["taskkill", "/F", "/PID", str(c["pid"])], capture_output=True)
                 print(f"RAM FLOOR: host available {avail} MiB < {floor_mib} for 3 s -> unload: {res}"
                       + (f"; killed llama-server {c['pid']}" if c else ""), flush=True)
+                stop.tripped = True
                 stop.set()
-    threading.Thread(target=watch, daemon=True).start()
+                # Unsloth relaunches a load whose child was killed (2026-10-29: Cyber-Tiel came back as a new 18 GB
+                # llama-server seconds after the kill), so sweep for 45 s and take down any relaunch too.
+                for _ in range(45):
+                    time.sleep(1)
+                    c = child()
+                    if c:
+                        res = unload_resident()
+                        subprocess.run(["taskkill", "/F", "/PID", str(c["pid"])], capture_output=True)
+                        print(f"RAM FLOOR: relaunched llama-server {c['pid']} killed -> unload: {res}", flush=True)
+    t = threading.Thread(target=watch, daemon=True)
+    t.start()
+    stop.thread = t
     return stop
 
 
@@ -461,18 +512,23 @@ def cmd_verify(a):
     print(f"before: VRAM free {b_free} MiB | host available {h_avail} MiB, commit {h_commit}%")
     guard = _ram_watchdog(a.ram_floor) if a.ram_floor else None
     try:
-        _verify_body(a, h_avail)
+        _verify_body(a, h_avail, guard)
     finally:
         if guard:
+            if guard.tripped:
+                guard.thread.join(60)  # let the relaunch sweep finish before the process exits
             guard.set()
 
 
-def _verify_body(a, h_avail):
+def _verify_body(a, h_avail, guard=None):
     t0 = time.time()
     # 256, not 12: models that start with reasoning on (Gemma 4) spend a small budget thinking and return empty content
     s, d = call("POST", "/v1/chat/completions", {"model": a.model, "messages": [{"role": "user", "content": "Reply with exactly: CONFIG-OK"}],
                                                  "max_tokens": 256, "temperature": 0}, timeout=900)
     print(f"load+answer: HTTP {s} in {time.time() - t0:.1f}s, model={d.get('model')}, content={((d.get('choices') or [{}])[0].get('message') or {}).get('content')!r}")
+    if guard is not None and guard.tripped:
+        print("stopped: the RAM floor fired, so no further request names the model (auto-switch would reload it)")
+        return
     c = child()
     used, cap, free = vram()
     h_avail2, h_commit2 = host_mem()
@@ -492,10 +548,12 @@ def _verify_body(a, h_avail):
             print("WARNING: shared GPU memory above 900 MiB with little VRAM headroom -> check tok/s for spill")
         if h_avail2 < 4096:
             print("WARNING: host available RAM under 4 GiB with the model loaded (the Docker-wedge precondition) -> unload, "
-                  "check LM Studio residue, or keep fewer weights in host RAM")
+                  "close other memory-heavy apps, or keep fewer weights in host RAM")
     if a.runs:
-        print("decode tok/s:", _toks(a.model, a.runs))
-    if not a.keep:
+        print("decode tok/s:", _toks(a.model, a.runs, guard))
+    if guard is not None and guard.tripped:
+        print("stopped: the RAM floor fired during the tok/s runs; the model stays unloaded")
+    elif not a.keep:
         print("unload:", unload_resident())
 
 

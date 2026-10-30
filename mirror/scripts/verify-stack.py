@@ -7,13 +7,15 @@ WHY THIS EXISTS (2026-09-09 currency sweep): every prior op re-derived the same 
 by hand (readiness, routable count, a chain 200, an allowlist 403, embedder dims,
 6/6 prometheus targets, provisioned dashboards/datasources, searxng json). Hand-derived
 gates drift and get skipped under time pressure; a script does not. Reads secrets from
-.env / .virtual-keys.env and NEVER prints them.
+.env / .virtual-keys.env and NEVER prints them. Every call it makes is tagged `health-gate` (header
+x-litellm-tags; body metadata.tags on gate 5, whose auth-time 403 row never sees headers), so the
+boards' TRAFFIC picker can leave gate traffic out of the client view (OP FAILED-REQUESTS, 2026-10-07).
 
 USAGE
   python scripts/verify-stack.py            # full gate
   python scripts/verify-stack.py --no-llm   # skip the paid chat probe (keeps the free gates)
   python scripts/verify-stack.py --no-local # skip the Unsloth G-SEC probe (it loads a small model in Unsloth)
-  python scripts/verify-stack.py --no-routes # skip the name-resolution sweep (about 240 near-free calls, 1-3 minutes)
+  python scripts/verify-stack.py --no-routes # skip the name-resolution sweep (about 240 near-free calls, about a minute)
 """
 import argparse, json, re, subprocess, sys, time, urllib.error, urllib.request
 from base64 import b64encode
@@ -24,6 +26,10 @@ LITELLM = "http://localhost:4000"
 GRAFANA = "http://localhost:3200"
 SEARXNG = "http://localhost:8080"
 PROM_UID, TEMPO_UID, LOKI_UID, PG_UID = "afimxbo42ap6oe", "dfipt8nyznn5sc", "praxen-loki", "praxen-litellm-pg"
+GATE_TAG = "health-gate"   # SpendLogs request_tags marker for gate traffic (same tag as scripts/route-resolve.py)
+# Config v4.29.0 / jev_gate v6 (OP JEV-LANES, 2026-10-28): the lane routers decline to their primary (classifier_fallback
+# default_model), every other router to LiteLLM's heuristic. Same names as jev_gate.py LANE_ROUTERS_DEFAULT; move both together.
+LANE_ROUTERS = {"array/reasoning", "array/fast", "array/coding"}
 
 def env(path, key):
     for line in (ROOT / path).read_text(encoding="utf-8", errors="replace").splitlines():
@@ -61,8 +67,8 @@ def main():
 
     master = env(".env", "LITELLM_MASTER_KEY")
     gpw = env(".env", "GRAFANA_ADMIN_PASSWORD")
-    go_key = env(".virtual-keys.env", "VKEY_MSTY_GO_WINPC") if (ROOT / ".virtual-keys.env").exists() else None
-    H = {"Authorization": f"Bearer {master}", "Content-Type": "application/json"}
+    go_key = env(".virtual-keys.env", "VKEY_FRONT_GO_WINPC") if (ROOT / ".virtual-keys.env").exists() else None
+    H = {"Authorization": f"Bearer {master}", "Content-Type": "application/json", "x-litellm-tags": GATE_TAG}
     G = {"Authorization": "Basic " + b64encode(f"admin:{gpw}".encode()).decode()}
 
     print("\nPRAXEN stack gate\n")
@@ -88,13 +94,13 @@ def main():
     gate("cost map remote + daily reload", s == 200 and cm.get("source") == "remote" and bool(rl.get("scheduled")),
          f"source={cm.get('source')} models={cm.get('model_count')} reload_every_h={rl.get('interval_hours')}")
 
-    # 3. routable catalog + every local-*/imac-* registered
+    # 3. routable catalog + every local-* registered (the imac-* tier left the config at v4.20.0, 2026-09-30)
     s, b = http(f"{LITELLM}/v1/models", H)
     ids = {m["id"] for m in (jbody(b) or {}).get("data", [])}
-    yaml_locals = sorted(set(re.findall(r"^\s*-\s*model_name:\s*((?:local|imac)-[\w.\-]+)", (ROOT / "litellm_config.yaml").read_text(encoding="utf-8"), re.M)))
+    yaml_locals = sorted(set(re.findall(r"^\s*-\s*model_name:\s*(local-[\w.\-]+)", (ROOT / "litellm_config.yaml").read_text(encoding="utf-8"), re.M)))
     missing = [m for m in yaml_locals if m not in ids]
     gate("catalog routable", s == 200 and len(ids) >= 500, f"{len(ids)} routable (count is upstream-driven, never a fixed target)")
-    gate("local/imac routes registered", not missing, f"{len(yaml_locals)} in YAML" + (f"; MISSING {missing}" if missing else ""))
+    gate("local routes registered", not missing, f"{len(yaml_locals)} in YAML" + (f"; MISSING {missing}" if missing else ""))
 
     # 3a. Every model_name and alias resolves to a live deployment (config v4.22.0, the operator 2026-10-02). /v1/models above lists
     #     a name even when the router no longer holds it: the proxy's model-sync job drops every entry whose params changed in
@@ -127,7 +133,12 @@ def main():
         with tlog.open("rb") as fh:
             fh.seek(start)
             ran = [l for l in fh.read().decode("utf-8", "replace").splitlines() if "execute_tool" in l]
-        gate("unsloth G-SEC (no server tool ran)", s == 200 and not ran, f"HTTP {s} in {time.time()-t:.1f}s execute_tool lines={len(ran)}")
+        # The guard must also REFUSE a call type LiteLLM does not know (it arrives as None): until 2026-10-07 the guard let it
+        # through, and POST /v1/realtime/client_secrets reached :8888 with the Unsloth key. Refused before any upstream call.
+        rs, rb = http(f"{LITELLM}/v1/realtime/client_secrets", H, json.dumps({"model": "gsec-unsloth-probe"}).encode(), timeout=60)
+        refused = rs == 400 and b"unsloth_guard" in rb
+        gate("unsloth G-SEC (no server tool ran)", s == 200 and not ran and refused,
+             f"HTTP {s} in {time.time()-t:.1f}s execute_tool lines={len(ran)} · unknown call type refused: {'yes' if refused else f'NO (HTTP {rs})'}")
 
     # 4. chain 200 (fast alias -> cloud primary; ~$0.0001)
     if not a.no_llm:
@@ -139,13 +150,23 @@ def main():
     else:
         gate("chain probe (fast) 200", True, "SKIPPED (--no-llm)")
 
-    # 5. allowlist enforcement (Go key must be refused a frontier model)
+    # 5. allowlist enforcement (Go key must be refused a frontier model). The 403 is raised at key lookup, before LiteLLM
+    #    reads headers, so only body metadata.tags reaches its SpendLogs row (probed 2026-10-07). The same 403 must also move
+    #    litellm_proxy_failed_requests_metric: that proves `prometheus` sits in litellm_settings.callbacks (config v4.25.1),
+    #    the only list the proxy's request-level failure hook walks (it is awaited before the response, so no race).
+    def proxy_failed():
+        _, raw = http(f"{LITELLM}/metrics/", timeout=30)
+        return sum(float(l.rsplit(" ", 1)[1]) for l in raw.decode("utf-8", "replace").splitlines()
+                   if l.startswith("litellm_proxy_failed_requests_metric_total{"))
     if go_key:
-        body = json.dumps({"model": "claude-opus-4-8", "max_tokens": 1, "messages": [{"role": "user", "content": "x"}]}).encode()
+        body = json.dumps({"model": "claude-opus-4-8", "max_tokens": 1, "messages": [{"role": "user", "content": "x"}],
+                           "metadata": {"tags": [GATE_TAG]}}).encode()
+        f0 = proxy_failed()
         s, b = http(f"{LITELLM}/v1/chat/completions", {"Authorization": f"Bearer {go_key}", "Content-Type": "application/json"}, body, timeout=30)
-        gate("allowlist 403 (front-go-winpc)", s in (401, 403), f"HTTP {s}")
+        moved = proxy_failed() - f0
+        gate("allowlist 403 (front-go-winpc)", s in (401, 403) and moved >= 1, f"HTTP {s} · request-level failure metric +{moved:g}")
     else:
-        gate("allowlist 403 (front-go-winpc)", False, ".virtual-keys.env / VKEY_MSTY_GO_WINPC not found")
+        gate("allowlist 403 (front-go-winpc)", False, ".virtual-keys.env / VKEY_FRONT_GO_WINPC not found")
 
     # 6. embedder dimension (verify by DIMENSION, never by echoed name)
     body = json.dumps({"model": "legacy/embed", "input": "dimension probe"}).encode()
@@ -154,11 +175,12 @@ def main():
     dims = len((d.get("data") or [{}])[0].get("embedding", []))
     gate("embed legacy/embed = 1024 dims", s == 200 and dims == 1024, f"HTTP {s} dims={dims} in {time.time()-t:.1f}s")
 
-    # 6b. TypeSafe Jev pass-through (config v4.14.0): the generic /typesafe route forwards to api.typesafe.ai with the
-    #     proxy's TYPESAFE_API_KEY injected; a jev-* name proves key + route + upstream in one probe.
+    # 6b. TypeSafe Jev through LiteLLM's NATIVE /typesafe/{path} route (v1.104.0; the YAML pass-through of v4.14.0 was retired
+    #     in v4.24.0): it forwards to api.typesafe.ai with the proxy's TYPESAFE_API_KEY injected. TypeSafe answers 403 to an
+    #     unauthenticated call (probed 2026-10-05), so a 200 listing jev-* models proves key + route + upstream in one probe.
     t = time.time(); s, b = http(f"{LITELLM}/typesafe/v1/models", H, timeout=30)
     names = [m.get("name") or m.get("id") for m in ((jbody(b) or {}).get("models") or (jbody(b) or {}).get("data") or [])]
-    gate("typesafe pass-through (/typesafe/v1/models)", s == 200 and any(str(n).startswith("jev") for n in names), f"HTTP {s} models={names} in {time.time()-t:.1f}s")
+    gate("typesafe native route (/typesafe/v1/models)", s == 200 and any(str(n).startswith("jev") for n in names), f"HTTP {s} models={names} in {time.time()-t:.1f}s")
 
     # 6c. Jev v2 (config v4.15.0, OP JEV pt2): the classifier plugin must be registered on EVERY complexity router (the two local
     #     routers joined at v4.15.0), and the array/* + go/* namespaces must list. /v1/model/info exposes each deployment's
@@ -177,11 +199,35 @@ def main():
         body = blk.split("\n", 1)[1] if "\n" in blk else ""
         if "auto_router/complexity_router" in body:
             yaml_routers[name] = "jev_gate.classifier_instance" in body
+    # v4.29.0: a lane router must decline to its primary (default_model), every other router to the heuristic.
     not_jev = sorted(n for n, c in routers.items()
-                     if c.get("classifier_type") != "custom" or c.get("classifier_fallback") != "heuristic" or not yaml_routers.get(n, False))
+                     if c.get("classifier_type") != "custom"
+                     or c.get("classifier_fallback") != ("default_model" if n in LANE_ROUTERS else "heuristic")
+                     or not yaml_routers.get(n, False))
     not_jev += sorted(n for n, ok in yaml_routers.items() if n not in routers)  # in YAML but not registered live
-    gate("jev classifier on every router", s == 200 and bool(routers) and not not_jev,
-         f"{len(routers)} routers in {time.time()-t:.1f}s" + (f"; NOT JEV: {not_jev}" if not_jev else f": {sorted(routers)}"))
+    # v4.29.0 lane + loop invariants, from the YAML on disk (config truth; the live routers above prove registration):
+    # a lane router's REASONING tier is its complexity_router_default_model (Jev routes down, never up), and no router's tier
+    # or default names another router. jev_gate v6 refuses such a router at runtime too; this catches it before traffic.
+    lane_bad = []
+    try:
+        import yaml
+        ycfg = yaml.safe_load(ytxt) or {}
+        yrouters = {e["model_name"]: e.get("litellm_params") or {} for e in ycfg.get("model_list") or []
+                    if str((e.get("litellm_params") or {}).get("model", "")).startswith("auto_router/")}
+        for n, lp in yrouters.items():
+            tiers = (lp.get("complexity_router_config") or {}).get("tiers") or {}
+            names = {(v.get("model_name") if isinstance(v, dict) else v) for tv in tiers.values()
+                     for v in (tv if isinstance(tv, list) else [tv])} | {lp.get("complexity_router_default_model")}
+            loops = sorted(m for m in names if m in yrouters)
+            if loops:
+                lane_bad.append(f"{n} -> router {loops}")
+            if n in LANE_ROUTERS and tiers.get("REASONING") != lp.get("complexity_router_default_model"):
+                lane_bad.append(f"{n}: REASONING tier != default")
+    except Exception as e:  # noqa: BLE001
+        lane_bad.append(f"lane check error: {e!r}"[:120])
+    gate("jev classifier on every router", s == 200 and bool(routers) and not not_jev and not lane_bad,
+         f"{len(routers)} routers in {time.time()-t:.1f}s" + (f"; NOT JEV: {not_jev}" if not_jev else f": {sorted(routers)}")
+         + (f"; LANE/LOOP: {lane_bad}" if lane_bad else ""))
     need = {"array/auto", "array/fast", "array/reasoning", "go/fast", "array/auto-local", "go/local"}
     missing_ns = sorted(need - set(ids))
     gate("array/* + go/* namespaces listed", not missing_ns, f"missing={missing_ns}" if missing_ns else "array/auto · array/fast · array/reasoning · go/fast · array/auto-local · go/local")
@@ -236,6 +282,56 @@ def main():
                 bad.append(want)
         gate("jev routes each tier (array/auto)", bool(tier_map) and bool(notes) and not bad,
              f"{' · '.join(notes)} in {time.time()-t:.0f}s" + (f"; MISMATCH on {bad}" if bad else ""))
+
+    # 6e. OP JEV-DECISIONS (config v4.28.0 / jev_gate v5, 2026-10-19): the OpenAI routers are classified by OpenAI Decisions
+    #     THROUGH LiteLLM (an in-process llm_router.adecisions call on the jev-decisions entry). One exemplar through
+    #     array/auto-openai: the chat must answer, Jev must not decline, praxen_decisions_calls_total{outcome="ok"} must move, and
+    #     SpendLogs must hold the sub-call (call_type adecisions, model_group jev-decisions) priced above zero. ~$0.0002 a run.
+    if a.no_llm:
+        gate("jev decisions via litellm (OpenAI router)", True, "SKIPPED (--no-llm)")
+    else:
+        def dec_counts():
+            _, raw = http(f"{LITELLM}/metrics/", timeout=30)
+            ok_calls = declined = 0.0
+            for line in raw.decode("utf-8", "replace").splitlines():
+                if line.startswith('praxen_decisions_calls_total{outcome="ok"}'):
+                    ok_calls = float(line.rsplit(" ", 1)[1])
+                elif line.startswith("praxen_jev_classifier_decision_total{") and 'router="array/auto-openai"' in line \
+                        and 'decision="declined"' in line:
+                    declined = float(line.rsplit(" ", 1)[1])
+            return ok_calls, declined
+
+        ok0, dec0 = dec_counts()
+        t = time.time()
+        since = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime(t - 2))
+        req = urllib.request.Request(f"{LITELLM}/v1/chat/completions", headers=H, method="POST", data=json.dumps(
+            {"model": "array/auto-openai", "max_tokens": 48, "messages": [{"role": "user", "content":
+             f"Summarize the trade-off between optimistic and pessimistic locking in one sentence. (gate {int(t)})"}]}).encode())
+        try:
+            with urllib.request.urlopen(req, timeout=180) as r:
+                s = r.status
+        except urllib.error.HTTPError as e:
+            s = e.code
+        except Exception:  # noqa: BLE001
+            s = 0
+        ok1, dec1 = dec_counts()
+        rows, spend = 0, 0.0
+        for _ in range(6):   # SpendLogs batches its writes
+            time.sleep(3)
+            sql = ("SELECT count(*), coalesce(sum(spend), 0) FROM \"LiteLLM_SpendLogs\" WHERE call_type = 'adecisions' "
+                   f"AND model_group = 'jev-decisions' AND \"startTime\" >= '{since}';")
+            q = subprocess.run(["docker", "exec", "-i", "praxen-postgres", "sh", "-c", 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -At -F "|"'],
+                               input=sql, capture_output=True, text=True)
+            try:
+                rows, spend = int(q.stdout.split("|")[0]), float(q.stdout.split("|")[1])
+            except (ValueError, IndexError):
+                rows, spend = 0, 0.0
+            if rows:
+                break
+        ok = s == 200 and ok1 - ok0 >= 1 and dec1 - dec0 < 1 and rows >= 1 and spend > 0
+        gate("jev decisions via litellm (OpenAI router)", ok,
+             f"chat HTTP {s} · decisions ok +{ok1 - ok0:.0f} · declined +{dec1 - dec0:.0f} · SpendLogs adecisions rows={rows} "
+             f"spend=${spend:.6f} in {time.time() - t:.0f}s")
 
     # 7. prometheus targets via grafana datasource proxy
     s, b = http(f"{GRAFANA}/api/datasources/proxy/uid/{PROM_UID}/api/v1/targets", G)

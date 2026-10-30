@@ -7,7 +7,7 @@ This script turns auto-import off on the record (PUT without `credential` keeps 
 provider) and registers each model id, so the list no longer depends on LiteLLM answering quickly.
 
 Re-run after every LiteLLM config change that adds or removes models:
-    python scripts/sync-gateway-models.py              # provider openai-compatible, key VKEY_MSTY_GATEWAY_WINPC
+    python scripts/sync-gateway-models.py              # provider openai-compatible, key VKEY_FRONT_GATEWAY_WINPC
     python scripts/sync-gateway-models.py --prune      # also delete registrations LiteLLM no longer serves
     python scripts/sync-gateway-models.py --dry-run
 Secrets are read from .env / .virtual-keys.env inside the script and never printed.
@@ -24,8 +24,9 @@ def not_for_gateway(mid):
     """Advised routes and intake-extract stay out of the Gateway picker (the operator 2026-09-29, config v4.18.0): a streamed chat on
     an advised route logs $0 spend and surfaces the advisor consult as a tool call, and intake-extract is a production route
     with its own key. Direct LiteLLM keys still reach all of them. gsec-unsloth-probe (config v4.19.0) is the gate's G-SEC probe
-    target, not a model anyone should pick."""
-    return "-advised" in mid or mid in ("intake-extract", "gsec-unsloth-probe")
+    target, not a model anyone should pick. jev-decisions (config v4.28.0) is jev_gate's Decisions classifier deployment, not a
+    chat model."""
+    return "-advised" in mid or mid in ("intake-extract", "gsec-unsloth-probe", "jev-decisions")
 
 
 def dotenv(path):
@@ -51,7 +52,7 @@ def http(method, url, headers, body=None, timeout=60):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--provider", default="openai-compatible")
-    ap.add_argument("--key-var", default="VKEY_MSTY_GATEWAY_WINPC", help="the LiteLLM key this Gateway record uses (.virtual-keys.env)")
+    ap.add_argument("--key-var", default="VKEY_FRONT_GATEWAY_WINPC", help="the LiteLLM key this Gateway record uses (.virtual-keys.env)")
     ap.add_argument("--prune", action="store_true")
     ap.add_argument("--dry-run", action="store_true")
     a = ap.parse_args()

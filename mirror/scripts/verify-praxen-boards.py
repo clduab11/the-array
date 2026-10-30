@@ -5,9 +5,10 @@ verify-praxen-boards.py — validation gate for the three PRAXEN boards (COMMAND
 Static: JSON parses · expected uid per file · no top-level id · unique panel ids · every datasource uid exists
         on the live Grafana · dashboard links keep time + variables.
 Live:   every PromQL / SQL / LogQL / TraceQL target is executed through Grafana's real datasource path
-        (POST /api/ds/query) with the dashboard variables set to their defaults (All => `.*`, textboxes empty)
-        and reported as HTTP status + frames/rows. Panels that return nothing are listed so an unexpected
-        "No data" cannot hide. Also checks provisioned=true per uid and that the two alert rules still load.
+        (POST /api/ds/query) with the dashboard variables set to their defaults (All => `.*`, textboxes empty,
+        TRAFFIC = its default) and reported as HTTP status + frames/rows; a target that uses TRAFFIC runs a second
+        time with TRAFFIC = all. Panels that return nothing are listed so an unexpected "No data" cannot hide.
+        Also checks provisioned=true per uid and that the three alert rules still load.
 
 USAGE
     python scripts/verify-praxen-boards.py                 # boards under grafana/dashboards
@@ -51,9 +52,12 @@ def http(url, hdr, data=None, timeout=60):
         return 0, str(e).encode()
 
 
-def interpolate(s: str, trace_id: str) -> str:
-    """Dashboard-variable defaults the way the frontend would send them (All => `.*`, textboxes empty)."""
+def interpolate(s: str, trace_id: str, traffic: str) -> str:
+    """Dashboard-variable defaults the way the frontend would send them (All => `.*`, textboxes empty). TRAFFIC is a
+    custom variable whose value is a regex of key aliases to leave OUT, so it must never become `.*` (that empties
+    every panel, and an empty panel is only a WARN)."""
     subs = {
+        "${traffic:raw}": traffic, "${traffic}": traffic, "$traffic": traffic,
         "${key:regex}": ".*", "${model:regex}": ".*", "${team:regex}": ".*",
         "$key": ".*", "$model": ".*", "$team": ".*",
         # logcontainer has no custom All value: Grafana joins the label values; Loki rejects an empty-compatible matcher
@@ -65,24 +69,24 @@ def interpolate(s: str, trace_id: str) -> str:
     return s
 
 
-def build_query(p, t, trace_id, from_ms, to_ms):
+def build_query(p, t, trace_id, from_ms, to_ms, traffic):
     ds = t.get("datasource") or p.get("datasource")
     uid = ds["uid"]
     q = {"refId": t.get("refId", "A"), "datasource": {"uid": uid, "type": DS_TYPES.get(uid, ds.get("type"))}, "intervalMs": 60000, "maxDataPoints": 500}
     if "expr" in t and DS_TYPES.get(uid) == "prometheus":
-        q.update({"expr": interpolate(t["expr"], trace_id), "instant": bool(t.get("instant")), "range": not t.get("instant")})
+        q.update({"expr": interpolate(t["expr"], trace_id, traffic), "instant": bool(t.get("instant")), "range": not t.get("instant")})
         if t.get("format"):
             q["format"] = t["format"]
     elif "rawSql" in t:
-        q.update({"rawSql": interpolate(t["rawSql"], trace_id), "format": t.get("format", "table"), "rawQuery": True})
+        q.update({"rawSql": interpolate(t["rawSql"], trace_id, traffic), "format": t.get("format", "table"), "rawQuery": True})
     elif "expr" in t and DS_TYPES.get(uid) == "loki":
-        q.update({"expr": interpolate(t["expr"], trace_id), "queryType": t.get("queryType", "range")})
+        q.update({"expr": interpolate(t["expr"], trace_id, traffic), "queryType": t.get("queryType", "range")})
     elif DS_TYPES.get(uid) == "tempo" and p["type"] == "traces":
         # the traces panel pastes a bare id into the TraceQL editor; the FRONTEND turns that into a trace lookup.
         # /api/ds/query has no such detection, so probe the same lookup through the backend's traceId query type.
-        q.update({"queryType": "traceId", "query": interpolate(t.get("query", ""), trace_id)})
+        q.update({"queryType": "traceId", "query": interpolate(t.get("query", ""), trace_id, traffic)})
     elif DS_TYPES.get(uid) == "tempo":
-        q.update({"queryType": "traceql", "query": interpolate(t.get("query", ""), trace_id), "tableType": t.get("tableType", "traces"), "limit": t.get("limit", 20)})
+        q.update({"queryType": "traceql", "query": interpolate(t.get("query", ""), trace_id, traffic), "tableType": t.get("tableType", "traces"), "limit": t.get("limit", 20)})
     else:
         return None
     return q
@@ -135,6 +139,10 @@ def main():
         missing = used - live_ds
         if missing: fails.append(f"{fname}: datasource uids not on live Grafana: {sorted(missing)}")
         print(f"  static: uid={board['uid']} panels={len(ids)} datasources={sorted(used)} links={[l.get('title') for l in board.get('links', [])]}")
+        # ${x:queryparam} renders `var-x=...` itself; a hand-written `var-x=` before it doubles the prefix and every filtered
+        # panel on the target board reads empty (live 09-18 to 10-07).
+        doubled = sorted(set(re.findall(r"var-(\w+)=\$\{\{?\1:queryparam", path.read_text(encoding="utf-8"))))
+        if doubled: fails.append(f"{fname}: doubled var- prefix before ${{x:queryparam}} for {doubled}")
 
         if a.skip_live:
             continue
@@ -145,12 +153,20 @@ def main():
         if s != 200 or not meta.get("provisioned"):
             fails.append(f"{fname}: not provisioned on live Grafana (HTTP {s})")
 
-        # execute every target
+        # execute every target: TRAFFIC at its default, and again at "all" where the target uses it
+        tv = next((v for v in board.get("templating", {}).get("list", []) if v.get("name") == "traffic"), None)
+        if tv is None:
+            fails.append(f"{fname}: no TRAFFIC variable"); continue
+        t_default = tv["current"]["value"]
+        t_all = next(o["value"] for o in tv["options"] if o["text"] == "all")
+        print(f"  TRAFFIC: default={t_default!r} all={t_all!r}")
         for p in board["panels"]:
             if p["type"] in ("row", "text"):
                 continue
-            for t in p.get("targets", []):
-                q = build_query(p, t, a.trace, frm, now)
+            runs = [(t, v, lbl) for t in p.get("targets", [])
+                    for v, lbl in [(t_default, "")] + ([(t_all, " [all]")] if "traffic" in json.dumps(t) else [])]
+            for t, traffic, label in runs:
+                q = build_query(p, t, a.trace, frm, now, traffic)
                 if q is None:
                     warns.append(f"{fname} #{p['id']} {t.get('refId')}: unrecognised target shape"); continue
                 body = json.dumps({"from": str(frm), "to": str(now), "queries": [q]}).encode()
@@ -164,16 +180,16 @@ def main():
                 err = res.get("error") or (res.get("errorSource") and res.get("error"))
                 tag = "ok " if (status == 200 and not err) else "ERR"
                 empty = " (empty)" if nf == 0 or nr == 0 else ""
-                print(f"  [{tag}] #{p['id']:<3} {t.get('refId')} {p['type']:<24} {p.get('title', '')[:58]:<58} frames={nf} rows={nr}{empty}")
+                print(f"  [{tag}] #{p['id']:<3} {t.get('refId')}{label:<6} {p['type']:<24} {p.get('title', '')[:58]:<58} frames={nf} rows={nr}{empty}")
                 if tag == "ERR":
-                    fails.append(f"{fname} #{p['id']} {t.get('refId')} ({p.get('title', '')[:40]}): HTTP {status} {str(err)[:160]}")
+                    fails.append(f"{fname} #{p['id']} {t.get('refId')}{label} ({p.get('title', '')[:40]}): HTTP {status} {str(err)[:160]}")
                 elif empty:
-                    warns.append(f"{fname} #{p['id']} {t.get('refId')} ({p.get('title', '')[:40]}): no data at defaults")
+                    warns.append(f"{fname} #{p['id']} {t.get('refId')}{label} ({p.get('title', '')[:40]}): no data at defaults")
 
     if not a.skip_live:
         s, b = http(f"{GRAFANA}/api/v1/provisioning/alert-rules", hdr)
         rules = {r["uid"] for r in json.loads(b)} if s == 200 else set()
-        need = {"praxen-key-over-watch", "praxen-total-over-plan"}
+        need = {"praxen-key-over-watch", "praxen-total-over-plan", "praxen-fallback-served"}
         print(f"\n  alert rules: {sorted(rules)}")
         if not need <= rules: fails.append(f"alert rules missing: {sorted(need - rules)}")
 

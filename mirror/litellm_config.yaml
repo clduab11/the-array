@@ -1,4 +1,4 @@
-# Sanitized structural mirror of the-array/litellm_config.yaml (2026-10-02). Comments and identity values
+# Sanitized structural mirror of the-array/litellm_config.yaml (2026-10-29). Comments and identity values
 # removed or replaced; budgets are placeholders. See mirror/README.md before restoring from it.
 general_settings:
   master_key: os.environ/LITELLM_MASTER_KEY
@@ -7,27 +7,17 @@ general_settings:
   always_include_stream_usage: true
   ui_access_mode: admin_only
   default_team_disabled: true
-  pass_through_endpoints:
-    - path: /typesafe
-      target: https://api.typesafe.ai
-      include_subpath: true
-      auth: true
-      headers:
-        Authorization: Bearer os.environ/TYPESAFE_API_KEY
-        content-type: application/json
-      cost_per_request: 2.0e-05
-      timeout: 30
+  disable_env_credential_login: true
 litellm_settings:
   success_callback:
-    - prometheus
     - otel
   failure_callback:
-    - prometheus
     - otel
   callbacks:
     - refusal_fallback.proxy_handler_instance
     - jev_gate.judge_instance
     - unsloth_guard.guard_instance
+    - prometheus
   service_callback:
     - prometheus_system
   turn_off_message_logging: true
@@ -47,7 +37,7 @@ litellm_settings:
   context_window_fallbacks:
     - local-gemma4-12b:
         - local-qwen3.5-4b
-    - local-lfm2.5-8b:
+    - local-sharp-spark-4b:
         - local-qwen3.5-4b
     - local-ministral-3b:
         - local-qwen3.5-4b
@@ -107,17 +97,17 @@ litellm_settings:
     - reasoning:
         - claude-sonnet-5
         - grok-4.5
-        - gemini-3.1-pro
+        - gemini-4-argon
         - local-gemma4-uncensored
     - praxen/reasoning:
         - claude-sonnet-5
         - grok-4.5
-        - gemini-3.1-pro
+        - gemini-4-argon
         - local-gemma4-uncensored
     - array/reasoning:
         - claude-sonnet-5
         - grok-4.5
-        - gemini-3.1-pro
+        - gemini-4-argon
         - local-gemma4-uncensored
     - array/deep-reasoning:
         - venice/openai-gpt-56-sol-pro
@@ -150,26 +140,26 @@ litellm_settings:
         - local-ministral-3b
     - coding:
         - kimi-k2.7-code
-        - mimo-v2.5
+        - mimo-v2.6-flash
         - venice-qwen3-coder
         - codestral
-        - local-lfm2.5-8b
+        - local-sharp-spark-4b
         - local-gemma4-12b
         - local-qwen3.5-4b
     - praxen/coding:
         - kimi-k2.7-code
-        - mimo-v2.5
+        - mimo-v2.6-flash
         - venice-qwen3-coder
         - codestral
-        - local-lfm2.5-8b
+        - local-sharp-spark-4b
         - local-gemma4-12b
         - local-qwen3.5-4b
     - array/coding:
         - kimi-k2.7-code
-        - mimo-v2.5
+        - mimo-v2.6-flash
         - venice-qwen3-coder
         - codestral
-        - local-lfm2.5-8b
+        - local-sharp-spark-4b
         - local-gemma4-12b
         - local-qwen3.5-4b
     - vision:
@@ -187,29 +177,27 @@ litellm_settings:
     - legacy-go/coding-lite:
         - glm-5.3-flash
         - gemini-3.6-flash
-        - laguna-s-2.1
-        - local-lfm2.5-8b
+        - local-sharp-spark-4b
         - local-gemma4-12b
         - local-qwen3.5-4b
     - go/coding-lite:
         - glm-5.3-flash
         - gemini-3.6-flash
-        - laguna-s-2.1
-        - local-lfm2.5-8b
+        - local-sharp-spark-4b
         - local-gemma4-12b
         - local-qwen3.5-4b
     - legacy-go/coding-balanced:
         - minimax-m3
         - kimi-k3
         - venice/e2ee-glm-5-2-p
-        - local-lfm2.5-8b
+        - local-sharp-spark-4b
         - local-gemma4-12b
         - local-qwen3.5-4b
     - go/coding-balanced:
         - minimax-m3
         - kimi-k3
         - venice/e2ee-glm-5-2-p
-        - local-lfm2.5-8b
+        - local-sharp-spark-4b
         - local-gemma4-12b
         - local-qwen3.5-4b
     - legacy-go/coding-heavy:
@@ -242,13 +230,13 @@ litellm_settings:
         - local-ministral-3b
     - legacy-go/reasoning:
         - claude-sonnet-5
-        - gemini-3.1-pro
+        - gemini-4-argon
         - grok-4.5
         - gpt-5.6-terra
         - local-gemma4-uncensored
     - go/reasoning:
         - claude-sonnet-5
-        - gemini-3.1-pro
+        - gemini-4-argon
         - grok-4.5
         - gpt-5.6-terra
         - local-gemma4-uncensored
@@ -303,7 +291,7 @@ litellm_settings:
     - reasoning:
         - claude-sonnet-5
         - grok-4.5
-        - gemini-3.1-pro
+        - gemini-4-argon
         - local-gemma4-uncensored
     - deep-reasoning:
         - venice/openai-gpt-56-sol-pro
@@ -320,10 +308,10 @@ litellm_settings:
         - local-ministral-3b
     - coding:
         - kimi-k2.7-code
-        - mimo-v2.5
+        - mimo-v2.6-flash
         - venice-qwen3-coder
         - codestral
-        - local-lfm2.5-8b
+        - local-sharp-spark-4b
         - local-gemma4-12b
         - local-qwen3.5-4b
     - private:
@@ -346,12 +334,12 @@ litellm_settings:
     - praxen/reasoning:
         - claude-sonnet-5
         - grok-4.5
-        - gemini-3.1-pro
+        - gemini-4-argon
         - local-gemma4-uncensored
     - array/reasoning:
         - claude-sonnet-5
         - grok-4.5
-        - gemini-3.1-pro
+        - gemini-4-argon
         - local-gemma4-uncensored
     - praxen/deep-reasoning:
         - venice/openai-gpt-56-sol-pro
@@ -381,18 +369,18 @@ litellm_settings:
         - local-ministral-3b
     - praxen/coding:
         - kimi-k2.7-code
-        - mimo-v2.5
+        - mimo-v2.6-flash
         - venice-qwen3-coder
         - codestral
-        - local-lfm2.5-8b
+        - local-sharp-spark-4b
         - local-gemma4-12b
         - local-qwen3.5-4b
     - array/coding:
         - kimi-k2.7-code
-        - mimo-v2.5
+        - mimo-v2.6-flash
         - venice-qwen3-coder
         - codestral
-        - local-lfm2.5-8b
+        - local-sharp-spark-4b
         - local-gemma4-12b
         - local-qwen3.5-4b
     - praxen/private:
@@ -424,29 +412,27 @@ litellm_settings:
     - legacy-go/coding-lite:
         - glm-5.3-flash
         - gemini-3.6-flash
-        - laguna-s-2.1
-        - local-lfm2.5-8b
+        - local-sharp-spark-4b
         - local-gemma4-12b
         - local-qwen3.5-4b
     - go/coding-lite:
         - glm-5.3-flash
         - gemini-3.6-flash
-        - laguna-s-2.1
-        - local-lfm2.5-8b
+        - local-sharp-spark-4b
         - local-gemma4-12b
         - local-qwen3.5-4b
     - legacy-go/coding-balanced:
         - minimax-m3
         - kimi-k3
         - venice/e2ee-glm-5-2-p
-        - local-lfm2.5-8b
+        - local-sharp-spark-4b
         - local-gemma4-12b
         - local-qwen3.5-4b
     - go/coding-balanced:
         - minimax-m3
         - kimi-k3
         - venice/e2ee-glm-5-2-p
-        - local-lfm2.5-8b
+        - local-sharp-spark-4b
         - local-gemma4-12b
         - local-qwen3.5-4b
     - legacy-go/coding-heavy:
@@ -479,13 +465,13 @@ litellm_settings:
         - local-ministral-3b
     - legacy-go/reasoning:
         - claude-sonnet-5
-        - gemini-3.1-pro
+        - gemini-4-argon
         - grok-4.5
         - gpt-5.6-terra
         - local-gemma4-uncensored
     - go/reasoning:
         - claude-sonnet-5
-        - gemini-3.1-pro
+        - gemini-4-argon
         - grok-4.5
         - gpt-5.6-terra
         - local-gemma4-uncensored
@@ -564,7 +550,7 @@ litellm_settings:
         - local-gemma4-uncensored
     - claude-opus-4-8:
         - claude-fable-5[1m]
-        - gemini-3.1-pro
+        - gemini-4-argon
         - claude-opus-4-6
         - local-gemma4-uncensored
     - claude-fable-5[1m]:
@@ -584,30 +570,34 @@ litellm_settings:
         - local-gemma4-uncensored
     - claude-opus-4-6:
         - claude-opus-4-8
-        - gemini-3.1-pro
+        - gemini-4-argon
         - gpt-5.4-pro
         - local-gemma4-uncensored
     - claude-opus-4-7:
         - claude-opus-4-8
         - claude-opus-4-6
-        - gemini-3.1-pro
+        - gemini-4-argon
         - local-gemma4-uncensored
     - gpt-5.4-pro:
         - claude-opus-4-8
-        - gemini-3.1-pro
+        - gemini-4-argon
         - local-gemma4-uncensored
     - gpt-5.5-pro:
         - claude-opus-4-8
-        - gemini-3.1-pro
+        - gemini-4-argon
         - local-gemma4-uncensored
     - gpt-5.6-sol:
         - claude-opus-4-8
         - gpt-5.5
-        - gemini-3.1-pro
+        - gemini-4-argon
         - local-gemma4-uncensored
     - gemini-3.1-pro:
         - claude-opus-4-8
         - gpt-5.4-pro
+        - local-gemma4-uncensored
+    - gemini-4-argon:
+        - gemini-3.1-pro
+        - claude-opus-4-8
         - local-gemma4-uncensored
     - claude-mythos-5:
         - claude-opus-4-8
@@ -659,7 +649,7 @@ litellm_settings:
         - claude-sonnet-5
         - gpt-5.4
         - grok-4.3
-        - gemini-3.1-pro
+        - gemini-4-argon
         - local-gemma4-uncensored
     - gpt-5.4:
         - claude-sonnet-4-6
@@ -668,7 +658,7 @@ litellm_settings:
     - gpt-5.5:
         - claude-sonnet-4-6
         - gpt-5.4
-        - gemini-3.1-pro
+        - gemini-4-argon
         - local-gemma4-uncensored
     - gpt-5.6-terra:
         - gpt-5.5
@@ -702,6 +692,11 @@ litellm_settings:
         - claude-sonnet-4-6
         - gpt-5.4
         - local-gemma4-uncensored
+    - mistral-large-4:
+        - mistral-large-3
+        - claude-sonnet-4-6
+        - gpt-5.4
+        - local-gemma4-uncensored
     - mistral-medium-latest:
         - claude-sonnet-4-6
         - gpt-5.5
@@ -727,7 +722,7 @@ litellm_settings:
         - gpt-5.4-mini
         - local-ministral-3b
     - gemini-3.6-flash:
-        - gemini-3.5-flash
+        - gemini-3.8-flash
         - gpt-5.4-mini
         - local-ministral-3b
     - gemini-3.1-flash-lite:
@@ -738,7 +733,7 @@ litellm_settings:
         - local-ministral-3b
     - gpt-5.4-mini:
         - gemini-3.5-flash
-        - claude-haiku-4-5
+        - claude-haiku-5-5
         - local-ministral-3b
     - gpt-5.4-nano:
         - gemini-3.1-flash-lite
@@ -760,15 +755,23 @@ litellm_settings:
         - gpt-5.4-mini
         - gemini-3.5-flash
         - local-ministral-3b
+    - claude-haiku-5-5:
+        - claude-haiku-4-5
+        - gpt-5.4-mini
+        - gemini-3.5-flash
+        - local-ministral-3b
     - claude-haiku-4-5-advised-opus:
+        - claude-haiku-5-5
         - claude-haiku-4-5
         - gpt-5.4-mini
         - local-ministral-3b
     - claude-haiku-4-5-advised-sonnet:
+        - claude-haiku-5-5
         - claude-haiku-4-5
         - gpt-5.4-mini
         - local-ministral-3b
     - intake-extract:
+        - claude-haiku-5-5
         - claude-haiku-4-5
         - gpt-5.4-mini
         - local-ministral-3b
@@ -796,26 +799,20 @@ litellm_settings:
         - local-qwen3.5-4b
     - grok-code:
         - kimi-k2.7-code
-        - mimo-v2.5
+        - mimo-v2.6-flash
         - venice-qwen3-coder
-        - local-lfm2.5-8b
+        - local-sharp-spark-4b
         - local-gemma4-12b
         - local-qwen3.5-4b
     - kimi-k2.7-code:
-        - mimo-v2.5
-        - grok-code
-        - local-gemma4-12b
-        - local-qwen3.5-4b
-    - mimo-v2.5:
-        - kimi-k2.7-code
+        - mimo-v2.6-flash
         - grok-code
         - local-gemma4-12b
         - local-qwen3.5-4b
     - mimo-v2.6-flash:
         - glm-5.3-flash
         - gemini-3.6-flash
-        - laguna-s-2.1
-        - local-lfm2.5-8b
+        - local-sharp-spark-4b
         - local-gemma4-12b
         - local-qwen3.5-4b
     - venice-qwen3-coder:
@@ -824,7 +821,7 @@ litellm_settings:
         - local-gemma4-12b
         - local-qwen3.5-4b
     - gemini-2.5-pro:
-        - gemini-3.1-pro
+        - gemini-4-argon
         - claude-opus-4-6
         - local-gemma4-uncensored
     - venice/e2ee-glm-5-3-p:
@@ -904,7 +901,6 @@ router_settings:
     reasoning:
       model: claude-sonnet-5-5
       hidden: true
-    array/reasoning: claude-sonnet-5-5
     praxen/reasoning:
       model: claude-sonnet-5-5
       hidden: true
@@ -918,14 +914,12 @@ router_settings:
     fast:
       model: gemini-3.1-flash-lite
       hidden: true
-    array/fast: gemini-3.1-flash-lite
     praxen/fast:
       model: gemini-3.1-flash-lite
       hidden: true
     coding:
       model: grok-code
       hidden: true
-    array/coding: grok-code
     praxen/coding:
       model: grok-code
       hidden: true
@@ -992,8 +986,6 @@ model_list:
       model: openai/responses/gpt-6-astra
       api_key: os.environ/OPENAI_API_KEY
       store: false
-      max_budget: 1.0
-      budget_duration: 1mo
       service_tier: priority
       additional_drop_params:
         - max_tokens
@@ -1009,15 +1001,11 @@ model_list:
     litellm_params:
       model: openai/gpt-5.6-sol
       api_key: os.environ/OPENAI_API_KEY
-      max_budget: 1.0
-      budget_duration: 1mo
       service_tier: priority
   - model_name: gpt-5.5-priority
     litellm_params:
       model: openai/gpt-5.5
       api_key: os.environ/OPENAI_API_KEY
-      max_budget: 1.0
-      budget_duration: 1mo
       service_tier: priority
   - model_name: praxen/openai-router
     litellm_params:
@@ -1028,6 +1016,7 @@ model_list:
         classifier_plugin: jev_gate.classifier_instance
         classifier_plugin_timeout_ms: 4000
         classifier_fallback: heuristic
+        max_tokens_from_tier_model: false
         tiers:
           SIMPLE: gpt-5.6-luna
           MEDIUM: gpt-5.6-terra
@@ -1038,8 +1027,6 @@ model_list:
     litellm_params:
       model: anthropic/claude-fable-5-1
       api_key: os.environ/ANTHROPIC_API_KEY
-      max_budget: 1.0
-      budget_duration: 1mo
       cache_control_injection_points:
         - location: message
           role: system
@@ -1047,8 +1034,6 @@ model_list:
     litellm_params:
       model: anthropic/claude-opus-5-5
       api_key: os.environ/ANTHROPIC_API_KEY
-      max_budget: 1.0
-      budget_duration: 1mo
       cache_control_injection_points:
         - location: message
           role: system
@@ -1056,8 +1041,6 @@ model_list:
     litellm_params:
       model: anthropic/claude-fable-5
       api_key: os.environ/ANTHROPIC_API_KEY
-      max_budget: 1.0
-      budget_duration: 1mo
       cache_control_injection_points:
         - location: message
           role: system
@@ -1065,8 +1048,6 @@ model_list:
     litellm_params:
       model: anthropic/claude-fable-5
       api_key: os.environ/ANTHROPIC_API_KEY
-      max_budget: 1.0
-      budget_duration: 1mo
       cache_control_injection_points:
         - location: message
           role: system
@@ -1074,8 +1055,6 @@ model_list:
     litellm_params:
       model: anthropic/claude-opus-4-6
       api_key: os.environ/ANTHROPIC_API_KEY
-      max_budget: 1.0
-      budget_duration: 1mo
       cache_control_injection_points:
         - location: message
           role: system
@@ -1083,14 +1062,10 @@ model_list:
     litellm_params:
       model: anthropic/claude-opus-4-7
       api_key: os.environ/ANTHROPIC_API_KEY
-      max_budget: 1.0
-      budget_duration: 1mo
   - model_name: claude-opus-4-8
     litellm_params:
       model: anthropic/claude-opus-4-8
       api_key: os.environ/ANTHROPIC_API_KEY
-      max_budget: 1.0
-      budget_duration: 1mo
       cache_control_injection_points:
         - location: message
           role: system
@@ -1098,8 +1073,6 @@ model_list:
     litellm_params:
       model: anthropic/claude-mythos-5
       api_key: os.environ/ANTHROPIC_API_KEY
-      max_budget: 1.0
-      budget_duration: 1mo
       cache_control_injection_points:
         - location: message
           role: system
@@ -1108,30 +1081,27 @@ model_list:
       model: gemini/gemini-3.1-pro-preview
       service_tier: default
       api_key: os.environ/GEMINI_API_KEY
-      max_budget: 1.0
-      budget_duration: 1mo
+  - model_name: gemini-4-argon
+    litellm_params:
+      model: gemini/gemini-4-argon
+      service_tier: default
+      api_key: os.environ/GEMINI_API_KEY
   - model_name: gpt-5.4-pro
     litellm_params:
       model: openai/gpt-5.4-pro
       api_key: os.environ/OPENAI_API_KEY
       service_tier: default
-      max_budget: 1.0
-      budget_duration: 1mo
   - model_name: gpt-5.5-pro
     litellm_params:
       model: openai/gpt-5.5-pro
       api_key: os.environ/OPENAI_API_KEY
       service_tier: default
-      max_budget: 1.0
-      budget_duration: 1mo
   - model_name: gpt-6-astra
     litellm_params:
       model: openai/responses/gpt-6-astra
       api_key: os.environ/OPENAI_API_KEY
       store: false
       service_tier: default
-      max_budget: 1.0
-      budget_duration: 1mo
       additional_drop_params:
         - max_tokens
         - temperature
@@ -1148,20 +1118,22 @@ model_list:
       api_key: os.environ/OPENAI_API_KEY
       service_tier: default
       store: false
-      max_budget: 1.0
-      budget_duration: 1mo
       additional_drop_params:
         - temperature
         - top_p
         - top_logprobs
+  - model_name: jev-decisions
+    litellm_params:
+      model: openai/gpt-6-luna
+      api_key: os.environ/OPENAI_API_KEY
+    model_info:
+      mode: decisions
   - model_name: gpt-6-luna
     litellm_params:
       model: openai/responses/gpt-6-luna
       api_key: os.environ/OPENAI_API_KEY
       service_tier: default
       store: false
-      max_budget: 1.0
-      budget_duration: 1mo
       additional_drop_params:
         - temperature
         - top_p
@@ -1172,8 +1144,6 @@ model_list:
       api_key: os.environ/OPENAI_API_KEY
       service_tier: default
       store: false
-      max_budget: 1.0
-      budget_duration: 1mo
       additional_drop_params:
         - temperature
         - top_p
@@ -1183,14 +1153,10 @@ model_list:
       model: openai/gpt-5.6-sol
       api_key: os.environ/OPENAI_API_KEY
       service_tier: default
-      max_budget: 1.0
-      budget_duration: 1mo
   - model_name: claude-sonnet-4-6
     litellm_params:
       model: anthropic/claude-sonnet-4-6
       api_key: os.environ/ANTHROPIC_API_KEY
-      max_budget: 1.0
-      budget_duration: 1mo
       cache_control_injection_points:
         - location: message
           role: system
@@ -1198,8 +1164,6 @@ model_list:
     litellm_params:
       model: anthropic/claude-sonnet-5
       api_key: os.environ/ANTHROPIC_API_KEY
-      max_budget: 1.0
-      budget_duration: 1mo
       extra_headers:
         anthropic-beta: advisor-tool-2026-03-01
       cache_control_injection_points:
@@ -1209,8 +1173,6 @@ model_list:
     litellm_params:
       model: anthropic/claude-sonnet-5-5
       api_key: os.environ/ANTHROPIC_API_KEY
-      max_budget: 1.0
-      budget_duration: 1mo
       cache_control_injection_points:
         - location: message
           role: system
@@ -1218,8 +1180,6 @@ model_list:
     litellm_params:
       model: anthropic/claude-sonnet-5
       api_key: os.environ/ANTHROPIC_API_KEY
-      max_budget: 1.0
-      budget_duration: 1mo
       timeout: 600
       extra_headers:
         anthropic-beta: advisor-tool-2026-03-01
@@ -1239,8 +1199,6 @@ model_list:
     litellm_params:
       model: anthropic/claude-sonnet-5-5
       api_key: os.environ/ANTHROPIC_API_KEY
-      max_budget: 1.0
-      budget_duration: 1mo
       timeout: 600
       extra_headers:
         anthropic-beta: advisor-tool-2026-03-01
@@ -1260,8 +1218,6 @@ model_list:
     litellm_params:
       model: anthropic/claude-opus-5-5
       api_key: os.environ/ANTHROPIC_API_KEY
-      max_budget: 1.0
-      budget_duration: 1mo
       timeout: 600
       extra_headers:
         anthropic-beta: advisor-tool-2026-03-01
@@ -1282,29 +1238,21 @@ model_list:
       model: openai/gpt-4.1
       api_key: os.environ/OPENAI_API_KEY
       service_tier: default
-      max_budget: 1.0
-      budget_duration: 1mo
   - model_name: gpt-5.4
     litellm_params:
       model: openai/gpt-5.4
       api_key: os.environ/OPENAI_API_KEY
       service_tier: default
-      max_budget: 1.0
-      budget_duration: 1mo
   - model_name: gpt-5.5
     litellm_params:
       model: openai/gpt-5.5
       api_key: os.environ/OPENAI_API_KEY
       service_tier: default
-      max_budget: 1.0
-      budget_duration: 1mo
   - model_name: gpt-5.6-terra
     litellm_params:
       model: openai/gpt-5.6-terra
       api_key: os.environ/OPENAI_API_KEY
       service_tier: default
-      max_budget: 1.0
-      budget_duration: 1mo
   - model_name: grok-4.3
     litellm_params:
       model: xai/grok-4.3
@@ -1312,8 +1260,6 @@ model_list:
       additional_drop_params:
         - presence_penalty
         - logit_bias
-      max_budget: 1.0
-      budget_duration: 1mo
   - model_name: grok-4.5
     litellm_params:
       model: xai/grok-4.5
@@ -1321,8 +1267,6 @@ model_list:
       additional_drop_params:
         - presence_penalty
         - logit_bias
-      max_budget: 1.0
-      budget_duration: 1mo
   - model_name: grok-4.7
     litellm_params:
       model: xai/grok-4.7
@@ -1330,8 +1274,6 @@ model_list:
       additional_drop_params:
         - presence_penalty
         - logit_bias
-      max_budget: 1.0
-      budget_duration: 1mo
   - model_name: grok-4.6
     litellm_params:
       model: xai/grok-4.6
@@ -1339,8 +1281,6 @@ model_list:
       additional_drop_params:
         - presence_penalty
         - logit_bias
-      max_budget: 1.0
-      budget_duration: 1mo
   - model_name: grok-4.20
     litellm_params:
       model: xai/grok-4.20
@@ -1348,48 +1288,45 @@ model_list:
       additional_drop_params:
         - presence_penalty
         - logit_bias
-      max_budget: 1.0
-      budget_duration: 1mo
   - model_name: magistral
     litellm_params:
       model: mistral/magistral-medium-latest
       api_key: os.environ/MISTRAL_API_KEY
-      max_budget: 1.0
-      budget_duration: 1mo
   - model_name: mistral-large-3
     litellm_params:
-      model: mistral/mistral-large-latest
+      model: mistral/mistral-large-2512
       api_key: os.environ/MISTRAL_API_KEY
-      max_budget: 1.0
-      budget_duration: 1mo
+  - model_name: mistral-large-4
+    litellm_params:
+      model: mistral/mistral-large-4
+      api_key: os.environ/MISTRAL_API_KEY
   - model_name: mistral-small-4
     litellm_params:
       model: mistral/mistral-small-latest
       api_key: os.environ/MISTRAL_API_KEY
-      max_budget: 1.0
-      budget_duration: 1mo
   - model_name: gemini-2.5-pro
     litellm_params:
       model: gemini/gemini-2.5-pro
       service_tier: default
       api_key: os.environ/GEMINI_API_KEY
-      max_budget: 1.0
-      budget_duration: 1mo
   - model_name: claude-haiku-4-5
     litellm_params:
       model: anthropic/claude-haiku-4-5
       api_key: os.environ/ANTHROPIC_API_KEY
-      max_budget: 1.0
-      budget_duration: 1mo
+      cache_control_injection_points:
+        - location: message
+          role: system
+  - model_name: claude-haiku-5-5
+    litellm_params:
+      model: anthropic/claude-haiku-5-5
+      api_key: os.environ/ANTHROPIC_API_KEY
       cache_control_injection_points:
         - location: message
           role: system
   - model_name: claude-haiku-4-5-advised-opus
     litellm_params:
-      model: anthropic/claude-haiku-4-5
+      model: anthropic/claude-haiku-5-5
       api_key: os.environ/ANTHROPIC_API_KEY
-      max_budget: 1.0
-      budget_duration: 1mo
       timeout: 600
       extra_headers:
         anthropic-beta: advisor-tool-2026-03-01
@@ -1407,10 +1344,8 @@ model_list:
           role: system
   - model_name: claude-haiku-4-5-advised-sonnet
     litellm_params:
-      model: anthropic/claude-haiku-4-5
+      model: anthropic/claude-haiku-5-5
       api_key: os.environ/ANTHROPIC_API_KEY
-      max_budget: 1.0
-      budget_duration: 1mo
       timeout: 600
       extra_headers:
         anthropic-beta: advisor-tool-2026-03-01
@@ -1428,10 +1363,8 @@ model_list:
           role: system
   - model_name: intake-extract
     litellm_params:
-      model: anthropic/claude-haiku-4-5
+      model: anthropic/claude-haiku-5-5
       api_key: os.environ/ANTHROPIC_API_KEY
-      max_budget: 1.0
-      budget_duration: 1mo
       timeout: 600
       extra_headers:
         anthropic-beta: advisor-tool-2026-03-01
@@ -1451,64 +1384,46 @@ model_list:
     litellm_params:
       model: cohere_chat/command-r7b-12-2024
       api_key: os.environ/COHERE_API_KEY
-      max_budget: 1.0
-      budget_duration: 1mo
   - model_name: gemini-2.5-flash
     litellm_params:
       model: gemini/gemini-2.5-flash
       service_tier: default
       api_key: os.environ/GEMINI_API_KEY
-      max_budget: 1.0
-      budget_duration: 1mo
   - model_name: gemini-3-flash
     litellm_params:
       model: gemini/gemini-3-flash-preview
       service_tier: default
       api_key: os.environ/GEMINI_API_KEY
-      max_budget: 1.0
-      budget_duration: 1mo
   - model_name: gemini-3.1-flash-lite
     litellm_params:
       model: gemini/gemini-3.1-flash-lite
       service_tier: default
       api_key: os.environ/GEMINI_API_KEY
-      max_budget: 1.0
-      budget_duration: 1mo
   - model_name: gpt-4.1-mini
     litellm_params:
       model: openai/gpt-4.1-mini
       api_key: os.environ/OPENAI_API_KEY
       service_tier: default
-      max_budget: 1.0
-      budget_duration: 1mo
   - model_name: gpt-5.4-mini
     litellm_params:
       model: openai/gpt-5.4-mini
       api_key: os.environ/OPENAI_API_KEY
       service_tier: default
-      max_budget: 1.0
-      budget_duration: 1mo
   - model_name: gpt-5.4-nano
     litellm_params:
       model: openai/gpt-5.4-nano
       api_key: os.environ/OPENAI_API_KEY
       service_tier: default
-      max_budget: 1.0
-      budget_duration: 1mo
   - model_name: gpt-5.6-luna
     litellm_params:
       model: openai/gpt-5.6-luna
       api_key: os.environ/OPENAI_API_KEY
       service_tier: default
-      max_budget: 1.0
-      budget_duration: 1mo
   - model_name: mercury-2
     litellm_params:
       model: openai/mercury-2
       api_base: https://api.inceptionlabs.ai/v1
       api_key: os.environ/MERCURY_API_KEY
-      max_budget: 1.0
-      budget_duration: 1mo
       input_cost_per_token: 2.5e-07
       output_cost_per_token: 7.5e-07
       cache_read_input_token_cost: 2.5e-08
@@ -1517,8 +1432,6 @@ model_list:
       model: openai/mercury-2.5
       api_base: https://api.inceptionlabs.ai/v1
       api_key: os.environ/MERCURY_API_KEY
-      max_budget: 1.0
-      budget_duration: 1mo
       max_tokens: 2048
       input_cost_per_token: 2.0e-07
       output_cost_per_token: 7.5e-07
@@ -1527,20 +1440,14 @@ model_list:
     litellm_params:
       model: mistral/mistral-small-latest
       api_key: os.environ/MISTRAL_API_KEY
-      max_budget: 1.0
-      budget_duration: 1mo
   - model_name: codestral
     litellm_params:
       model: mistral/codestral-latest
       api_key: os.environ/MISTRAL_API_KEY
-      max_budget: 1.0
-      budget_duration: 1mo
   - model_name: devstral-2
     litellm_params:
       model: mistral/mistral-medium-latest
       api_key: os.environ/MISTRAL_API_KEY
-      max_budget: 1.0
-      budget_duration: 1mo
   - model_name: grok-code
     litellm_params:
       model: xai/grok-build-0.1
@@ -1548,21 +1455,9 @@ model_list:
       additional_drop_params:
         - presence_penalty
         - logit_bias
-      max_budget: 1.0
-      budget_duration: 1mo
   - model_name: kimi-k2.7-code
     litellm_params:
       model: openrouter/moonshotai/kimi-k2.7-code
-      extra_body:
-        provider:
-          data_collection: deny
-          zdr: true
-      api_key: os.environ/OPENROUTER_API_KEY
-      max_budget: 1.0
-      budget_duration: 1mo
-  - model_name: mimo-v2.5
-    litellm_params:
-      model: openrouter/xiaomi/mimo-v2.5
       extra_body:
         provider:
           data_collection: deny
@@ -1666,16 +1561,6 @@ model_list:
       output_cost_per_token: 9.0e-07
       max_budget: 1.0
       budget_duration: 1mo
-  - model_name: openrouter-free
-    litellm_params:
-      model: openrouter/qwen/qwen3.8-27b:free
-      extra_body:
-        provider:
-          data_collection: deny
-          zdr: true
-      api_key: os.environ/OPENROUTER_API_KEY
-      max_budget: 1.0
-      budget_duration: 1mo
   - model_name: venice/abliteration-abliterated-model-large-v2
     litellm_params:
       model: openai/abliteration-abliterated-model-large-v2
@@ -1770,15 +1655,6 @@ model_list:
       output_cost_per_token: 6.0e-05
       cache_read_input_token_cost: 1.2e-06
       cache_creation_input_token_cost: 1.5e-05
-  - model_name: venice/claude-sonnet-4-5
-    litellm_params:
-      model: openai/claude-sonnet-4-5
-      api_base: https://api.venice.ai/api/v1
-      api_key: os.environ/VENICE_API_KEY
-      input_cost_per_token: 3.75e-06
-      output_cost_per_token: 1.875e-05
-      cache_read_input_token_cost: 3.75e-07
-      cache_creation_input_token_cost: 4.69e-06
   - model_name: venice/claude-sonnet-4-6
     litellm_params:
       model: openai/claude-sonnet-4-6
@@ -1797,14 +1673,6 @@ model_list:
       output_cost_per_token: 1.25e-05
       cache_read_input_token_cost: 2.5e-07
       cache_creation_input_token_cost: 3.125e-06
-  - model_name: venice/deepseek-v3.2
-    litellm_params:
-      model: openai/deepseek-v3.2
-      api_base: https://api.venice.ai/api/v1
-      api_key: os.environ/VENICE_API_KEY
-      input_cost_per_token: 3.3e-07
-      output_cost_per_token: 4.8e-07
-      cache_read_input_token_cost: 1.6e-07
   - model_name: venice/deepseek-v4-flash
     litellm_params:
       model: openai/deepseek-v4-flash
@@ -2333,9 +2201,9 @@ model_list:
       model: openai/qwen3-5-35b-a3b
       api_base: https://api.venice.ai/api/v1
       api_key: os.environ/VENICE_API_KEY
-      input_cost_per_token: 3.125e-07
-      output_cost_per_token: 1.25e-06
-      cache_read_input_token_cost: 1.5625e-07
+      input_cost_per_token: 1.5e-07
+      output_cost_per_token: 1.0e-06
+      cache_read_input_token_cost: 5.0e-08
   - model_name: venice/qwen3-5-397b-a17b
     litellm_params:
       model: openai/qwen3-5-397b-a17b
@@ -2343,13 +2211,6 @@ model_list:
       api_key: os.environ/VENICE_API_KEY
       input_cost_per_token: 7.5e-07
       output_cost_per_token: 4.5e-06
-  - model_name: venice/qwen3-5-9b
-    litellm_params:
-      model: openai/qwen3-5-9b
-      api_base: https://api.venice.ai/api/v1
-      api_key: os.environ/VENICE_API_KEY
-      input_cost_per_token: 1.0e-07
-      output_cost_per_token: 1.5e-07
   - model_name: venice/qwen3-6-27b
     litellm_params:
       model: openai/qwen3-6-27b
@@ -2434,14 +2295,6 @@ model_list:
       input_cost_per_token: 5.5e-07
       output_cost_per_token: 2.65e-06
       cache_read_input_token_cost: 1.1e-07
-  - model_name: venice/zai-org-glm-4.7-flash
-    litellm_params:
-      model: openai/zai-org-glm-4.7-flash
-      api_base: https://api.venice.ai/api/v1
-      api_key: os.environ/VENICE_API_KEY
-      input_cost_per_token: 6.0e-08
-      output_cost_per_token: 4.0e-07
-      cache_read_input_token_cost: 1.0e-08
   - model_name: venice/zai-org-glm-5
     litellm_params:
       model: openai/zai-org-glm-5
@@ -2468,38 +2321,28 @@ model_list:
       cache_read_input_token_cost: 2.6e-07
   - model_name: gemini-3.5-flash
     litellm_params:
-      model: gemini/gemini-3.5-flash
+      model: gemini/gemini-3.6-flash
       service_tier: default
       api_key: os.environ/GEMINI_API_KEY
-      max_budget: 1.0
-      budget_duration: 1mo
   - model_name: gemini-3.6-flash
     litellm_params:
       model: gemini/gemini-3.6-flash
       service_tier: default
       api_key: os.environ/GEMINI_API_KEY
-      max_budget: 1.0
-      budget_duration: 1mo
   - model_name: gemini-3.8-flash
     litellm_params:
       model: gemini/gemini-3.8-flash
       service_tier: default
       api_key: os.environ/GEMINI_API_KEY
-      max_budget: 1.0
-      budget_duration: 1mo
   - model_name: gemini-3.7-flash
     litellm_params:
-      model: gemini/gemini-3.7-flash
+      model: gemini/gemini-3.8-flash
       service_tier: default
       api_key: os.environ/GEMINI_API_KEY
-      max_budget: 1.0
-      budget_duration: 1mo
   - model_name: mistral-medium-latest
     litellm_params:
       model: mistral/mistral-medium-latest
       api_key: os.environ/MISTRAL_API_KEY
-      max_budget: 1.0
-      budget_duration: 1mo
   - model_name: anthropic/*
     litellm_params:
       model: anthropic/*
@@ -2542,14 +2385,10 @@ model_list:
     litellm_params:
       model: perplexity/perplexity/sonar
       api_key: os.environ/PERPLEXITY_API_KEY
-      max_budget: 1.0
-      budget_duration: 1mo
   - model_name: pplx-pro-search
     litellm_params:
       model: perplexity/preset/low
       api_key: os.environ/PERPLEXITY_API_KEY
-      max_budget: 1.0
-      budget_duration: 1mo
   - model_name: perplexity/*
     litellm_params:
       model: perplexity/*
@@ -2588,21 +2427,10 @@ model_list:
       api_key: os.environ/OPENROUTER_API_KEY
       max_budget: 1.0
       budget_duration: 1mo
-  - model_name: laguna-s-2.1
-    litellm_params:
-      model: openrouter/poolside/laguna-s-2.1
-      extra_body:
-        provider:
-          data_collection: deny
-      api_key: os.environ/OPENROUTER_API_KEY
-      max_budget: 1.0
-      budget_duration: 1mo
   - model_name: claude-opus-5
     litellm_params:
       model: anthropic/claude-opus-5
       api_key: os.environ/ANTHROPIC_API_KEY
-      max_budget: 1.0
-      budget_duration: 1mo
   - model_name: gpt-5.6-sol-pro
     litellm_params:
       model: openrouter/openai/gpt-5.6-sol-pro
@@ -2623,8 +2451,6 @@ model_list:
       model: openai/gpt-image-2.5-flare
       api_key: os.environ/OPENAI_API_KEY
       service_tier: default
-      max_budget: 1.0
-      budget_duration: 1mo
     model_info:
       mode: image_generation
   - model_name: gpt-image-2.5-sunburst
@@ -2632,13 +2458,16 @@ model_list:
       model: openai/gpt-image-2.5-sunburst
       api_key: os.environ/OPENAI_API_KEY
       service_tier: default
-      max_budget: 1.0
-      budget_duration: 1mo
     model_info:
       mode: image_generation
   - model_name: gemini-3-pro-image
     litellm_params:
       model: gemini/gemini-3-pro-image
+      service_tier: default
+      api_key: os.environ/GEMINI_API_KEY
+  - model_name: gemini-nano-banana-2.1
+    litellm_params:
+      model: gemini/gemini-nano-banana-2.1
       service_tier: default
       api_key: os.environ/GEMINI_API_KEY
   - model_name: legacy-go/local
@@ -2650,6 +2479,7 @@ model_list:
         classifier_plugin: jev_gate.classifier_instance
         classifier_plugin_timeout_ms: 4000
         classifier_fallback: heuristic
+        max_tokens_from_tier_model: false
         tiers:
           SIMPLE: local-ministral-3b
           MEDIUM: local-qwen3.5-4b
@@ -2658,23 +2488,13 @@ model_list:
         default_model: local-ministral-3b
   - model_name: local-gemma4-uncensored
     litellm_params:
-      model: openai/groxaxo/Huihui-gemma-4-26B-A4B-it-abliterated-GGUF:UD-Q4_K_S
+      model: openai/mradermacher/gemma-4-26B-A4B-it-heretic-ara-v2-GGUF:Q4_K_S
       api_base: os.environ/UNSLOTH_PC_URL
       api_key: os.environ/UNSLOTH_PC_API_KEY
       timeout: 900
     model_info:
       supports_vision: false
       supports_function_calling: true
-  - model_name: local-lfm2.5-8b
-    litellm_params:
-      model: openai/unsloth/LFM2.5-8B-A1B-GGUF:UD-Q4_K_XL
-      api_base: os.environ/UNSLOTH_PC_URL
-      api_key: os.environ/UNSLOTH_PC_API_KEY
-      max_tokens: 8192
-      timeout: 420
-    model_info:
-      supports_function_calling: true
-      supports_vision: false
   - model_name: local-gemma4-12b
     litellm_params:
       model: openai/unsloth/gemma-4-12B-it-qat-GGUF:UD-Q4_K_XL
@@ -2707,12 +2527,72 @@ model_list:
       supports_vision: false
   - model_name: local-huihui-gpt
     litellm_params:
-      model: openai/huihui-ai/Huihui-gpt-oss-20b-mxfp4-abliterated-v2:mxfp4
+      model: openai/mradermacher/Huihui-gpt-oss-20b-BF16-abliterated-v2-GGUF:MXFP4_MOE
       custom_llm_provider: openai
       api_base: os.environ/UNSLOTH_PC_URL
       api_key: os.environ/UNSLOTH_PC_API_KEY
       max_tokens: 8192
       timeout: 1200
+    model_info:
+      supports_function_calling: true
+      supports_vision: false
+  - model_name: local-nemotron-bolt-e4b
+    litellm_params:
+      model: openai/unsloth/NVIDIA-Nemotron-3.5-Bolt-E4B-GGUF:UD-Q4_K_XL
+      api_base: os.environ/UNSLOTH_PC_URL
+      api_key: os.environ/UNSLOTH_PC_API_KEY
+      max_tokens: 8192
+      timeout: 480
+    model_info:
+      supports_function_calling: true
+      supports_vision: true
+  - model_name: local-gemma4-e2b
+    litellm_params:
+      model: openai/unsloth/gemma-4-E2B-it-qat-GGUF:UD-Q4_K_XL
+      api_base: os.environ/UNSLOTH_PC_URL
+      api_key: os.environ/UNSLOTH_PC_API_KEY
+      max_tokens: 8192
+      timeout: 240
+    model_info:
+      supports_function_calling: true
+      supports_vision: true
+  - model_name: local-lfm3-omni-2b
+    litellm_params:
+      model: openai/LiquidAI/LFM3-Omni-2B-GGUF:Q8_0
+      api_base: os.environ/UNSLOTH_PC_URL
+      api_key: os.environ/UNSLOTH_PC_API_KEY
+      max_tokens: 8192
+      timeout: 240
+    model_info:
+      supports_function_calling: true
+      supports_vision: true
+  - model_name: local-lfm3-1.7b-uncensored
+    litellm_params:
+      model: openai/AtomicChat/LFM3-1.7B-Uncensored-GGUF:Q6_K
+      api_base: os.environ/UNSLOTH_PC_URL
+      api_key: os.environ/UNSLOTH_PC_API_KEY
+      max_tokens: 8192
+      timeout: 240
+    model_info:
+      supports_function_calling: true
+      supports_vision: false
+  - model_name: local-lfm2.5-24b
+    litellm_params:
+      model: openai/unsloth/LFM2.5-24B-A2B-GGUF:UD-IQ3_XXS
+      api_base: os.environ/UNSLOTH_PC_URL
+      api_key: os.environ/UNSLOTH_PC_API_KEY
+      max_tokens: 8192
+      timeout: 600
+    model_info:
+      supports_function_calling: true
+      supports_vision: false
+  - model_name: local-nemotron-lightning-30b
+    litellm_params:
+      model: openai/unsloth/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-GGUF:MXFP4_MOE
+      api_base: os.environ/UNSLOTH_PC_URL
+      api_key: os.environ/UNSLOTH_PC_API_KEY
+      max_tokens: 8192
+      timeout: 3000
     model_info:
       supports_function_calling: true
       supports_vision: false
@@ -2729,7 +2609,7 @@ model_list:
       supports_vision: true
   - model_name: local-qwen3.5-4b
     litellm_params:
-      model: openai/HauhauCS/Qwen3.5-4B-Uncensored-HauhauCS-Aggressive:Q6_K
+      model: openai/HauhauCS/Qwen3.5-4B-Uncensored-HauhauCS-Aggressive:Q4_K_M
       api_base: os.environ/UNSLOTH_PC_URL
       api_key: os.environ/UNSLOTH_PC_API_KEY
       max_tokens: 8192
@@ -2739,7 +2619,7 @@ model_list:
       supports_function_calling: true
   - model_name: gsec-unsloth-probe
     litellm_params:
-      model: openai/lmstudio-community/Ministral-3-3B-Instruct-2512-GGUF:Q6_K
+      model: openai/unsloth/Ministral-3-3B-Instruct-2512-GGUF:UD-Q4_K_XL
       api_base: os.environ/UNSLOTH_PC_URL
       api_key: os.environ/UNSLOTH_PC_API_KEY
       max_tokens: 1024
@@ -2748,7 +2628,7 @@ model_list:
       supports_function_calling: true
   - model_name: local-ministral-3b
     litellm_params:
-      model: openai/lmstudio-community/Ministral-3-3B-Instruct-2512-GGUF:Q6_K
+      model: openai/unsloth/Ministral-3-3B-Instruct-2512-GGUF:UD-Q4_K_XL
       api_base: os.environ/UNSLOTH_PC_URL
       api_key: os.environ/UNSLOTH_PC_API_KEY
       max_tokens: 8192
@@ -2773,6 +2653,7 @@ model_list:
         classifier_plugin: jev_gate.classifier_instance
         classifier_plugin_timeout_ms: 4000
         classifier_fallback: heuristic
+        max_tokens_from_tier_model: false
         tiers:
           SIMPLE: local-ministral-3b
           MEDIUM: local-qwen3.5-4b
@@ -2788,11 +2669,12 @@ model_list:
         classifier_plugin: jev_gate.classifier_instance
         classifier_plugin_timeout_ms: 4000
         classifier_fallback: heuristic
+        max_tokens_from_tier_model: false
         tiers:
           SIMPLE: local-ministral-3b
           MEDIUM: gpt-5.6-luna
           COMPLEX: claude-sonnet-5-5
-          REASONING: gpt-6.1-sol
+          REASONING: gemini-4-argon
         default_model: gpt-5.6-luna
   - model_name: array/auto-openai
     litellm_params:
@@ -2803,6 +2685,7 @@ model_list:
         classifier_plugin: jev_gate.classifier_instance
         classifier_plugin_timeout_ms: 4000
         classifier_fallback: heuristic
+        max_tokens_from_tier_model: false
         tiers:
           SIMPLE: gpt-5.6-luna
           MEDIUM: gpt-5.6-terra
@@ -2818,6 +2701,7 @@ model_list:
         classifier_plugin: jev_gate.classifier_instance
         classifier_plugin_timeout_ms: 4000
         classifier_fallback: heuristic
+        max_tokens_from_tier_model: false
         tiers:
           SIMPLE: local-ministral-3b
           MEDIUM: local-qwen3.5-4b
@@ -2833,9 +2717,58 @@ model_list:
         classifier_plugin: jev_gate.classifier_instance
         classifier_plugin_timeout_ms: 4000
         classifier_fallback: heuristic
+        max_tokens_from_tier_model: false
         tiers:
           SIMPLE: local-ministral-3b
           MEDIUM: local-qwen3.5-4b
           COMPLEX: local-gemma4-12b
           REASONING: local-gemma4-12b
         default_model: local-ministral-3b
+  - model_name: array/reasoning
+    litellm_params:
+      model: auto_router/complexity_router
+      complexity_router_default_model: claude-sonnet-5-5
+      complexity_router_config:
+        classifier_type: custom
+        classifier_plugin: jev_gate.classifier_instance
+        classifier_plugin_timeout_ms: 4000
+        classifier_fallback: default_model
+        max_tokens_from_tier_model: false
+        tiers:
+          SIMPLE: grok-4.5
+          MEDIUM: grok-4.5
+          COMPLEX: claude-sonnet-5-5
+          REASONING: claude-sonnet-5-5
+        default_model: claude-sonnet-5-5
+  - model_name: array/fast
+    litellm_params:
+      model: auto_router/complexity_router
+      complexity_router_default_model: gemini-3.1-flash-lite
+      complexity_router_config:
+        classifier_type: custom
+        classifier_plugin: jev_gate.classifier_instance
+        classifier_plugin_timeout_ms: 4000
+        classifier_fallback: default_model
+        max_tokens_from_tier_model: false
+        tiers:
+          SIMPLE: gpt-5.6-luna
+          MEDIUM: gpt-5.6-luna
+          COMPLEX: gemini-3.1-flash-lite
+          REASONING: gemini-3.1-flash-lite
+        default_model: gemini-3.1-flash-lite
+  - model_name: array/coding
+    litellm_params:
+      model: auto_router/complexity_router
+      complexity_router_default_model: grok-code
+      complexity_router_config:
+        classifier_type: custom
+        classifier_plugin: jev_gate.classifier_instance
+        classifier_plugin_timeout_ms: 4000
+        classifier_fallback: default_model
+        max_tokens_from_tier_model: false
+        tiers:
+          SIMPLE: codestral
+          MEDIUM: codestral
+          COMPLEX: grok-code
+          REASONING: grok-code
+        default_model: grok-code

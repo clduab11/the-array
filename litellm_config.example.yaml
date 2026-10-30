@@ -56,7 +56,11 @@ litellm_settings:
   # routes listed under content_policy_fallbacks it asks TypeSafe Jev whether the reply actually answered,
   # and a confident "refused"/"non_answer" verdict walks the same chain. With TYPESAFE_API_KEY unset it does
   # nothing. Remove it (and the pass-through above) if you do not want that vendor in the path.
-  callbacks: ["refusal_fallback.proxy_handler_instance", "jev_gate.judge_instance"]
+  # unsloth_guard.guard_instance (litellm/unsloth_guard.py) runs before every call that lands on the Unsloth
+  # host, fallbacks included: it keeps only standard chat parameters, forces Unsloth's server-side tools off,
+  # and refuses non-chat calls (embeddings go to LOCAL_EMBED_URL instead). Keep it whenever a route points
+  # at Unsloth Desktop: without it, any caller with a gateway key could ask Unsloth to run code on the host.
+  callbacks: ["refusal_fallback.proxy_handler_instance", "jev_gate.judge_instance", "unsloth_guard.guard_instance"]
   service_callback: ["prometheus_system"]
   turn_off_message_logging: true   # prompts/completions never reach trace or log backends
   # Single-tenant posture: the scrape job runs inside the same private network,
@@ -290,15 +294,18 @@ model_list:
       budget_duration: 1mo
 
   # ---------------------------------------------------------------------------
-  # Local tier (LM Studio, OpenAI-compatible). WINDOWS_LM_STUDIO_URL is the base
+  # Local tier (Unsloth Desktop, OpenAI-compatible). UNSLOTH_PC_URL is the base
   # URL as seen from INSIDE the proxy container - probe it from the container's
   # network namespace before trusting it; the host reaching it proves nothing.
+  # Unsloth runs server-side tools for any keyed caller that asks for them; the
+  # reference deployment strips those request fields in a gateway callback
+  # (mirror/litellm/unsloth_guard.py) so no client can switch them on.
   # ---------------------------------------------------------------------------
   - model_name: local-chat-example
     litellm_params:
       model: openai/local-served-model-id   # openai/ = litellm route prefix; the rest is the server's own id
-      api_base: os.environ/WINDOWS_LM_STUDIO_URL
-      api_key: not-needed
+      api_base: os.environ/UNSLOTH_PC_URL
+      api_key: os.environ/UNSLOTH_PC_API_KEY
       # Both knobs are sized from MEASURED throughput, not guessed: at roughly
       # 40 tok/s, 8192 output tokens is about 205 s of decode plus a cold load,
       # so a 360 s clock covers it. Re-measure after any runtime, quantization or
@@ -317,7 +324,7 @@ model_list:
   - model_name: local-embed-example
     litellm_params:
       model: openai/local-embedding-model-id
-      api_base: os.environ/WINDOWS_LM_STUDIO_URL
+      api_base: os.environ/LOCAL_EMBED_URL   # a separate embedding server keeps the chat model resident
       api_key: not-needed
       input_cost_per_token: 0
       output_cost_per_token: 0

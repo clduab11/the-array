@@ -26,6 +26,33 @@
   "templating": {
     "list": [
       {
+        "name": "traffic",
+        "label": "TRAFFIC",
+        "type": "custom",
+        "query": "clients : None|sandbox-probe, all : a^",
+        "options": [
+          {
+            "selected": true,
+            "text": "clients",
+            "value": "None|sandbox-probe"
+          },
+          {
+            "selected": false,
+            "text": "all",
+            "value": "a^"
+          }
+        ],
+        "current": {
+          "selected": true,
+          "text": "clients",
+          "value": "None|sandbox-probe"
+        },
+        "multi": false,
+        "includeAll": false,
+        "hide": 0,
+        "description": "clients = leave out the health gate, other master-key calls and the operator probe key; all = every request"
+      },
+      {
         "name": "key",
         "label": "KEY",
         "type": "query",
@@ -62,15 +89,11 @@
         "label": "MODEL",
         "type": "query",
         "datasource": {
-          "type": "prometheus",
-          "uid": "afimxbo42ap6oe"
+          "type": "grafana-postgresql-datasource",
+          "uid": "praxen-litellm-pg"
         },
-        "definition": "label_values(litellm_proxy_total_requests_metric_total, requested_model)",
-        "query": {
-          "qryType": 1,
-          "query": "label_values(litellm_proxy_total_requests_metric_total, requested_model)",
-          "refId": "var-model"
-        },
+        "definition": "SELECT n AS __value FROM (SELECT COALESCE(NULLIF(metadata->>'original_model_group',''), model_group) AS n FROM \"LiteLLM_SpendLogs\" WHERE $__timeFilter(\"startTime\") AND ('${traffic:raw}' = 'a^' OR NOT (COALESCE(request_tags, '[]'::jsonb) @> '[\"health-gate\"]'::jsonb OR (COALESCE(metadata->>'user_api_key_alias','') = '' AND COALESCE(metadata->>'user_api_key_user_id','') = 'default_user_id') OR COALESCE(metadata->>'user_api_key_alias','') ~ '^(?:${traffic:raw})$')) UNION SELECT model_group FROM \"LiteLLM_SpendLogs\" WHERE $__timeFilter(\"startTime\") AND ('${traffic:raw}' = 'a^' OR NOT (COALESCE(request_tags, '[]'::jsonb) @> '[\"health-gate\"]'::jsonb OR (COALESCE(metadata->>'user_api_key_alias','') = '' AND COALESCE(metadata->>'user_api_key_user_id','') = 'default_user_id') OR COALESCE(metadata->>'user_api_key_alias','') ~ '^(?:${traffic:raw})$'))) x WHERE COALESCE(n, '') <> '' ORDER BY 1",
+        "query": "SELECT n AS __value FROM (SELECT COALESCE(NULLIF(metadata->>'original_model_group',''), model_group) AS n FROM \"LiteLLM_SpendLogs\" WHERE $__timeFilter(\"startTime\") AND ('${traffic:raw}' = 'a^' OR NOT (COALESCE(request_tags, '[]'::jsonb) @> '[\"health-gate\"]'::jsonb OR (COALESCE(metadata->>'user_api_key_alias','') = '' AND COALESCE(metadata->>'user_api_key_user_id','') = 'default_user_id') OR COALESCE(metadata->>'user_api_key_alias','') ~ '^(?:${traffic:raw})$')) UNION SELECT model_group FROM \"LiteLLM_SpendLogs\" WHERE $__timeFilter(\"startTime\") AND ('${traffic:raw}' = 'a^' OR NOT (COALESCE(request_tags, '[]'::jsonb) @> '[\"health-gate\"]'::jsonb OR (COALESCE(metadata->>'user_api_key_alias','') = '' AND COALESCE(metadata->>'user_api_key_user_id','') = 'default_user_id') OR COALESCE(metadata->>'user_api_key_alias','') ~ '^(?:${traffic:raw})$'))) x WHERE COALESCE(n, '') <> '' ORDER BY 1",
         "refresh": 2,
         "regex": "",
         "sort": 1,
@@ -256,7 +279,7 @@
       },
       "options": {
         "mode": "html",
-        "content": "<style>\n/* THEME STRATEGY (rewritten 2026-08-05 after a live-mode bug):\n   Do NOT key off Grafana's `body.theme-dark` class. Grafana serves that class hardcoded\n   in the initial HTML and then swaps themes via CSS-in-JS WITHOUT updating it, so a\n   `body.theme-dark` selector matches permanently and the banner rendered dark inside a\n   light dashboard. It looked correct only under /render, because the image renderer\n   bakes ?theme= into the served page.\n   Instead this panel is theme-AGNOSTIC: transparent background and inherited text\n   colour mean it is automatically whatever Grafana is. Hierarchy comes from opacity,\n   not from hardcoded greys. Accents are duotone mid-tones that clear contrast on both\n   #EEF1F4 and #06080A. prefers-color-scheme then lifts the accent for dark, which is\n   what tracks the operating system's light/dark switch when Grafana's theme pref is \"system\". */\n.praxen-hud{--pa:#2E7D9A;--pg:#4A6B8A;--pok:#2F8F72;--pw:#B0862A;--pc:#A8453F;\n  --pline:rgba(127,127,127,.28);--pglow:none}\n@media (prefers-color-scheme: dark){\n  .praxen-hud{--pa:#5AB0CE;--pg:#8DA3BA;--pok:#3F8F7E;--pw:#C9A227;--pc:#B85C5C;\n    --pline:rgba(160,170,180,.22);--pglow:0 0 10px rgba(90,176,206,.30)}\n}\n.praxen-hud{font-family:'JetBrains Mono','SF Mono',Menlo,Consolas,monospace;position:relative;box-sizing:border-box;color:inherit;\n  padding:12px 16px 10px 18px;background:transparent;border:1px solid var(--pline);\n  border-left:3px solid var(--pa);border-radius:3px;overflow:hidden}\n.praxen-hud *{box-sizing:border-box}\n.praxen-hud .ph-tick{position:absolute;width:12px;height:12px;opacity:.55;border-color:var(--pa)}\n.praxen-hud .ph-tl{top:0;left:0;border-top:1px solid;border-left:1px solid}\n.praxen-hud .ph-tr{top:0;right:0;border-top:1px solid;border-right:1px solid}\n.praxen-hud .ph-br{bottom:0;right:0;border-bottom:1px solid;border-right:1px solid}\n.praxen-hud .ph-top{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:8px}\n.praxen-hud .ph-mark{color:var(--pa);font-size:21px;font-weight:700;letter-spacing:3px;text-shadow:var(--pglow)}\n/* inherited colour + opacity => correct in BOTH themes with no detection */\n.praxen-hud .ph-mark2{font-size:21px;font-weight:700;letter-spacing:3px;opacity:.62}\n.praxen-hud .ph-live{color:var(--pok);font-size:10px;font-weight:700;letter-spacing:2px;\n  border:1px solid var(--pok);border-radius:2px;padding:2px 8px}\n.praxen-hud .ph-sub{font-size:10.5px;letter-spacing:1.4px;margin-top:4px;text-transform:uppercase;opacity:.62}\n.praxen-hud .ph-bar{display:flex;align-items:center;flex-wrap:wrap;gap:12px;margin-top:8px;\n  padding-top:7px;border-top:1px solid var(--pline)}\n.praxen-hud .ph-lbl{font-size:9px;letter-spacing:2px;text-transform:uppercase;opacity:.55}\n.praxen-hud .ph-st{display:inline-flex;align-items:center;gap:5px;font-size:10px;letter-spacing:1px}\n.praxen-hud .ph-dot{display:inline-block;width:7px;height:7px;border-radius:50%}\n.praxen-hud .ph-pill{font-size:10px;letter-spacing:1px;border:1px solid;border-radius:2px;padding:2px 7px}\n.praxen-hud .ph-div{width:1px;height:13px;background:var(--pline)}\n.praxen-hud a.ph-pill{text-decoration:none}.praxen-hud a.ph-pill:hover{filter:brightness(1.15)}\n</style>\n<div class=\"praxen-hud\">\n  <div class=\"ph-tick ph-tl\"></div><div class=\"ph-tick ph-tr\"></div><div class=\"ph-tick ph-br\"></div>\n  <div class=\"ph-top\">\n    <div><span class=\"ph-mark\">PRAXEN</span><span class=\"ph-mark2\">&nbsp;//&nbsp;COMMAND</span></div>\n    <span class=\"ph-live\">&#9679;&nbsp;LIVE</span>\n  </div>\n  <div class=\"ph-sub\">is anything broken, overspending, degraded or off-policy right now? &nbsp;//&nbsp; litellm proxy · stack · spend truth (spendlogs) · flow · live model telemetry · request log · verbose logs</div>\n  <div class=\"ph-bar\">\n    <span class=\"ph-lbl\">Status</span><span class=\"ph-st\" style=\"color:var(--pok)\"><span class=\"ph-dot\" style=\"background:var(--pok)\"></span>OK</span><span class=\"ph-st\" style=\"color:var(--pw)\"><span class=\"ph-dot\" style=\"background:var(--pw)\"></span>WATCH</span><span class=\"ph-st\" style=\"color:var(--pc)\"><span class=\"ph-dot\" style=\"background:var(--pc)\"></span>CRIT</span>\n    <span class=\"ph-div\"></span>\n    <span class=\"ph-lbl\">Boards</span>\n    <a class=\"ph-pill\" style=\"color:var(--pa);border-color:var(--pa);font-weight:700\" href=\"/d/praxen-command/praxen-command?${__url_time_range}&var-key=${key:queryparam}&var-model=${model:queryparam}&var-team=${team:queryparam}&var-interval=${interval:queryparam}\">COMMAND</a> <a class=\"ph-pill\" style=\"color:var(--pg);border-color:var(--pg)\" href=\"/d/praxen-routing/praxen-routing?${__url_time_range}&var-key=${key:queryparam}&var-model=${model:queryparam}&var-team=${team:queryparam}&var-interval=${interval:queryparam}\">ROUTING</a> <a class=\"ph-pill\" style=\"color:var(--pg);border-color:var(--pg)\" href=\"/d/praxen-forensics/praxen-forensics?${__url_time_range}&var-key=${key:queryparam}&var-model=${model:queryparam}&var-team=${team:queryparam}&var-interval=${interval:queryparam}\">FORENSICS</a>\n  </div>\n</div>",
+        "content": "<style>\n/* THEME STRATEGY (rewritten 2026-08-05 after a live-mode bug):\n   Do NOT key off Grafana's `body.theme-dark` class. Grafana serves that class hardcoded\n   in the initial HTML and then swaps themes via CSS-in-JS WITHOUT updating it, so a\n   `body.theme-dark` selector matches permanently and the banner rendered dark inside a\n   light dashboard. It looked correct only under /render, because the image renderer\n   bakes ?theme= into the served page.\n   Instead this panel is theme-AGNOSTIC: transparent background and inherited text\n   colour mean it is automatically whatever Grafana is. Hierarchy comes from opacity,\n   not from hardcoded greys. Accents are duotone mid-tones that clear contrast on both\n   #EEF1F4 and #06080A. prefers-color-scheme then lifts the accent for dark, which is\n   what tracks the operating system's light/dark switch when Grafana's theme pref is \"system\". */\n.praxen-hud{--pa:#2E7D9A;--pg:#4A6B8A;--pok:#2F8F72;--pw:#B0862A;--pc:#A8453F;\n  --pline:rgba(127,127,127,.28);--pglow:none}\n@media (prefers-color-scheme: dark){\n  .praxen-hud{--pa:#5AB0CE;--pg:#8DA3BA;--pok:#3F8F7E;--pw:#C9A227;--pc:#B85C5C;\n    --pline:rgba(160,170,180,.22);--pglow:0 0 10px rgba(90,176,206,.30)}\n}\n.praxen-hud{font-family:'JetBrains Mono','SF Mono',Menlo,Consolas,monospace;position:relative;box-sizing:border-box;color:inherit;\n  padding:12px 16px 10px 18px;background:transparent;border:1px solid var(--pline);\n  border-left:3px solid var(--pa);border-radius:3px;overflow:hidden}\n.praxen-hud *{box-sizing:border-box}\n.praxen-hud .ph-tick{position:absolute;width:12px;height:12px;opacity:.55;border-color:var(--pa)}\n.praxen-hud .ph-tl{top:0;left:0;border-top:1px solid;border-left:1px solid}\n.praxen-hud .ph-tr{top:0;right:0;border-top:1px solid;border-right:1px solid}\n.praxen-hud .ph-br{bottom:0;right:0;border-bottom:1px solid;border-right:1px solid}\n.praxen-hud .ph-top{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:8px}\n.praxen-hud .ph-mark{color:var(--pa);font-size:21px;font-weight:700;letter-spacing:3px;text-shadow:var(--pglow)}\n/* inherited colour + opacity => correct in BOTH themes with no detection */\n.praxen-hud .ph-mark2{font-size:21px;font-weight:700;letter-spacing:3px;opacity:.62}\n.praxen-hud .ph-live{color:var(--pok);font-size:10px;font-weight:700;letter-spacing:2px;\n  border:1px solid var(--pok);border-radius:2px;padding:2px 8px}\n.praxen-hud .ph-sub{font-size:10.5px;letter-spacing:1.4px;margin-top:4px;text-transform:uppercase;opacity:.62}\n.praxen-hud .ph-bar{display:flex;align-items:center;flex-wrap:wrap;gap:12px;margin-top:8px;\n  padding-top:7px;border-top:1px solid var(--pline)}\n.praxen-hud .ph-lbl{font-size:9px;letter-spacing:2px;text-transform:uppercase;opacity:.55}\n.praxen-hud .ph-st{display:inline-flex;align-items:center;gap:5px;font-size:10px;letter-spacing:1px}\n.praxen-hud .ph-dot{display:inline-block;width:7px;height:7px;border-radius:50%}\n.praxen-hud .ph-pill{font-size:10px;letter-spacing:1px;border:1px solid;border-radius:2px;padding:2px 7px}\n.praxen-hud .ph-div{width:1px;height:13px;background:var(--pline)}\n.praxen-hud a.ph-pill{text-decoration:none}.praxen-hud a.ph-pill:hover{filter:brightness(1.15)}\n</style>\n<div class=\"praxen-hud\">\n  <div class=\"ph-tick ph-tl\"></div><div class=\"ph-tick ph-tr\"></div><div class=\"ph-tick ph-br\"></div>\n  <div class=\"ph-top\">\n    <div><span class=\"ph-mark\">PRAXEN</span><span class=\"ph-mark2\">&nbsp;//&nbsp;COMMAND</span></div>\n    <span class=\"ph-live\">&#9679;&nbsp;LIVE</span>\n  </div>\n  <div class=\"ph-sub\">is anything broken, overspending, degraded or off-policy right now? &nbsp;//&nbsp; litellm proxy · stack · spend truth (spendlogs) · flow · live model telemetry · request log · verbose logs</div>\n  <div class=\"ph-bar\">\n    <span class=\"ph-lbl\">Status</span><span class=\"ph-st\" style=\"color:var(--pok)\"><span class=\"ph-dot\" style=\"background:var(--pok)\"></span>OK</span><span class=\"ph-st\" style=\"color:var(--pw)\"><span class=\"ph-dot\" style=\"background:var(--pw)\"></span>WATCH</span><span class=\"ph-st\" style=\"color:var(--pc)\"><span class=\"ph-dot\" style=\"background:var(--pc)\"></span>CRIT</span>\n    <span class=\"ph-div\"></span>\n    <span class=\"ph-lbl\">Boards</span>\n    <a class=\"ph-pill\" style=\"color:var(--pa);border-color:var(--pa);font-weight:700\" href=\"/d/praxen-command/praxen-command?${__url_time_range}&${traffic:queryparam}&${key:queryparam}&${model:queryparam}&${team:queryparam}&${interval:queryparam}\">COMMAND</a> <a class=\"ph-pill\" style=\"color:var(--pg);border-color:var(--pg)\" href=\"/d/praxen-routing/praxen-routing?${__url_time_range}&${traffic:queryparam}&${key:queryparam}&${model:queryparam}&${team:queryparam}&${interval:queryparam}\">ROUTING</a> <a class=\"ph-pill\" style=\"color:var(--pg);border-color:var(--pg)\" href=\"/d/praxen-forensics/praxen-forensics?${__url_time_range}&${traffic:queryparam}&${key:queryparam}&${model:queryparam}&${team:queryparam}&${interval:queryparam}\">FORENSICS</a>\n  </div>\n</div>",
         "code": {
           "language": "html",
           "showLineNumbers": false,
@@ -288,7 +311,7 @@
       "id": 101,
       "type": "stat",
       "title": "ACTIVE WATCHES",
-      "description": "How many spend watches are firing right now, out of all the watch lines Grafana checks (one per API key plus the monthly total). A watch is a warning that a key, or the whole proxy, is past 80% of its share of the monthly plan. A watch never blocks anything.",
+      "description": "How many alerts are firing right now, out of all the checks Grafana runs: one spend watch per API key and one for the monthly total. A spend watch warns that a key, or the whole proxy, is past 80% of its share of the monthly plan. Alerts never block anything.",
       "datasource": {
         "type": "prometheus",
         "uid": "afimxbo42ap6oe"
@@ -398,24 +421,23 @@
     {
       "id": 9,
       "type": "stat",
-      "title": "ROUTE SUCCESS",
-      "description": "Share of model calls the proxy completed successfully in the selected time range, counted at the point where the proxy hands a request to a model. Under 99% deserves a look; under 90% something is failing repeatedly. Respects the KEY, MODEL and TEAM pickers at the top.",
+      "title": "REQUEST SUCCESS",
+      "description": "Share of requests that got an answer in the selected time range, one count per request: a request a backup model answered counts as answered. Under 99% deserves a look; under 90% something is failing repeatedly. Respects the TRAFFIC, KEY, MODEL and TEAM pickers at the top (TRAFFIC = clients leaves out the health check's own test calls).",
       "datasource": {
-        "type": "prometheus",
-        "uid": "afimxbo42ap6oe"
+        "type": "grafana-postgresql-datasource",
+        "uid": "praxen-litellm-pg"
       },
       "targets": [
         {
           "refId": "A",
           "datasource": {
-            "type": "prometheus",
-            "uid": "afimxbo42ap6oe"
+            "type": "grafana-postgresql-datasource",
+            "uid": "praxen-litellm-pg"
           },
-          "expr": "sum(increase(litellm_deployment_success_responses_total{api_key_alias=~\"$key\",requested_model=~\"$model\",team_alias=~\"$team\"}[$__range])) / clamp_min(sum(increase(litellm_deployment_total_requests_total{api_key_alias=~\"$key\",requested_model=~\"$model\",team_alias=~\"$team\"}[$__range])), 1)",
-          "legendFormat": "success",
+          "format": "table",
+          "rawQuery": true,
           "editorMode": "code",
-          "range": true,
-          "instant": false
+          "rawSql": "SELECT round(1 - count(*) FILTER (WHERE status = 'failure')::numeric / NULLIF(count(*), 0), 4) AS \"success\" FROM \"LiteLLM_SpendLogs\" WHERE $__timeFilter(\"startTime\") AND COALESCE(metadata->>'user_api_key_alias','') ~ '^(?:${key:regex})$' AND (COALESCE(model_group,'') ~ '^(?:${model:regex})$' OR COALESCE(metadata->>'original_model_group','') ~ '^(?:${model:regex})$') AND COALESCE(metadata->>'user_api_key_team_alias','') ~ '^(?:${team:regex})$' AND ('${traffic:raw}' = 'a^' OR NOT (COALESCE(request_tags, '[]'::jsonb) @> '[\"health-gate\"]'::jsonb OR (COALESCE(metadata->>'user_api_key_alias','') = '' AND COALESCE(metadata->>'user_api_key_user_id','') = 'default_user_id') OR COALESCE(metadata->>'user_api_key_alias','') ~ '^(?:${traffic:raw})$'))"
         }
       ],
       "fieldConfig": {
@@ -476,31 +498,30 @@
     {
       "id": 102,
       "type": "stat",
-      "title": "API ERROR RATE",
-      "description": "Percentage of requests where the model provider answered with an error. The big number is the latest reading; the shaded line is the whole time range. Respects KEY and TEAM (the failure counter does not record the requested model, so MODEL does not apply).",
+      "title": "ERROR RATE // requests",
+      "description": "Percentage of requests that failed, per INTERVAL. The big number is the latest interval that had traffic; the shaded line is the whole time range. Respects the TRAFFIC, KEY, MODEL and TEAM pickers at the top (TRAFFIC = clients leaves out the health check's own test calls).",
       "datasource": {
-        "type": "prometheus",
-        "uid": "afimxbo42ap6oe"
+        "type": "grafana-postgresql-datasource",
+        "uid": "praxen-litellm-pg"
       },
       "targets": [
         {
           "refId": "A",
           "datasource": {
-            "type": "prometheus",
-            "uid": "afimxbo42ap6oe"
+            "type": "grafana-postgresql-datasource",
+            "uid": "praxen-litellm-pg"
           },
-          "expr": "100 * sum(rate(litellm_llm_api_failed_requests_metric_total{api_key_alias=~\"$key\",team_alias=~\"$team\"}[$interval])) / clamp_min(sum(rate(litellm_proxy_total_requests_metric_total{api_key_alias=~\"$key\",team_alias=~\"$team\"}[$interval])), 1)",
-          "legendFormat": "error %",
+          "format": "time_series",
+          "rawQuery": true,
           "editorMode": "code",
-          "range": true,
-          "instant": false
+          "rawSql": "SELECT $__timeGroupAlias(\"startTime\", '$interval'), round(100.0 * count(*) FILTER (WHERE status = 'failure') / NULLIF(count(*), 0), 1) AS \"error %\" FROM \"LiteLLM_SpendLogs\" WHERE $__timeFilter(\"startTime\") AND COALESCE(metadata->>'user_api_key_alias','') ~ '^(?:${key:regex})$' AND (COALESCE(model_group,'') ~ '^(?:${model:regex})$' OR COALESCE(metadata->>'original_model_group','') ~ '^(?:${model:regex})$') AND COALESCE(metadata->>'user_api_key_team_alias','') ~ '^(?:${team:regex})$' AND ('${traffic:raw}' = 'a^' OR NOT (COALESCE(request_tags, '[]'::jsonb) @> '[\"health-gate\"]'::jsonb OR (COALESCE(metadata->>'user_api_key_alias','') = '' AND COALESCE(metadata->>'user_api_key_user_id','') = 'default_user_id') OR COALESCE(metadata->>'user_api_key_alias','') ~ '^(?:${traffic:raw})$')) GROUP BY 1 ORDER BY 1"
         }
       ],
       "fieldConfig": {
         "defaults": {
           "unit": "percent",
           "decimals": 1,
-          "noValue": "0",
+          "noValue": "no traffic",
           "mappings": [],
           "thresholds": {
             "mode": "absolute",
@@ -553,7 +574,7 @@
       "id": 103,
       "type": "stat",
       "title": "P95 LATENCY // end-to-end",
-      "description": "How long a request takes from arriving at the proxy to the last byte going back to the client, including any retries and fallbacks. 95 out of 100 requests were faster than this. Amber past 30 seconds, red past 2 minutes — long-reasoning models legitimately take tens of seconds. Respects the KEY, MODEL and TEAM pickers at the top.",
+      "description": "How long a request takes from arriving at the proxy to the last byte going back to the client, including any retries and fallbacks. 95 out of 100 requests were faster than this. Amber past 30 seconds, red past 2 minutes — long-reasoning models legitimately take tens of seconds. Respects the TRAFFIC, KEY, MODEL and TEAM pickers at the top (TRAFFIC = clients leaves out the health check's own test calls).",
       "datasource": {
         "type": "prometheus",
         "uid": "afimxbo42ap6oe"
@@ -565,7 +586,7 @@
             "type": "prometheus",
             "uid": "afimxbo42ap6oe"
           },
-          "expr": "histogram_quantile(0.95, sum by (le) (rate(litellm_request_total_latency_metric_bucket{api_key_alias=~\"$key\",requested_model=~\"$model\",team_alias=~\"$team\"}[$interval])))",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(litellm_request_total_latency_metric_bucket{api_key_alias=~\"$key\",api_key_alias!~\"${traffic:raw}\",requested_model=~\"$model\",team_alias=~\"$team\"}[$interval])))",
           "legendFormat": "p95",
           "editorMode": "code",
           "range": true,
@@ -628,30 +649,30 @@
     {
       "id": 48,
       "type": "stat",
-      "title": "FALLBACKS FIRED",
-      "description": "How many times the proxy gave up on the first model and moved to the next one in its chain during the selected range. Green at 0. Refusals caught mid-stream are handled separately and are not counted here. Respects the KEY, MODEL and TEAM pickers at the top.",
+      "title": "SERVED BY FALLBACK",
+      "description": "Requests in the selected range that the model asked for did not answer: a backup model in its chain did (SERVED), and that count as a share of all requests (SHARE). The client still got an answer, but from a different model, often a different vendor. A provider that runs out of credit shows up here first. Green at 0. Respects the TRAFFIC, KEY, MODEL and TEAM pickers at the top (TRAFFIC = clients leaves out the health check's own test calls).",
       "datasource": {
-        "type": "prometheus",
-        "uid": "afimxbo42ap6oe"
+        "type": "grafana-postgresql-datasource",
+        "uid": "praxen-litellm-pg"
       },
       "targets": [
         {
           "refId": "A",
           "datasource": {
-            "type": "prometheus",
-            "uid": "afimxbo42ap6oe"
+            "type": "grafana-postgresql-datasource",
+            "uid": "praxen-litellm-pg"
           },
-          "expr": "(sum(increase(litellm_deployment_successful_fallbacks_total{api_key_alias=~\"$key\",requested_model=~\"$model\",team_alias=~\"$team\"}[$__range])) or vector(0)) + (sum(increase(litellm_deployment_failed_fallbacks_total{api_key_alias=~\"$key\",requested_model=~\"$model\",team_alias=~\"$team\"}[$__range])) or vector(0))",
-          "legendFormat": "fallbacks",
+          "format": "table",
+          "rawQuery": true,
           "editorMode": "code",
-          "range": true,
-          "instant": false
+          "rawSql": "SELECT count(*) FILTER (WHERE status = 'success' AND (COALESCE((metadata->>'attempted_fallbacks')::int, 0) > 0 OR (metadata->>'original_model_group' IS NOT NULL AND metadata->>'original_model_group' <> model_group))) AS \"SERVED\", round(100.0 * count(*) FILTER (WHERE status = 'success' AND (COALESCE((metadata->>'attempted_fallbacks')::int, 0) > 0 OR (metadata->>'original_model_group' IS NOT NULL AND metadata->>'original_model_group' <> model_group))) / NULLIF(count(*), 0), 1) AS \"SHARE\" FROM \"LiteLLM_SpendLogs\" WHERE $__timeFilter(\"startTime\") AND COALESCE(metadata->>'user_api_key_alias','') ~ '^(?:${key:regex})$' AND (COALESCE(model_group,'') ~ '^(?:${model:regex})$' OR COALESCE(metadata->>'original_model_group','') ~ '^(?:${model:regex})$') AND COALESCE(metadata->>'user_api_key_team_alias','') ~ '^(?:${team:regex})$' AND ('${traffic:raw}' = 'a^' OR NOT (COALESCE(request_tags, '[]'::jsonb) @> '[\"health-gate\"]'::jsonb OR (COALESCE(metadata->>'user_api_key_alias','') = '' AND COALESCE(metadata->>'user_api_key_user_id','') = 'default_user_id') OR COALESCE(metadata->>'user_api_key_alias','') ~ '^(?:${traffic:raw})$'))"
         }
       ],
       "fieldConfig": {
         "defaults": {
           "unit": "short",
           "decimals": 0,
+          "noValue": "0",
           "mappings": [],
           "thresholds": {
             "mode": "absolute",
@@ -670,7 +691,50 @@
             "mode": "thresholds"
           }
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "SHARE"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "thresholds"
+                }
+              },
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "#2F8F72",
+                      "value": null
+                    },
+                    {
+                      "color": "#B0862A",
+                      "value": 1
+                    },
+                    {
+                      "color": "#A8453F",
+                      "value": 10
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
       },
       "options": {
         "reduceOptions": {
@@ -684,7 +748,7 @@
         "colorMode": "value",
         "graphMode": "none",
         "justifyMode": "center",
-        "textMode": "value",
+        "textMode": "value_and_name",
         "wideLayout": true,
         "showPercentChange": false,
         "percentChangeColorMode": "standard"
@@ -700,7 +764,7 @@
       "id": 49,
       "type": "stat",
       "title": "OFF-TIER CALLS",
-      "description": "Calls billed at a premium speed tier (priority or fast) that nobody asked for. Choosing a route whose name ends in -priority, or the router picking one on purpose, counts as opt-in and is excluded. Green at 0; anything else means you paid a multiplier you did not choose. Respects the KEY, MODEL and TEAM pickers at the top.",
+      "description": "Calls billed at a premium speed tier (priority or fast) that nobody asked for. Choosing a route whose name ends in -priority, or the router picking one on purpose, counts as opt-in and is excluded. Green at 0; anything else means you paid a multiplier you did not choose. Respects the TRAFFIC, KEY, MODEL and TEAM pickers at the top (TRAFFIC = clients leaves out the health check's own test calls).",
       "datasource": {
         "type": "grafana-postgresql-datasource",
         "uid": "praxen-litellm-pg"
@@ -715,7 +779,7 @@
           "format": "table",
           "rawQuery": true,
           "editorMode": "code",
-          "rawSql": "SELECT count(*) AS \"off_tier_calls\" FROM \"LiteLLM_SpendLogs\" WHERE $__timeFilter(\"startTime\") AND metadata->'cost_breakdown'->>'service_tier' IN ('priority','fast') AND NOT (model_group ~ '-priority$' OR COALESCE(metadata->'routing_decision'->>'routed_model','') ~ '-priority$') AND COALESCE(metadata->>'user_api_key_alias','') ~ '^(?:${key:regex})$' AND COALESCE(model_group,'') ~ '^(?:${model:regex})$' AND COALESCE(metadata->>'user_api_key_team_alias','') ~ '^(?:${team:regex})$'"
+          "rawSql": "SELECT count(*) AS \"off_tier_calls\" FROM \"LiteLLM_SpendLogs\" WHERE $__timeFilter(\"startTime\") AND metadata->'cost_breakdown'->>'service_tier' IN ('priority','fast') AND NOT (model_group ~ '-priority$' OR COALESCE(metadata->'routing_decision'->>'routed_model','') ~ '-priority$') AND COALESCE(metadata->>'user_api_key_alias','') ~ '^(?:${key:regex})$' AND (COALESCE(model_group,'') ~ '^(?:${model:regex})$' OR COALESCE(metadata->>'original_model_group','') ~ '^(?:${model:regex})$') AND COALESCE(metadata->>'user_api_key_team_alias','') ~ '^(?:${team:regex})$' AND ('${traffic:raw}' = 'a^' OR NOT (COALESCE(request_tags, '[]'::jsonb) @> '[\"health-gate\"]'::jsonb OR (COALESCE(metadata->>'user_api_key_alias','') = '' AND COALESCE(metadata->>'user_api_key_user_id','') = 'default_user_id') OR COALESCE(metadata->>'user_api_key_alias','') ~ '^(?:${traffic:raw})$'))"
         }
       ],
       "fieldConfig": {
@@ -1542,7 +1606,7 @@
       "options": {
         "renderer": "canvas",
         "map": "none",
-        "getOption": "const PRAXEN_MKT = false;\n// PROVIDER -> MODEL Sankey (the-array LiteLLM). Source classified by api_base so VENICE\n// (private cloud) and LOCAL split out of the openai-compatible api_provider bucket.\n// query: sum by (api_provider, api_base, litellm_model_name) (increase(litellm_deployment_success_responses_total[$__range]))\n// PRAXEN_MKT (injected by the generator) masks venice -> PRIVATE for marketing screenshots.\nconst MKT = (typeof PRAXEN_MKT !== 'undefined') && PRAXEN_MKT;\nconst isDark = !(context.grafana && context.grafana.theme && context.grafana.theme.isDark === false);\nconst T = isDark\n  ? { bg:'transparent', text:'#EEF1F4', sub:'#8A939C', grid:'#2A3038', steel:'#8DA3BA', good:'#3F8F7E', signal:'#5AB0CE', signal2:'#8DA3BA', amber:'#C9A227', red:'#B85C5C', violet:'#A99BD1', phosphor:'#58C0A0', panel:'#0B0D10', border:'#2A3038' }\n  : { bg:'transparent', text:'#0B0D10', sub:'#3A4651', grid:'#D2D7DD', steel:'#1B3A5C', good:'#2A6B5E', signal:'#0F536A', signal2:'#1B3A5C', amber:'#8A6D1F', red:'#8B3A3A', violet:'#5B4B8A', phosphor:'#147D64', panel:'#FFFFFF', border:'#D2D7DD' };\nconst MONO = 'JetBrains Mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace';\nconst GLOW = isDark ? 10 : 0, GLOW_S = isDark ? 6 : 0;\nfunction lastVal(fr) { if (!fr || !fr.fields) return 0; const v = fr.fields.find(f => f.type === 'number'); if (!v || !v.values) return 0; for (let i = v.values.length - 1; i >= 0; i--) { const n = Number(v.values[i]); if (Number.isFinite(n)) return n; } return 0; }\nconst frames = (context.panel && context.panel.data && context.panel.data.series) || [];\n\nfunction sourceOf(prov, base) {\n  const b = String(base || '').toLowerCase();\n  if (b.indexOf('venice') >= 0) return 'private';   // venice ALWAYS masked in the sankeys (live + marketing)\n  if (b.indexOf(':1234') >= 0 || b.indexOf(':8888') >= 0 || b.indexOf('praxen-embed') >= 0) return 'local';\n  if (b.indexOf('api.openai.com') >= 0) return 'openai';\n  return String(prov || '?');\n}\nconst SCOLOR = { venice:T.violet, private:T.violet, local:T.good, openai:T.signal2, anthropic:T.amber,\n  gemini:T.signal, xai:T.violet, groq:T.red, mistral:T.signal2, perplexity:T.phosphor, huggingface:'#FFD21E', None:T.sub };\nconst CYCLE = [T.signal, T.amber, T.good, T.violet, T.red, T.signal2, T.phosphor];\nfunction sColor(n, i) { return SCOLOR[n] || CYCLE[i % CYCLE.length]; }\nfunction titleStyle(c) { return { color:c, fontFamily:MONO, fontSize:14, fontWeight:700, textShadowColor:isDark ? c : 'transparent', textShadowBlur:GLOW }; }\n\nconst SEP = ' ';\nconst linkMap = {}, sTot = {}, mTot = {};\nfor (const fr of frames) {\n  const vf = fr.fields.find(f => f.type === 'number'); const labs = (vf && vf.labels) || {};\n  const s = sourceOf(labs.api_provider, labs.api_base);\n  let m = String(labs.litellm_model_name || ''); if (!m || m === '*') continue;\n  if (s === 'private') m = 'private · models';   // venice models always collapsed — sankeys never reveal venice\n  const v = lastVal(fr); if (!(v > 0)) continue;\n  const k = s + SEP + m; linkMap[k] = (linkMap[k] || 0) + v; sTot[s] = (sTot[s] || 0) + v; mTot[m] = (mTot[m] || 0) + v;\n}\nif (!Object.keys(linkMap).length) {\n  return { backgroundColor:T.bg, title:{ text:'PROVIDER → MODEL — NO DATA', subtext:'widen the time range',\n    left:'center', top:'center', textStyle:titleStyle(T.amber), subtextStyle:{ color:T.sub, fontFamily:MONO, fontSize:12 } } };\n}\n\n// declutter: keep top-N models, collapse the tail into one node\nconst TOPN = 14;\nconst modelsSorted = Object.keys(mTot).sort((a, b) => mTot[b] - mTot[a]);\nconst keep = new Set(modelsSorted.slice(0, TOPN));\nconst tailN = modelsSorted.length - keep.size;\nconst TAIL = tailN > 0 ? ('… +' + tailN + ' models') : null;\nconst links2 = {}, mTot2 = {};\nObject.keys(linkMap).forEach(k => {\n  const i = k.indexOf(SEP), s = k.slice(0, i), m = k.slice(i + 1);\n  const mm = keep.has(m) ? m : TAIL; if (!mm) return;\n  const kk = s + SEP + mm; links2[kk] = (links2[kk] || 0) + linkMap[k]; mTot2[mm] = (mTot2[mm] || 0) + linkMap[k];\n});\n\nconst srcSorted = Object.keys(sTot).sort((a, b) => sTot[b] - sTot[a]);\nconst modSorted = Object.keys(mTot2).sort((a, b) => mTot2[b] - mTot2[a]);\nconst nodes = [];\nsrcSorted.forEach((s, i) => { const c = sColor(s, i);\n  nodes.push({ name:s, itemStyle:{ color:c, borderColor:c, borderWidth:1, shadowColor:isDark ? c : 'transparent', shadowBlur:GLOW_S },\n    label:{ color:c, fontFamily:MONO, fontSize:13, fontWeight:700, textShadowColor:isDark ? c : 'transparent', textShadowBlur:GLOW_S,\n      formatter:p => p.name.toUpperCase() + '  ' + Math.round(sTot[p.name] || 0) } }); });\nmodSorted.forEach(m => {\n  nodes.push({ name:m, itemStyle:{ color:T.steel, borderColor:T.border, borderWidth:1 },\n    label:{ color:T.text, fontFamily:MONO, fontSize:12,\n      formatter:p => { let s = p.name; if (s.length > 30) s = s.slice(0, 29) + '…'; return s + '  ' + Math.round(mTot2[p.name] || 0); } } }); });\nfunction grad(c) { try { return new echarts.graphic.LinearGradient(0, 0, 1, 0, [{ offset:0, color:c }, { offset:1, color:T.steel }]); } catch (e) { return c; } }\nconst links = Object.keys(links2).map(k => {\n  const i = k.indexOf(SEP), s = k.slice(0, i), m = k.slice(i + 1);\n  const c = sColor(s, srcSorted.indexOf(s));\n  return { source:s, target:m, value:links2[k],\n    lineStyle:{ color:grad(c), opacity:isDark ? 0.5 : 0.4, curveness:0.5, shadowColor:isDark ? c : 'transparent', shadowBlur:GLOW_S } };\n});\nconst total = Math.round(Object.values(sTot).reduce((a, b) => a + b, 0));\n\nreturn {\n  backgroundColor:T.bg, textStyle:{ fontFamily:MONO, color:T.text },\n  title:{ text:'PROVIDER → MODEL', subtext:'success responses · ' + total + ' calls · top ' + TOPN + ' models · range',\n    left:14, top:10, textStyle:titleStyle(T.signal), subtextStyle:{ color:T.sub, fontFamily:MONO, fontSize:11 } },\n  tooltip:{ trigger:'item', backgroundColor:T.panel, borderColor:T.border, textStyle:{ color:T.text, fontFamily:MONO, fontSize:12 },\n    formatter:p => p.dataType === 'edge'\n      ? (p.data.source.toUpperCase() + '  →  ' + p.data.target + '<br/><b>' + Math.round(p.data.value) + '</b> calls')\n      : ('<b>' + p.name + '</b>') },\n  series:[{ type:'sankey', left:16, right:248, top:62, bottom:24, nodeWidth:16, nodeGap:12, draggable:false, nodeAlign:'left',\n    data:nodes, links:links, label:{ color:T.text, fontFamily:MONO, fontSize:12 }, lineStyle:{ color:'gradient', curveness:0.5 },\n    emphasis:{ focus:'adjacency', lineStyle:{ opacity:0.9 }, label:{ fontWeight:700, textShadowColor:T.signal, textShadowBlur:GLOW } },\n    levels:[{ depth:0, label:{ position:'right' } }, { depth:1, label:{ position:'right' } }] }]\n};\n"
+        "getOption": "const PRAXEN_MKT = false;\n// PROVIDER -> MODEL Sankey (the-array LiteLLM). Source classified by api_base so VENICE\n// (private cloud) and LOCAL split out of the openai-compatible api_provider bucket.\n// query: sum by (api_provider, api_base, litellm_model_name) (increase(litellm_deployment_success_responses_total[$__range]))\n// PRAXEN_MKT (injected by the generator) masks venice -> PRIVATE for marketing screenshots.\nconst MKT = (typeof PRAXEN_MKT !== 'undefined') && PRAXEN_MKT;\nconst isDark = !(context.grafana && context.grafana.theme && context.grafana.theme.isDark === false);\nconst T = isDark\n  ? { bg:'transparent', text:'#EEF1F4', sub:'#8A939C', grid:'#2A3038', steel:'#8DA3BA', good:'#3F8F7E', signal:'#5AB0CE', signal2:'#8DA3BA', amber:'#C9A227', red:'#B85C5C', violet:'#A99BD1', phosphor:'#58C0A0', panel:'#0B0D10', border:'#2A3038' }\n  : { bg:'transparent', text:'#0B0D10', sub:'#3A4651', grid:'#D2D7DD', steel:'#1B3A5C', good:'#2A6B5E', signal:'#0F536A', signal2:'#1B3A5C', amber:'#8A6D1F', red:'#8B3A3A', violet:'#5B4B8A', phosphor:'#147D64', panel:'#FFFFFF', border:'#D2D7DD' };\nconst MONO = 'JetBrains Mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace';\nconst GLOW = isDark ? 10 : 0, GLOW_S = isDark ? 6 : 0;\nfunction lastVal(fr) { if (!fr || !fr.fields) return 0; const v = fr.fields.find(f => f.type === 'number'); if (!v || !v.values) return 0; for (let i = v.values.length - 1; i >= 0; i--) { const n = Number(v.values[i]); if (Number.isFinite(n)) return n; } return 0; }\nconst frames = (context.panel && context.panel.data && context.panel.data.series) || [];\n\nfunction sourceOf(prov, base) {\n  const b = String(base || '').toLowerCase();\n  if (b.indexOf('venice') >= 0) return 'private';   // venice ALWAYS masked in the sankeys (live + marketing)\n  if (b.indexOf(':8888') >= 0 || b.indexOf('praxen-embed') >= 0) return 'local';\n  if (b.indexOf('api.openai.com') >= 0) return 'openai';\n  return String(prov || '?');\n}\nconst SCOLOR = { venice:T.violet, private:T.violet, local:T.good, openai:T.signal2, anthropic:T.amber,\n  gemini:T.signal, xai:T.violet, groq:T.red, mistral:T.signal2, perplexity:T.phosphor, huggingface:'#FFD21E', None:T.sub };\nconst CYCLE = [T.signal, T.amber, T.good, T.violet, T.red, T.signal2, T.phosphor];\nfunction sColor(n, i) { return SCOLOR[n] || CYCLE[i % CYCLE.length]; }\nfunction titleStyle(c) { return { color:c, fontFamily:MONO, fontSize:14, fontWeight:700, textShadowColor:isDark ? c : 'transparent', textShadowBlur:GLOW }; }\n\nconst SEP = ' ';\nconst linkMap = {}, sTot = {}, mTot = {};\nfor (const fr of frames) {\n  const vf = fr.fields.find(f => f.type === 'number'); const labs = (vf && vf.labels) || {};\n  const s = sourceOf(labs.api_provider, labs.api_base);\n  let m = String(labs.litellm_model_name || ''); if (!m || m === '*') continue;\n  if (s === 'private') m = 'private · models';   // venice models always collapsed — sankeys never reveal venice\n  const v = lastVal(fr); if (!(v > 0)) continue;\n  const k = s + SEP + m; linkMap[k] = (linkMap[k] || 0) + v; sTot[s] = (sTot[s] || 0) + v; mTot[m] = (mTot[m] || 0) + v;\n}\nif (!Object.keys(linkMap).length) {\n  return { backgroundColor:T.bg, title:{ text:'PROVIDER → MODEL — NO DATA', subtext:'widen the time range',\n    left:'center', top:'center', textStyle:titleStyle(T.amber), subtextStyle:{ color:T.sub, fontFamily:MONO, fontSize:12 } } };\n}\n\n// declutter: keep top-N models, collapse the tail into one node\nconst TOPN = 14;\nconst modelsSorted = Object.keys(mTot).sort((a, b) => mTot[b] - mTot[a]);\nconst keep = new Set(modelsSorted.slice(0, TOPN));\nconst tailN = modelsSorted.length - keep.size;\nconst TAIL = tailN > 0 ? ('… +' + tailN + ' models') : null;\nconst links2 = {}, mTot2 = {};\nObject.keys(linkMap).forEach(k => {\n  const i = k.indexOf(SEP), s = k.slice(0, i), m = k.slice(i + 1);\n  const mm = keep.has(m) ? m : TAIL; if (!mm) return;\n  const kk = s + SEP + mm; links2[kk] = (links2[kk] || 0) + linkMap[k]; mTot2[mm] = (mTot2[mm] || 0) + linkMap[k];\n});\n\nconst srcSorted = Object.keys(sTot).sort((a, b) => sTot[b] - sTot[a]);\nconst modSorted = Object.keys(mTot2).sort((a, b) => mTot2[b] - mTot2[a]);\nconst nodes = [];\nsrcSorted.forEach((s, i) => { const c = sColor(s, i);\n  nodes.push({ name:s, itemStyle:{ color:c, borderColor:c, borderWidth:1, shadowColor:isDark ? c : 'transparent', shadowBlur:GLOW_S },\n    label:{ color:c, fontFamily:MONO, fontSize:13, fontWeight:700, textShadowColor:isDark ? c : 'transparent', textShadowBlur:GLOW_S,\n      formatter:p => p.name.toUpperCase() + '  ' + Math.round(sTot[p.name] || 0) } }); });\nmodSorted.forEach(m => {\n  nodes.push({ name:m, itemStyle:{ color:T.steel, borderColor:T.border, borderWidth:1 },\n    label:{ color:T.text, fontFamily:MONO, fontSize:12,\n      formatter:p => { let s = p.name; if (s.length > 30) s = s.slice(0, 29) + '…'; return s + '  ' + Math.round(mTot2[p.name] || 0); } } }); });\nfunction grad(c) { try { return new echarts.graphic.LinearGradient(0, 0, 1, 0, [{ offset:0, color:c }, { offset:1, color:T.steel }]); } catch (e) { return c; } }\nconst links = Object.keys(links2).map(k => {\n  const i = k.indexOf(SEP), s = k.slice(0, i), m = k.slice(i + 1);\n  const c = sColor(s, srcSorted.indexOf(s));\n  return { source:s, target:m, value:links2[k],\n    lineStyle:{ color:grad(c), opacity:isDark ? 0.5 : 0.4, curveness:0.5, shadowColor:isDark ? c : 'transparent', shadowBlur:GLOW_S } };\n});\nconst total = Math.round(Object.values(sTot).reduce((a, b) => a + b, 0));\n\nreturn {\n  backgroundColor:T.bg, textStyle:{ fontFamily:MONO, color:T.text },\n  title:{ text:'PROVIDER → MODEL', subtext:'success responses · ' + total + ' calls · top ' + TOPN + ' models · range',\n    left:14, top:10, textStyle:titleStyle(T.signal), subtextStyle:{ color:T.sub, fontFamily:MONO, fontSize:11 } },\n  tooltip:{ trigger:'item', backgroundColor:T.panel, borderColor:T.border, textStyle:{ color:T.text, fontFamily:MONO, fontSize:12 },\n    formatter:p => p.dataType === 'edge'\n      ? (p.data.source.toUpperCase() + '  →  ' + p.data.target + '<br/><b>' + Math.round(p.data.value) + '</b> calls')\n      : ('<b>' + p.name + '</b>') },\n  series:[{ type:'sankey', left:16, right:248, top:62, bottom:24, nodeWidth:16, nodeGap:12, draggable:false, nodeAlign:'left',\n    data:nodes, links:links, label:{ color:T.text, fontFamily:MONO, fontSize:12 }, lineStyle:{ color:'gradient', curveness:0.5 },\n    emphasis:{ focus:'adjacency', lineStyle:{ opacity:0.9 }, label:{ fontWeight:700, textShadowColor:T.signal, textShadowBlur:GLOW } },\n    levels:[{ depth:0, label:{ position:'right' } }, { depth:1, label:{ position:'right' } }] }]\n};\n"
       },
       "targets": [
         {
@@ -1555,7 +1619,7 @@
           "legendFormat": "{{api_provider}}→{{litellm_model_name}}"
         }
       ],
-      "description": "How successful calls flowed from each provider (Anthropic, OpenAI, Google, local LM Studio, the private cloud) to the model that actually answered, over the selected range. Thicker ribbons carry more calls. The 14 busiest models are shown; the rest are grouped into one line.",
+      "description": "How successful calls flowed from each provider (Anthropic, OpenAI, Google, the local tier, the private cloud) to the model that actually answered, over the selected range. Thicker ribbons carry more calls. The 14 busiest models are shown; the rest are grouped into one line.",
       "gridPos": {
         "x": 0,
         "y": 17,
@@ -1567,7 +1631,7 @@
       "id": 19,
       "type": "timeseries",
       "title": "Token throughput // in vs out (tok/s)",
-      "description": "Tokens per second flowing into the proxy (prompts) and back out (answers), across everything it handles. Respects the KEY, MODEL and TEAM pickers at the top.",
+      "description": "Tokens per second flowing into the proxy (prompts) and back out (answers), across everything it handles. Respects the TRAFFIC, KEY, MODEL and TEAM pickers at the top (TRAFFIC = clients leaves out the health check's own test calls).",
       "datasource": {
         "type": "prometheus",
         "uid": "afimxbo42ap6oe"
@@ -1579,7 +1643,7 @@
             "type": "prometheus",
             "uid": "afimxbo42ap6oe"
           },
-          "expr": "sum(rate(litellm_input_tokens_metric_total{api_key_alias=~\"$key\",requested_model=~\"$model\",team_alias=~\"$team\"}[$interval]))",
+          "expr": "sum(rate(litellm_input_tokens_metric_total{api_key_alias=~\"$key\",api_key_alias!~\"${traffic:raw}\",requested_model=~\"$model\",team_alias=~\"$team\"}[$interval]))",
           "legendFormat": "input tok/s",
           "editorMode": "code",
           "range": true,
@@ -1591,7 +1655,7 @@
             "type": "prometheus",
             "uid": "afimxbo42ap6oe"
           },
-          "expr": "sum(rate(litellm_output_tokens_metric_total{api_key_alias=~\"$key\",requested_model=~\"$model\",team_alias=~\"$team\"}[$interval]))",
+          "expr": "sum(rate(litellm_output_tokens_metric_total{api_key_alias=~\"$key\",api_key_alias!~\"${traffic:raw}\",requested_model=~\"$model\",team_alias=~\"$team\"}[$interval]))",
           "legendFormat": "output tok/s",
           "editorMode": "code",
           "range": true,
@@ -1686,53 +1750,39 @@
     {
       "id": 23,
       "type": "timeseries",
-      "title": "Requests & error rate",
-      "description": "Requests per second (blue), provider failures per second (red) and the resulting error percentage (amber, right-hand axis). Respects the KEY, MODEL and TEAM pickers at the top.",
+      "title": "Requests & error rate // per $interval",
+      "description": "Requests per INTERVAL (blue), failed requests (red), requests a backup model answered (amber) and the failure percentage (amber dashes, right-hand axis). Respects the TRAFFIC, KEY, MODEL and TEAM pickers at the top (TRAFFIC = clients leaves out the health check's own test calls).",
       "datasource": {
-        "type": "prometheus",
-        "uid": "afimxbo42ap6oe"
+        "type": "grafana-postgresql-datasource",
+        "uid": "praxen-litellm-pg"
       },
       "targets": [
         {
           "refId": "A",
           "datasource": {
-            "type": "prometheus",
-            "uid": "afimxbo42ap6oe"
+            "type": "grafana-postgresql-datasource",
+            "uid": "praxen-litellm-pg"
           },
-          "expr": "sum(rate(litellm_proxy_total_requests_metric_total{api_key_alias=~\"$key\",requested_model=~\"$model\",team_alias=~\"$team\"}[$interval]))",
-          "legendFormat": "requests/s",
+          "format": "time_series",
+          "rawQuery": true,
           "editorMode": "code",
-          "range": true,
-          "instant": false
+          "rawSql": "SELECT $__timeGroupAlias(\"startTime\", '$interval', 0), count(*) AS \"requests\", count(*) FILTER (WHERE status = 'failure') AS \"failed\", count(*) FILTER (WHERE status = 'success' AND (COALESCE((metadata->>'attempted_fallbacks')::int, 0) > 0 OR (metadata->>'original_model_group' IS NOT NULL AND metadata->>'original_model_group' <> model_group))) AS \"served by fallback\" FROM \"LiteLLM_SpendLogs\" WHERE $__timeFilter(\"startTime\") AND COALESCE(metadata->>'user_api_key_alias','') ~ '^(?:${key:regex})$' AND (COALESCE(model_group,'') ~ '^(?:${model:regex})$' OR COALESCE(metadata->>'original_model_group','') ~ '^(?:${model:regex})$') AND COALESCE(metadata->>'user_api_key_team_alias','') ~ '^(?:${team:regex})$' AND ('${traffic:raw}' = 'a^' OR NOT (COALESCE(request_tags, '[]'::jsonb) @> '[\"health-gate\"]'::jsonb OR (COALESCE(metadata->>'user_api_key_alias','') = '' AND COALESCE(metadata->>'user_api_key_user_id','') = 'default_user_id') OR COALESCE(metadata->>'user_api_key_alias','') ~ '^(?:${traffic:raw})$')) GROUP BY 1 ORDER BY 1"
         },
         {
           "refId": "B",
           "datasource": {
-            "type": "prometheus",
-            "uid": "afimxbo42ap6oe"
+            "type": "grafana-postgresql-datasource",
+            "uid": "praxen-litellm-pg"
           },
-          "expr": "sum(rate(litellm_llm_api_failed_requests_metric_total{api_key_alias=~\"$key\",team_alias=~\"$team\"}[$interval]))",
-          "legendFormat": "failed/s",
+          "format": "time_series",
+          "rawQuery": true,
           "editorMode": "code",
-          "range": true,
-          "instant": false
-        },
-        {
-          "refId": "C",
-          "datasource": {
-            "type": "prometheus",
-            "uid": "afimxbo42ap6oe"
-          },
-          "expr": "100 * sum(rate(litellm_llm_api_failed_requests_metric_total{api_key_alias=~\"$key\",team_alias=~\"$team\"}[$interval])) / clamp_min(sum(rate(litellm_proxy_total_requests_metric_total{api_key_alias=~\"$key\",team_alias=~\"$team\"}[$interval])), 1)",
-          "legendFormat": "error %",
-          "editorMode": "code",
-          "range": true,
-          "instant": false
+          "rawSql": "SELECT $__timeGroupAlias(\"startTime\", '$interval'), round(100.0 * count(*) FILTER (WHERE status = 'failure') / NULLIF(count(*), 0), 1) AS \"error %\" FROM \"LiteLLM_SpendLogs\" WHERE $__timeFilter(\"startTime\") AND COALESCE(metadata->>'user_api_key_alias','') ~ '^(?:${key:regex})$' AND (COALESCE(model_group,'') ~ '^(?:${model:regex})$' OR COALESCE(metadata->>'original_model_group','') ~ '^(?:${model:regex})$') AND COALESCE(metadata->>'user_api_key_team_alias','') ~ '^(?:${team:regex})$' AND ('${traffic:raw}' = 'a^' OR NOT (COALESCE(request_tags, '[]'::jsonb) @> '[\"health-gate\"]'::jsonb OR (COALESCE(metadata->>'user_api_key_alias','') = '' AND COALESCE(metadata->>'user_api_key_user_id','') = 'default_user_id') OR COALESCE(metadata->>'user_api_key_alias','') ~ '^(?:${traffic:raw})$')) GROUP BY 1 ORDER BY 1"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "reqps",
+          "unit": "short",
           "color": {
             "mode": "palette-classic"
           },
@@ -1767,7 +1817,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "requests/s"
+              "options": "requests"
             },
             "properties": [
               {
@@ -1782,7 +1832,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "failed/s"
+              "options": "failed"
             },
             "properties": [
               {
@@ -1790,6 +1840,25 @@
                 "value": {
                   "mode": "fixed",
                   "fixedColor": "#A8453F"
+                }
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 0
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "served by fallback"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#B0862A"
                 }
               },
               {
@@ -1885,7 +1954,7 @@
             "type": "prometheus",
             "uid": "afimxbo42ap6oe"
           },
-          "expr": "sum by (requested_model) (increase(litellm_proxy_total_requests_metric_total{api_key_alias=~\"$key\",requested_model=~\"$model\",team_alias=~\"$team\"}[$__range]))",
+          "expr": "sum by (requested_model) (increase(litellm_proxy_total_requests_metric_total{status_code=\"200\",api_key_alias=~\"$key\",api_key_alias!~\"${traffic:raw}\",requested_model=~\"$model\",team_alias=~\"$team\"}[$__range]))",
           "format": "table",
           "instant": true,
           "range": false
@@ -1896,7 +1965,7 @@
             "type": "prometheus",
             "uid": "afimxbo42ap6oe"
           },
-          "expr": "sum by (requested_model) (increase(litellm_total_tokens_metric_total{api_key_alias=~\"$key\",requested_model=~\"$model\",team_alias=~\"$team\"}[$__range]))",
+          "expr": "sum by (requested_model) (increase(litellm_total_tokens_metric_total{api_key_alias=~\"$key\",api_key_alias!~\"${traffic:raw}\",requested_model=~\"$model\",team_alias=~\"$team\"}[$__range]))",
           "format": "table",
           "instant": true,
           "range": false
@@ -1907,7 +1976,7 @@
             "type": "prometheus",
             "uid": "afimxbo42ap6oe"
           },
-          "expr": "sum by (requested_model) (increase(litellm_output_tokens_metric_total{api_key_alias=~\"$key\",requested_model=~\"$model\",team_alias=~\"$team\"}[$__range]))",
+          "expr": "sum by (requested_model) (increase(litellm_output_tokens_metric_total{api_key_alias=~\"$key\",api_key_alias!~\"${traffic:raw}\",requested_model=~\"$model\",team_alias=~\"$team\"}[$__range]))",
           "format": "table",
           "instant": true,
           "range": false
@@ -1918,7 +1987,7 @@
             "type": "prometheus",
             "uid": "afimxbo42ap6oe"
           },
-          "expr": "sum by (requested_model) (increase(litellm_llm_api_latency_metric_sum{api_key_alias=~\"$key\",requested_model=~\"$model\",team_alias=~\"$team\"}[$__range])) / clamp_min(sum by (requested_model) (increase(litellm_llm_api_latency_metric_count{api_key_alias=~\"$key\",requested_model=~\"$model\",team_alias=~\"$team\"}[$__range])), 1)",
+          "expr": "sum by (requested_model) (increase(litellm_llm_api_latency_metric_sum{api_key_alias=~\"$key\",api_key_alias!~\"${traffic:raw}\",requested_model=~\"$model\",team_alias=~\"$team\"}[$__range])) / (sum by (requested_model) (increase(litellm_llm_api_latency_metric_count{api_key_alias=~\"$key\",api_key_alias!~\"${traffic:raw}\",requested_model=~\"$model\",team_alias=~\"$team\"}[$__range])) > 0)",
           "format": "table",
           "instant": true,
           "range": false
@@ -1929,7 +1998,7 @@
             "type": "prometheus",
             "uid": "afimxbo42ap6oe"
           },
-          "expr": "sum by (requested_model) (increase(litellm_llm_api_time_to_first_token_metric_sum{api_key_alias=~\"$key\",requested_model=~\"$model\",team_alias=~\"$team\"}[$__range])) / clamp_min(sum by (requested_model) (increase(litellm_llm_api_time_to_first_token_metric_count{api_key_alias=~\"$key\",requested_model=~\"$model\",team_alias=~\"$team\"}[$__range])), 1)",
+          "expr": "sum by (requested_model) (increase(litellm_llm_api_time_to_first_token_metric_sum{api_key_alias=~\"$key\",api_key_alias!~\"${traffic:raw}\",requested_model=~\"$model\",team_alias=~\"$team\"}[$__range])) / (sum by (requested_model) (increase(litellm_llm_api_time_to_first_token_metric_count{api_key_alias=~\"$key\",api_key_alias!~\"${traffic:raw}\",requested_model=~\"$model\",team_alias=~\"$team\"}[$__range])) > 0)",
           "format": "table",
           "instant": true,
           "range": false
@@ -1940,7 +2009,7 @@
             "type": "prometheus",
             "uid": "afimxbo42ap6oe"
           },
-          "expr": "sum by (requested_model) (increase(litellm_output_tokens_metric_total{api_key_alias=~\"$key\",requested_model=~\"$model\",team_alias=~\"$team\"}[$__range])) / clamp_min(sum by (requested_model) (increase(litellm_llm_api_latency_metric_sum{api_key_alias=~\"$key\",requested_model=~\"$model\",team_alias=~\"$team\"}[$__range])), 1)",
+          "expr": "sum by (requested_model) (increase(litellm_output_tokens_metric_total{api_key_alias=~\"$key\",api_key_alias!~\"${traffic:raw}\",requested_model=~\"$model\",team_alias=~\"$team\"}[$__range])) / (sum by (requested_model) (increase(litellm_llm_api_latency_metric_sum{api_key_alias=~\"$key\",api_key_alias!~\"${traffic:raw}\",requested_model=~\"$model\",team_alias=~\"$team\"}[$__range])) > 0)",
           "format": "table",
           "instant": true,
           "range": false
@@ -1951,7 +2020,7 @@
             "type": "prometheus",
             "uid": "afimxbo42ap6oe"
           },
-          "expr": "sum by (requested_model) (increase(litellm_spend_metric_total{api_key_alias=~\"$key\",requested_model=~\"$model\",team_alias=~\"$team\"}[$__range]))",
+          "expr": "sum by (requested_model) (increase(litellm_spend_metric_total{api_key_alias=~\"$key\",api_key_alias!~\"${traffic:raw}\",requested_model=~\"$model\",team_alias=~\"$team\"}[$__range]))",
           "legendFormat": "",
           "editorMode": "code",
           "range": false,
@@ -1964,7 +2033,7 @@
             "type": "prometheus",
             "uid": "afimxbo42ap6oe"
           },
-          "expr": "sum by (requested_model) (increase(litellm_deployment_success_responses_total{api_key_alias=~\"$key\",requested_model=~\"$model\",team_alias=~\"$team\"}[$__range])) / clamp_min(sum by (requested_model) (increase(litellm_deployment_total_requests_total{api_key_alias=~\"$key\",requested_model=~\"$model\",team_alias=~\"$team\"}[$__range])), 1)",
+          "expr": "sum by (requested_model) (increase(litellm_deployment_success_responses_total{api_key_alias=~\"$key\",api_key_alias!~\"${traffic:raw}\",requested_model=~\"$model\",team_alias=~\"$team\"}[$__range]) or 0 * increase(litellm_deployment_failure_responses_total{api_key_alias=~\"$key\",api_key_alias!~\"${traffic:raw}\",requested_model=~\"$model\",team_alias=~\"$team\",exception_class!~\"ModelAccessDeniedProxyException|ProxyException|HTTPException\"}[$__range])) / (sum by (requested_model) (increase(litellm_deployment_success_responses_total{api_key_alias=~\"$key\",api_key_alias!~\"${traffic:raw}\",requested_model=~\"$model\",team_alias=~\"$team\"}[$__range]) or increase(litellm_deployment_failure_responses_total{api_key_alias=~\"$key\",api_key_alias!~\"${traffic:raw}\",requested_model=~\"$model\",team_alias=~\"$team\",exception_class!~\"ModelAccessDeniedProxyException|ProxyException|HTTPException\"}[$__range])) > 0)",
           "legendFormat": "",
           "editorMode": "code",
           "range": false,
@@ -2218,7 +2287,7 @@
                 "value": [
                   {
                     "title": "Open on ROUTING (this model)",
-                    "url": "/d/praxen-routing/praxen-routing?${__url_time_range}&var-key=${key:queryparam}&var-team=${team:queryparam}&var-interval=${interval:queryparam}&var-model=${__data.fields.Model}",
+                    "url": "/d/praxen-routing/praxen-routing?${__url_time_range}&${traffic:queryparam}&${key:queryparam}&${team:queryparam}&${interval:queryparam}&var-model=${__data.fields.Model}",
                     "targetBlank": false
                   }
                 ]
@@ -2227,7 +2296,7 @@
           }
         ]
       },
-      "description": "One row per model or route name exactly as clients asked for it: requests, tokens in and out, average time to answer and to first token, output speed, dollars, and the share that succeeded. Click a name to open it on ROUTING. Respects the KEY, MODEL and TEAM pickers at the top.",
+      "description": "One row per model or route name: answered requests, tokens in and out, average time to answer and to first token, output speed, dollars, and the share of calls to that model that succeeded (a backup model's calls count on its own row; requests refused by a key's allowlist or a rate limit never reached a model and are left out). Click a name to open it on ROUTING. Respects the TRAFFIC, KEY, MODEL and TEAM pickers at the top (TRAFFIC = clients leaves out the health check's own test calls).",
       "gridPos": {
         "x": 0,
         "y": 32,
@@ -2252,7 +2321,7 @@
       "id": 25,
       "type": "table",
       "title": "Request log // last 50 in range (click a request_id → FORENSICS)",
-      "description": "The 50 most recent requests in the selected range: which key called, the route it asked for, the model that answered, success or failure, how long it took, tokens, dollars and the billed tier. Click a request id to investigate it on FORENSICS. Respects the KEY, MODEL and TEAM pickers at the top.",
+      "description": "The 50 most recent requests in the selected range: which key called, the route it asked for, the model that answered, success or failure, how long it took, tokens, dollars and the billed tier. Click a request id to investigate it on FORENSICS. Respects the TRAFFIC, KEY, MODEL and TEAM pickers at the top (TRAFFIC = clients leaves out the health check's own test calls).",
       "datasource": {
         "type": "grafana-postgresql-datasource",
         "uid": "praxen-litellm-pg"
@@ -2267,7 +2336,7 @@
           "format": "table",
           "rawQuery": true,
           "editorMode": "code",
-          "rawSql": "SELECT \"startTime\" AS \"time\", COALESCE(NULLIF(metadata->>'user_api_key_alias',''),'-') AS key, COALESCE(NULLIF(model_group,''),'-') AS route, COALESCE(NULLIF(model,''),'-') AS model, COALESCE(NULLIF(status,''),'?') AS status, request_duration_ms AS ms, prompt_tokens AS in_tok, completion_tokens AS out_tok, round(spend::numeric,5) AS usd, COALESCE(metadata->'cost_breakdown'->>'service_tier','-') AS tier, request_id FROM \"LiteLLM_SpendLogs\" WHERE $__timeFilter(\"startTime\") AND COALESCE(metadata->>'user_api_key_alias','') ~ '^(?:${key:regex})$' AND COALESCE(model_group,'') ~ '^(?:${model:regex})$' AND COALESCE(metadata->>'user_api_key_team_alias','') ~ '^(?:${team:regex})$' ORDER BY \"startTime\" DESC LIMIT 50"
+          "rawSql": "SELECT \"startTime\" AS \"time\", COALESCE(NULLIF(metadata->>'user_api_key_alias',''),'-') AS key, COALESCE(NULLIF(model_group,''),'-') AS route, COALESCE(NULLIF(model,''),'-') AS model, COALESCE(NULLIF(status,''),'?') AS status, request_duration_ms AS ms, prompt_tokens AS in_tok, completion_tokens AS out_tok, round(spend::numeric,5) AS usd, COALESCE(metadata->'cost_breakdown'->>'service_tier','-') AS tier, request_id FROM \"LiteLLM_SpendLogs\" WHERE $__timeFilter(\"startTime\") AND COALESCE(metadata->>'user_api_key_alias','') ~ '^(?:${key:regex})$' AND (COALESCE(model_group,'') ~ '^(?:${model:regex})$' OR COALESCE(metadata->>'original_model_group','') ~ '^(?:${model:regex})$') AND COALESCE(metadata->>'user_api_key_team_alias','') ~ '^(?:${team:regex})$' AND ('${traffic:raw}' = 'a^' OR NOT (COALESCE(request_tags, '[]'::jsonb) @> '[\"health-gate\"]'::jsonb OR (COALESCE(metadata->>'user_api_key_alias','') = '' AND COALESCE(metadata->>'user_api_key_user_id','') = 'default_user_id') OR COALESCE(metadata->>'user_api_key_alias','') ~ '^(?:${traffic:raw})$')) ORDER BY \"startTime\" DESC LIMIT 50"
         }
       ],
       "fieldConfig": {
@@ -2398,7 +2467,7 @@
                 "value": [
                   {
                     "title": "Open on FORENSICS",
-                    "url": "/d/praxen-forensics/praxen-forensics?${__url_time_range}&var-key=${key:queryparam}&var-model=${model:queryparam}&var-team=${team:queryparam}&var-interval=${interval:queryparam}&var-request_id=${__data.fields.request_id}",
+                    "url": "/d/praxen-forensics/praxen-forensics?${__url_time_range}&${traffic:queryparam}&${key:queryparam}&${model:queryparam}&${team:queryparam}&${interval:queryparam}&var-request_id=${__data.fields.request_id}",
                     "targetBlank": false
                   }
                 ]

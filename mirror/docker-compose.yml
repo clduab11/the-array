@@ -1,4 +1,4 @@
-# Sanitized structural mirror of the-array/docker-compose.yml (2026-10-02). Comments and identity values
+# Sanitized structural mirror of the-array/docker-compose.yml (2026-10-29). Comments and identity values
 # removed or replaced; budgets are placeholders. See mirror/README.md before restoring from it.
 x-logging:
   driver: json-file
@@ -10,7 +10,7 @@ x-restart:
 services:
   tailscale-litellm:
     restart: unless-stopped
-    image: tailscale/tailscale:v1.96.5
+    image: tailscale/tailscale:v1.102.5
     container_name: praxen-tailscale-litellm
     profiles:
       - retired
@@ -187,6 +187,19 @@ services:
       JEV_INJECTION_THRESHOLD: ${JEV_INJECTION_THRESHOLD:-}
       JEV_CAPABILITY_THRESHOLD: ${JEV_CAPABILITY_THRESHOLD:-}
       JEV_SELF_GRADING_THRESHOLD: ${JEV_SELF_GRADING_THRESHOLD:-}
+      JEV_LOCAL_FRONT: ${JEV_LOCAL_FRONT:-}
+      JEV_LOCAL_FRONT_EXCLUDE: ${JEV_LOCAL_FRONT_EXCLUDE:-}
+      JEV_LOCAL_FACTS_JSON: ${JEV_LOCAL_FACTS_JSON:-}
+      JEV_OBSERVE_RPM: ${JEV_OBSERVE_RPM:-}
+      JEV_SHADOW_PROVIDERS: ${JEV_SHADOW_PROVIDERS:-}
+      JEV_OBSERVE_PROVIDERS: ${JEV_OBSERVE_PROVIDERS:-}
+      JEV_EXCLUDE_GROUPS: ${JEV_EXCLUDE_GROUPS:-}
+      JEV_ROUTER_BACKEND_JSON: ${JEV_ROUTER_BACKEND_JSON:-}
+      JEV_DECISIONS_MODE: ${JEV_DECISIONS_MODE:-}
+      JEV_LANE_MODE: ${JEV_LANE_MODE:-}
+      JEV_LANE_ROUTERS: ${JEV_LANE_ROUTERS:-}
+      JEV_LOCAL_MATRIX: ${JEV_LOCAL_MATRIX:-}
+      JEV_LOCAL_MATRIX_JSON: ${JEV_LOCAL_MATRIX_JSON:-}
     volumes:
       - ./litellm_config.yaml:/app/config.yaml:ro
       - ./litellm/refusal_fallback.py:/app/refusal_fallback.py:ro
@@ -266,7 +279,7 @@ services:
           cpus: '0.5'
   alloy:
     restart: unless-stopped
-    image: grafana/alloy:v1.19.2
+    image: grafana/alloy:v1.20.1
     container_name: praxen-alloy
     profiles:
       - observe
@@ -295,7 +308,7 @@ services:
           cpus: '0.5'
   prometheus:
     restart: unless-stopped
-    image: prom/prometheus:v3.14.0
+    image: prom/prometheus:v3.15.1
     container_name: praxen-prometheus
     profiles:
       - observe
@@ -334,7 +347,7 @@ services:
           cpus: '0.5'
   grafana:
     restart: unless-stopped
-    image: grafana/grafana:13.1.5
+    image: grafana/grafana:13.2.5
     container_name: praxen-grafana
     profiles:
       - observe
@@ -358,7 +371,8 @@ services:
       GF_PANELS_DISABLE_SANITIZE_HTML: 'true'
       GF_SECURITY_ALLOW_EMBEDDING: 'true'
       GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /etc/grafana/dashboards/praxen-command.json
-      GF_PLUGINS_PREINSTALL_SYNC: yesoreyeram-infinity-datasource@4.0.0,volkovlabs-echarts-panel@7.2.5
+      GF_PLUGINS_PREINSTALL_SYNC: yesoreyeram-infinity-datasource@4.0.0,volkovlabs-echarts-panel@7.2.5,grafana-postgresql-datasource@13.0.4,prometheus@13.2.5,loki@13.2.4,tempo@13.4.1
+      GF_PLUGINS_PREINSTALL_AUTO_UPDATE: 'false'
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_USER: ${POSTGRES_USER:-pc-host}
       POSTGRES_DB: ${POSTGRES_DB:-litellm}
@@ -397,7 +411,7 @@ services:
           cpus: '1.0'
   grafana-image-renderer:
     restart: unless-stopped
-    image: grafana/grafana-image-renderer:v5.12.3
+    image: grafana/grafana-image-renderer:v5.12.5
     container_name: praxen-renderer
     profiles:
       - observe
@@ -429,7 +443,7 @@ services:
           cpus: '1.0'
   searxng:
     restart: unless-stopped
-    image: searxng/searxng:2026.9.8-3fdc6d753
+    image: searxng/searxng:2026.10.7-6671d89be
     container_name: praxen-searxng
     profiles:
       - observe
@@ -467,7 +481,7 @@ services:
           cpus: '0.5'
   qdrant:
     restart: unless-stopped
-    image: qdrant/qdrant:v1.15.4
+    image: qdrant/qdrant:v1.19.2
     container_name: praxen-qdrant
     profiles:
       - agents
@@ -500,7 +514,7 @@ services:
           cpus: '1.0'
   n8n:
     restart: unless-stopped
-    image: n8nio/n8n:2.23.3
+    image: n8nio/n8n:2.42.4
     container_name: praxen-n8n
     profiles:
       - agents
@@ -541,7 +555,7 @@ services:
           cpus: '1.0'
   embed:
     restart: unless-stopped
-    image: ghcr.io/ggml-org/llama.cpp:server-b11118@sha256:fb8f521cdfee1b763a6ef0d6633922e780c1393c03b49945526550cf55010343
+    image: ghcr.io/ggml-org/llama.cpp:server-b11459@sha256:33868c035b21dc63f7c60b7438774283fd99215bc319114eb03de5df4ce7cd6b
     container_name: praxen-embed
     profiles:
       - core
