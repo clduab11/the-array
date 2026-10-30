@@ -7,7 +7,7 @@ This script turns auto-import off on the record (PUT without `credential` keeps 
 provider) and registers each model id, so the list no longer depends on LiteLLM answering quickly.
 
 Re-run after every LiteLLM config change that adds or removes models:
-    python scripts/sync-gateway-models.py              # provider openai-compatible, key VKEY_front_GATEWAY_WINPC
+    python scripts/sync-gateway-models.py              # provider openai-compatible, key VKEY_FRONT_GATEWAY_WINPC
     python scripts/sync-gateway-models.py --prune      # also delete registrations LiteLLM no longer serves
     python scripts/sync-gateway-models.py --dry-run
 Secrets are read from .env / .virtual-keys.env inside the script and never printed.
@@ -52,7 +52,7 @@ def http(method, url, headers, body=None, timeout=60):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--provider", default="openai-compatible")
-    ap.add_argument("--key-var", default="VKEY_front_GATEWAY_WINPC", help="the LiteLLM key this Gateway record uses (.virtual-keys.env)")
+    ap.add_argument("--key-var", default="VKEY_FRONT_GATEWAY_WINPC", help="the LiteLLM key this Gateway record uses (.virtual-keys.env)")
     ap.add_argument("--prune", action="store_true")
     ap.add_argument("--dry-run", action="store_true")
     a = ap.parse_args()

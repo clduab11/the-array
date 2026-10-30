@@ -70,7 +70,7 @@ def main():
 
     master = env(".env", "LITELLM_MASTER_KEY")
     gpw = env(".env", "GRAFANA_ADMIN_PASSWORD")
-    go_key = env(".virtual-keys.env", "VKEY_front_GO_WINPC") if (ROOT / ".virtual-keys.env").exists() else None
+    go_key = env(".virtual-keys.env", "VKEY_FRONT_GO_WINPC") if (ROOT / ".virtual-keys.env").exists() else None
     H = {"Authorization": f"Bearer {master}", "Content-Type": "application/json", "x-litellm-tags": GATE_TAG, "User-Agent": GATE_UA}
     G = {"Authorization": "Basic " + b64encode(f"admin:{gpw}".encode()).decode()}
 
@@ -171,7 +171,7 @@ def main():
         moved = proxy_failed() - f0
         gate("allowlist 403 (front-go-winpc)", s in (401, 403) and moved >= 1, f"HTTP {s} · request-level failure metric +{moved:g}")
     else:
-        gate("allowlist 403 (front-go-winpc)", False, ".virtual-keys.env / VKEY_front_GO_WINPC not found")
+        gate("allowlist 403 (front-go-winpc)", False, ".virtual-keys.env / VKEY_FRONT_GO_WINPC not found")
 
     # 6. embedder dimension (verify by DIMENSION, never by echoed name)
     body = json.dumps({"model": "legacy/embed", "input": "dimension probe"}).encode()
