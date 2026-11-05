@@ -59,7 +59,7 @@ to cloud vendors; do not enable it on a router that must stay local-only.
 
 `POST /typesafe/v1/systemone` and `GET /typesafe/v1/models` on the gateway forward to
 `api.typesafe.ai` with the proxy's `TYPESAFE_API_KEY` injected, so scripts and agents hold only
-a gateway virtual key and every call lands in the spend ledger. As of 2026-11-04 (LiteLLM 1.106.5)
+a gateway virtual key and every call lands in the spend ledger. As of 2026-11-04 (LiteLLM 1.106.6)
 the native `/typesafe` route serves this, and each call is priced from the response usage. Any
 virtual key can list Jev's models, and a key with a model list can POST only with a Jev model on
 that list. Don't add a `pass_through_endpoints` entry for it; on LiteLLM 1.104 that

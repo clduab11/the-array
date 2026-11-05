@@ -239,7 +239,8 @@ docker exec praxen-postgres sh -c 'pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB"
   skip minor versions, even on one node. If its volume holds data, back it up
   and run the latest patch of each minor in turn before this pin; from this
   kit's old 1.15.4, that means 1.16, 1.17 and 1.18. A new volume has nothing to
-  migrate.
+  migrate. Since LiteLLM v1.106.6, inference replies aren't gzipped; if a client on
+  a slow link needs compression, add it in a reverse proxy.
 
 ## 6. Rollback
 
@@ -289,10 +290,6 @@ cleanup; move candidates to a visible staging directory and purge by hand.
   training, a Hub download is running and the call would load a model, or a hold
   file sits at `/tmp/unsloth-card-hold` inside the proxy container. Recreating the
   container clears that file.
-- **Every request slows down under load.** LiteLLM's notes flag this in v1.106.5:
-  it gzips non-streaming replies on its event loop when a client sends
-  `Accept-Encoding: gzip`, as most do. v1.106.6 fixes it. As of 2026-11-04 this kit
-  stays on what the reference deployment runs until that moves.
 
 ## 8. Optional: the Jev decision layer
 
@@ -313,7 +310,7 @@ version:
    not do this on a router that must stay local-only. If Jev fails the built-in scorer decides.
 4. Scripts and agents can call Jev through the gateway on LiteLLM's native `/typesafe` route,
    metered to the calling key and priced from the response usage. As of 2026-11-04 (LiteLLM
-   1.106.5) any virtual key can list Jev's models, and a key with a model list can POST only with
+   1.106.6) any virtual key can list Jev's models, and a key with a model list can POST only with
    a Jev model on that list. Test it with `python scripts/probe-typesafe.py --via-proxy`.
 5. Verify: `python scripts/verify-stack.py` (the TypeSafe pass-through probe), `praxen_jev_*` on `/metrics/`, one
    `jev_gate {...}` JSON line per decision in the proxy log, the Jev row on the dashboard.
