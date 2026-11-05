@@ -160,7 +160,7 @@ class _CardState:
         return body if isinstance(body, dict) else {}
 
     async def get(self) -> tuple[str, bool, str]:
-        """-> (training kind or "", a Hub download is running, the resident repo lower-cased or "")."""
+        """-> (training kind or "", a Hub download is running, the resident "repo:quantization" lower-cased or "")."""
         if time.monotonic() - self._at < CARD_TTL_S:
             return self._val
         llm, diffusion, hub, status = await asyncio.gather(
@@ -174,13 +174,25 @@ class _CardState:
             training = "training"
         elif diffusion.get("active"):
             training = "diffusion_training"
-        loaded = status.get("loaded") or []
+        loaded, variant = status.get("loaded") or [], status.get("gguf_variant")
         resident = str(loaded[0]).lower() if loaded else ""
+        if resident and variant:
+            resident = f"{resident}:{str(variant).lower()}"
         self._val, self._at = (training, bool(hub.get("downloads")), resident), time.monotonic()
         return self._val
 
 
 _CARD = _CardState()
+
+
+def _is_resident(resident: str, names: list[str]) -> bool:
+    """Whether a deployment's model is the file already loaded. Another quantization of the same repo is another file to load,
+    so the quantization has to match too. If Unsloth reports none, the repo decides."""
+    for name in names:
+        candidate = name if ":" in resident else name.split(":", 1)[0]
+        if candidate == resident or candidate.endswith("/" + resident):
+            return True
+    return False
 
 
 async def _card_refusal(kwargs: dict[str, Any]) -> tuple[str, str] | None:
@@ -193,9 +205,8 @@ async def _card_refusal(kwargs: dict[str, Any]) -> tuple[str, str] | None:
             return training, "Unsloth is training, so local models are closed until the run ends (the-array GPU rule)."
         if downloading:
             lp = kwargs.get("litellm_params")
-            names = [kwargs.get("model"), lp.get("model") if isinstance(lp, dict) else None]
-            target = " ".join(str(n).lower() for n in names if n)
-            if not resident or resident not in target:
+            names = [str(n).lower() for n in (kwargs.get("model"), lp.get("model") if isinstance(lp, dict) else None) if n]
+            if not resident or not _is_resident(resident, names):
                 return "download", "An Unsloth Hub download is running, so no local model can load until it ends (the-array GPU rule)."
     except Exception:  # noqa: BLE001
         return None
