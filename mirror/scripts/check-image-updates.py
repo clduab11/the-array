@@ -2,7 +2,7 @@
 """
 check-image-updates.py — report which pinned images are behind upstream. REPORTS ONLY.
 
-WHY THIS EXISTS (OP VERSION-TRUEUP, 2026-08-05):
+WHY THIS EXISTS (a change, 2026-08-05):
   Every image in this stack is pinned to an exact tag, deliberately. The alternative —
   floating tags like `postgres:16-alpine` — does NOT keep you patched: Docker only
   re-resolves a moving tag on an explicit `docker pull`, and `compose up -d` reuses the

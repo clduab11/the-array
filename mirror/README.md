@@ -4,7 +4,7 @@ This folder is a **failsafe snapshot** of the configuration that runs the stack,
 and sanitized before it left the machine. It is not the showcase (that is the rest of this repository) and it is
 not directly deployable: identity values were replaced, so a restore needs them re-entered by hand.
 
-Generated 2026-10-30 by a private tool; every file passed the leak gate before commit.
+Generated 2026-11-04 by a private tool; every file passed the leak gate before commit.
 
 ## What is here
 
@@ -24,9 +24,11 @@ The dashboards are in `../grafana/dashboards/` (sanitized by their own port).
 ## What was changed on the way out
 
 - **Comments:** removed from the stack's YAML files (compose, the proxy config, Prometheus, Tempo, Loki, SearXNG) and the
-  Alloy config (they carried names, clients and figures), and the full-line comments of `toolbox/toolbox.yaml` (its
-  operating log); the manifest's `note:` fields stay and go through the same substitutions as every other file.
+  Alloy config (they carried names, clients and figures), and `toolbox/toolbox.yaml`.
   `DEPLOY_PLAYBOOK.md` leaves out §6b, the internal agent-fleet runbook.
+- **The toolbox is structure only:** `toolbox/toolbox.yaml` leaves out its notes, evidence links and reasons, and the
+  overlay for the operator's agent bots, including the tools only those bots use, along with the renderer for it in
+  `toolbox/render.py`. A restore that wants those bots sets them up again.
 - **Budgets:** every `max_budget` / `soft_budget` value reads **1.0**, and team and key budgets in
   `provision-keys.sh` read **1**. Set your own before provisioning.
 - **Dollar figures** of two or more digits in prose read **$N**.
@@ -42,7 +44,8 @@ The dashboards are in `../grafana/dashboards/` (sanitized by their own port).
   prints. They fail quietly until the real vendor names are put back; restore step 3 lists what to search for.
 - **Not copied:** secrets (never in git), the narrative documents (operator notes, state logs, handoffs, rule pages), and
   the local-hosting guide, which records one machine's sign-in and security settings.
-  Scripts here cite some of them by path (`docs/rules/...`, `docs/STATE.md`); those paths are not part of this snapshot.
+  Scripts here cite some of them as "the private rules" or "private evidence", or by path (`docs/STATE.md`); none of
+  those are part of this snapshot.
   The Grafana alert files are not included either, so `scripts/verify-praxen-boards.py` reports the five alert rule
   uids it expects as missing until the deployment provisions its own.
 

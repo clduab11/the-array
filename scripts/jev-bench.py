@@ -8,7 +8,7 @@ numbers describe the shipped questions. Optionally collects REAL local-model out
   python scripts/jev-bench.py --local local-ministral-3b   # + N real local outputs judged (goes through the proxy)
   python scripts/jev-bench.py --out evidence/jev
 
-Reads TYPESAFE_API_KEY / LITELLM_MASTER_KEY from ./.env; never prints them. Stdlib only.
+Reads TYPESAFE_API_KEY / LITELLM_MASTER_KEY from ./.env; never prints them. Runs inside the proxy image, because it imports litellm.
 """
 import argparse
 import json

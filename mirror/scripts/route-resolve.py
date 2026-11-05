@@ -2,7 +2,7 @@
 """
 route-resolve.py — does every configured name still resolve to a deployment in the RUNNING router?
 
-WHY THIS EXISTS (2026-10-01, OP CATALOG-CURRENCY): /v1/models and /v1/model/info list a name even when the router holds
+WHY THIS EXISTS (2026-10-01, a change): /v1/models and /v1/model/info list a name even when the router holds
 no deployment for it. The proxy's model-sync job re-reads litellm_config.yaml about every 30 s and drops every deployment
 whose model_name + litellm_params changed on disk, loading nothing new until a restart; a live edit took 76 Venice routes
 dark that way while the catalog still listed them. Only a call proves resolution. This makes that call nearly free:

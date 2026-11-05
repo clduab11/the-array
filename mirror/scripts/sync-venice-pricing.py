@@ -29,7 +29,7 @@ USAGE:  python scripts/sync-venice-pricing.py [--dry-run] [--config litellm_conf
         (reads VENICE_API_KEY from the environment, else from ./.env; never prints it)
         Prefer --config on the staged copy, then swap it in and restart in one command. Without --config this script
         writes the LIVE config, and the running proxy drops every entry whose price lines changed within ~30 s
-        (docs/rules/litellm.md): restart AT ONCE, and run `python scripts/route-resolve.py` afterwards.
+        (the private rules): restart AT ONCE, and run `python scripts/route-resolve.py` afterwards.
 
 Text-surgery on purpose: pyyaml round-trip would destroy the config's
 comments. Venice no-auto-cull rule: flag, never delete.

@@ -6,7 +6,7 @@ files: each config names an environment variable, in that client's own syntax.
 | File | What it is |
 |---|---|
 | `toolbox.yaml` | The list: every kept tool with its profile, address or package, and key name; every dropped tool with what replaces it. Edit this, never the rendered files. |
-| `render.py` | Writes `out/<client>/` for Claude Code, VS Code, Zed, OpenCode and Codex. Fails if anything key-shaped appears in the output. |
+| `render.py` | Writes `out/<client>/` for Claude Code, VS Code, Zed, OpenCode and Codex. Fails if anything key-shaped appears in the output. This is a starter set; the reference deployment's list is `mirror/toolbox/`, without Zed or OpenCode. |
 | `check.py` | Connects to every hosted tool with your keys and reports its real tool count. |
 | `dbhub.toml.example` | Read-only config for the one database tool (the gateway's spend ledger). |
 | `out/SECRETS.md` | The key names to set, and which are missing (generated). |

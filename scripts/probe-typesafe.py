@@ -6,8 +6,8 @@ Exit 1 on any failed assertion. Stdlib only.
 
   python scripts/probe-typesafe.py            # direct: GET /v1/models + one 3-question evaluate
   python scripts/probe-typesafe.py --via-proxy  # same request through http://localhost:4000/typesafe/...
-                                                #   (needs a LiteLLM image with the TypeSafe pass-through,
-                                                #    first shipped in v1.103.0-dev.2 / PR #41607 - v1.100.1 404s)
+                                                #   (LiteLLM's native /typesafe route; a 404 means an older image,
+                                                #    or a leftover pass_through_endpoints entry overriding it)
 
 Assertions follow the durable rule: assert on the RESPONSE MODEL and shape, never on the status code.
 """
@@ -109,8 +109,8 @@ def main():
 
     status, models, dt = call("GET", f"{base}/v1/models", token)
     if status == 404 and args.via_proxy:
-        print("[FAIL] proxy /typesafe/v1/models -> 404: this LiteLLM image has no TypeSafe pass-through "
-              "(needs >= v1.103.0-dev.2 / PR #41607).")
+        print("[FAIL] proxy /typesafe/v1/models -> 404: this image predates the native /typesafe route, "
+              "or a /typesafe pass_through_endpoints entry is overriding it. Delete that entry.")
         return 1
     names = [m.get("id") or m.get("name") for m in (models.get("data") or models.get("models") or [])] \
         if isinstance(models, dict) else []

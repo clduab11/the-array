@@ -1,8 +1,8 @@
-"""the-array — G-SEC strip for Unsloth-backed deployments (LiteLLM v1.100.1; OP UNSLOTH CHARLIE C-0, plan §6.7 item 1).
+"""the-array — G-SEC strip and GPU rule for Unsloth-backed deployments (LiteLLM v1.100.1; a change CHARLIE C-0, plan §6.7 item 1).
 
 Unsloth's OpenAI-compatible API accepts about 29 non-standard request fields. With the key, `enable_tools: true` ran
-server-side Python as the Windows user (ALPHA p12), and LiteLLM forwards 28 of the 29 to an `openai/` upstream inside
-`extra_body` (ALPHA p17), including the `provider_*` fields that make Unsloth call an external provider (egress that
+server-side Python as the Windows user, and LiteLLM forwards 28 of the 29 to an `openai/` upstream inside
+`extra_body`, including the `provider_*` fields that make Unsloth call an external provider (egress that
 never passes through LiteLLM).
 
 This hook runs once per deployment attempt: `litellm.utils.async_pre_call_deployment_hook`, called from the core async
@@ -16,9 +16,23 @@ only a direct request. For a deployment whose api_base is the Unsloth host it:
     LiteLLM's "bug in LiteLLM" banner and the router retried three times; a 400 is not retried and never cools a deployment.
 Stripped field NAMES (never values) are logged as `unsloth_guard` warnings.
 
+GPU rule, on the same hook:
+  - While Unsloth is training (LLM or diffusion), every Unsloth deployment refuses with a 503. Unsloth's own chat-load guard
+    returns early for a GGUF row in Manual GPU mode, which is every pinned row here, so without this a routed call could
+    load beside a running trainer (studio/backend/routes/inference.py, source-read 2026-11-04).
+  - While a Hub download runs, a call that would load a model refuses with a 503 (a load during a download took the backend
+    down on the reference deployment). A call the resident model can serve still runs.
+  - A file at CARD_HOLD_FILE inside the container closes local routes by hand; a container recreate clears it.
+A 503 walks the caller's chain, every Unsloth rung refuses too, and the caller's own fallback takes the turn. The status read
+fails OPEN: if Unsloth's status can't be read, calls go through. This rule protects a run; the G-SEC strip is the security
+control and it still fails closed. Refusals count in praxen_unsloth_card_refusals_total{reason} and log as warnings.
+
 Loaded via litellm_settings.callbacks as `unsloth_guard.guard_instance`; mounted at /app/unsloth_guard.py.
 """
+import asyncio
 import os
+import re
+import time
 from typing import Any
 from urllib.parse import urlparse
 
@@ -37,8 +51,25 @@ try:
     from litellm.exceptions import BadRequestError as _BadRequestError
 except Exception:  # noqa: BLE001 — without it the refusal falls back to ValueError (still refused, as a 500)
     _BadRequestError = None
+try:
+    from litellm.exceptions import ServiceUnavailableError as _ServiceUnavailableError
+except Exception:  # noqa: BLE001 — without it the GPU rule falls back to ValueError (a 500, which still walks the chain)
+    _ServiceUnavailableError = None
+try:
+    import httpx
+except Exception:  # noqa: BLE001 — without it the GPU rule reads nothing and stays open
+    httpx = None
+try:
+    from prometheus_client import REGISTRY, Counter
 
-# The 29 Unsloth request fields ALPHA saw forwarded (p17), minus chat_template_kwargs, denied even if a LiteLLM
+    try:
+        _M_CARD = Counter("praxen_unsloth_card_refusals_total", "Unsloth deployments refused by the GPU rule", ["reason"])
+    except ValueError:  # already registered (module re-import)
+        _M_CARD = REGISTRY._names_to_collectors["praxen_unsloth_card_refusals_total"]  # noqa: SLF001
+except Exception:  # noqa: BLE001 — a missing meter never blocks a call
+    _M_CARD = None
+
+# The 29 Unsloth request fields seen forwarded, minus chat_template_kwargs, denied even if a LiteLLM
 # registry ever grows a same-named entry.
 UNSLOTH_FIELDS = frozenset({
     "anthropic_code_exec_container_id", "bypass_permissions", "compaction_headroom_ratio", "compaction_threshold",
@@ -57,6 +88,11 @@ CHAT_CALL_TYPES = frozenset({
     "anthropic_messages", "aanthropic_messages", "responses", "aresponses",
 })
 HEADER_KEYS = ("extra_headers", "headers", "default_headers")
+
+CARD_TTL_S = 3.0
+CARD_HOLD_FILE = "/tmp/unsloth-card-hold"
+# The phases /api/train/status reports while a run holds or is about to hold the card (routes/training.py _build_training_status).
+TRAINING_PHASES = frozenset({"configuring", "loading_model", "training_drafter", "training", "finalizing"})
 
 
 def _unsloth_netlocs() -> set[str]:
@@ -80,6 +116,17 @@ def _refusal(message: str, kwargs: dict[str, Any]) -> Exception:
     return ValueError(message)
 
 
+def _unavailable(message: str, kwargs: dict[str, Any]) -> Exception:
+    """The GPU rule's refusal: a 503, so the caller's fallback chain takes the call. Falls back to a ValueError."""
+    if _ServiceUnavailableError is not None:
+        try:
+            return _ServiceUnavailableError(message=message, model=str(kwargs.get("model") or ""),
+                                            llm_provider=str(kwargs.get("custom_llm_provider") or "openai"))
+        except Exception:  # noqa: BLE001 — a changed constructor must not turn the refusal into a pass
+            pass
+    return ValueError(message)
+
+
 def _is_unsloth(kwargs: dict[str, Any]) -> bool:
     bases = [kwargs.get("api_base"), kwargs.get("base_url")]
     lp = kwargs.get("litellm_params")
@@ -87,6 +134,72 @@ def _is_unsloth(kwargs: dict[str, Any]) -> bool:
         bases.append(lp.get("api_base"))
     netlocs = _unsloth_netlocs()
     return any(isinstance(b, str) and urlparse(b).netloc.lower() in netlocs for b in bases)
+
+
+class _CardState:
+    """What Unsloth is doing with the card, read at most once per CARD_TTL_S. Never raises: a route it can't read counts as idle."""
+
+    def __init__(self) -> None:
+        self._at = 0.0
+        self._val: tuple[str, bool, str] = ("", False, "")
+        self._client: Any = None
+
+    async def _fetch(self, path: str) -> dict[str, Any]:
+        base = re.sub(r"/v1/?$", "", os.environ.get("UNSLOTH_PC_URL", "").strip().rstrip("/"))
+        if not base or httpx is None:
+            return {}
+        key = os.environ.get("UNSLOTH_PC_API_KEY", "")
+        headers = {"Authorization": f"Bearer {key}"} if key else {}
+        try:
+            if self._client is None:
+                self._client = httpx.AsyncClient(timeout=1.0)
+            response = await self._client.get(base + path, headers=headers)
+            body = response.json() if response.status_code == 200 else {}
+        except Exception:  # noqa: BLE001
+            return {}
+        return body if isinstance(body, dict) else {}
+
+    async def get(self) -> tuple[str, bool, str]:
+        """-> (training kind or "", a Hub download is running, the resident repo lower-cased or "")."""
+        if time.monotonic() - self._at < CARD_TTL_S:
+            return self._val
+        llm, diffusion, hub, status = await asyncio.gather(
+            self._fetch("/api/train/status"),
+            self._fetch("/api/train/diffusion/status"),
+            self._fetch("/api/hub/active-downloads"),
+            self._fetch("/api/inference/status"),
+        )
+        training = ""
+        if llm.get("is_training_running") or str(llm.get("phase") or "") in TRAINING_PHASES:
+            training = "training"
+        elif diffusion.get("active"):
+            training = "diffusion_training"
+        loaded = status.get("loaded") or []
+        resident = str(loaded[0]).lower() if loaded else ""
+        self._val, self._at = (training, bool(hub.get("downloads")), resident), time.monotonic()
+        return self._val
+
+
+_CARD = _CardState()
+
+
+async def _card_refusal(kwargs: dict[str, Any]) -> tuple[str, str] | None:
+    """(reason, message) when the GPU rule closes this deployment, else None. Never raises: any fault here lets the call through."""
+    try:
+        if os.path.exists(CARD_HOLD_FILE):
+            return "hold", "Local models are on hold by hand (the-array GPU rule)."
+        training, downloading, resident = await _CARD.get()
+        if training:
+            return training, "Unsloth is training, so local models are closed until the run ends (the-array GPU rule)."
+        if downloading:
+            lp = kwargs.get("litellm_params")
+            names = [kwargs.get("model"), lp.get("model") if isinstance(lp, dict) else None]
+            target = " ".join(str(n).lower() for n in names if n)
+            if not resident or resident not in target:
+                return "download", "An Unsloth Hub download is running, so no local model can load until it ends (the-array GPU rule)."
+    except Exception:  # noqa: BLE001
+        return None
+    return None
 
 
 class UnslothGuard(CustomLogger):
@@ -99,6 +212,17 @@ class UnslothGuard(CustomLogger):
         if ct is None or str(ct) not in CHAT_CALL_TYPES:
             verbose_proxy_logger.warning("unsloth_guard: refused call_type=%s for an Unsloth deployment", ct)
             raise _refusal(f"unsloth_guard: call type {ct!r} is not allowed on an Unsloth deployment", kwargs)
+
+        card = await _card_refusal(kwargs)
+        if card is not None:
+            reason, message = card
+            verbose_proxy_logger.warning("unsloth_guard: GPU rule refused model=%s reason=%s", kwargs.get("model"), reason)
+            if _M_CARD is not None:
+                try:
+                    _M_CARD.labels(reason).inc()
+                except Exception:  # noqa: BLE001
+                    pass
+            raise _unavailable(message, kwargs)
 
         out = dict(kwargs)
         dropped = sorted(k for k in out if k not in ALLOWED_TOP_LEVEL)

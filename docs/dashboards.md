@@ -60,6 +60,10 @@ NEEDS ATTENTION and key-lanes queries. Change all of them together, or the board
 
 ## FORENSICS
 
+One text panel embeds the query explorer in an iframe, so it needs the two commented HTML settings in
+`docker-compose.yml`. Turn those on only for a single-tenant deployment with port 3200 off the LAN; this
+compose file publishes it on all interfaces.
+
 Paste a spend-ledger `request_id` **or** a `litellm_call_id` into REQUEST / CALL ID. The board derives the call id
 (most chat rows store the provider's id as `request_id`, while the judge and the traces key on the call id) and
 narrows everything to it: the verbose request table, the correlated Loki window, the Jev judge event, a timeline

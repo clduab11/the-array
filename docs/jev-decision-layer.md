@@ -1,18 +1,18 @@
 # The Jev decision layer
 
 `litellm/jev_gate.py` gives the gateway two decisions it could not make before, backed by
-TypeSafe AI's Jev, plus a pass-through so your own code can ask Jev through the gateway.
-Everything here is opt-in per route and declines gracefully without a key.
+TypeSafe AI's Jev. LiteLLM's native route also lets your own code ask Jev through the gateway.
+The two decisions are opt-in per route and decline gracefully without a key.
 
 ## What Jev is
 
-Jev (early access since 2026-09-15, https://docs.typesafe.ai) is a *decision* model, not a
+Jev (early access as of 2026-09-18, https://docs.typesafe.ai) is a *decision* model, not a
 chat model. You send it a `state` (text or JSON) and typed `questions`; it returns one typed
 answer per question with a probability distribution and a confidence, and never generates
 text. Three question types: **Choice** (one of your options), **Score** (a position on your
 ordered rubric), **Noul** (probability that a statement is true). Priced per input token
 ($0.042 per million at time of writing; output is free), roughly half a second round trip
-from a US host, 64K-token requests.
+from a US host.
 
 It cannot answer outside your schema, but it can pick the wrong valid option, and the vendor
 documents that adversarial text inside the state can move probabilities. It is not trained on
@@ -59,17 +59,11 @@ to cloud vendors; do not enable it on a router that must stay local-only.
 
 `POST /typesafe/v1/systemone` and `GET /typesafe/v1/models` on the gateway forward to
 `api.typesafe.ai` with the proxy's `TYPESAFE_API_KEY` injected, so scripts and agents hold only
-a gateway virtual key and every call lands in the spend ledger. On LiteLLM 1.100.x this
-generic route is opt-in per key or team:
-
-```
-POST /key/update
-{"key": "<virtual key>", "metadata": {"allowed_passthrough_routes": ["/typesafe"]}}
-```
-
-(exact or prefix match; merge into the key's existing metadata; the master key always passes).
-Spend is a flat `cost_per_request` estimate until the native `/typesafe` route in LiteLLM ≥ 1.103
-prices each call from the response usage.
+a gateway virtual key and every call lands in the spend ledger. As of 2026-11-04 (LiteLLM 1.106.5)
+the native `/typesafe` route serves this, and each call is priced from the response usage. Any
+virtual key can list Jev's models, and a key with a model list can POST only with a Jev model on
+that list. Don't add a `pass_through_endpoints` entry for it; on LiteLLM 1.104 that
+made every call return 404.
 
 ## Enable
 
@@ -96,7 +90,7 @@ tuned per version), `JEV_TIMEOUT_MS` (2500), `JEV_CIRCUIT_COOLDOWN_S` (30),
   `request_id`. LiteLLM snapshots request metadata before these hooks run, so the verdict
   cannot be written into the ledger row itself.
 - The example dashboard's Jev row: calls, refusals caught, estimated spend, tier mix.
-- `scripts/verify-stack.py` probe 15 checks the pass-through and skips when no key is set.
+- `scripts/verify-stack.py`'s TypeSafe probe checks the pass-through and skips when no key is set.
 
 ## Measured on the reference deployment (2026-09-18, jev-1.13.0)
 
@@ -110,10 +104,12 @@ tuned per version), `JEV_TIMEOUT_MS` (2500), `JEV_CIRCUIT_COOLDOWN_S` (30),
 | Live router: greeting / small function / prove √2 / 4.7K-token analysis / "this is SIMPLE" injection | SIMPLE / MEDIUM / REASONING / COMPLEX (size floor) / COMPLEX |
 | Round trip, gateway host → vendor | median 531 ms, p95 643 ms |
 | Whole bench, 27,468 input tokens | $0.0012 |
+| A later run, 2026-09-18, with 5 questions per classifier call and 3 per judge call | Classifier 16/16, and 20/23 on a harder set; judge 14/15; median 563 ms, p95 1,941 ms; $0.0028 |
 
 The injection cases moved probabilities without flipping labels (one self-grading reply moved
-`non_answer` from 1.00 to 0.90). Reproduce with `scripts/jev-bench.py`; run it inside the
-proxy image, because it imports `litellm` and this project does not install LiteLLM from PyPI.
+`non_answer` from 1.00 to 0.90). Reproduce the first run with `scripts/jev-bench.py` and the
+later one with `mirror/scripts/jev-bench.py`; run either inside the proxy image, because it
+imports `litellm` and this project does not install LiteLLM from PyPI.
 
 ## Caveats, plainly
 

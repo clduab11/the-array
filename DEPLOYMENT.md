@@ -1,7 +1,7 @@
 # Deployment
 
-Bring-up, daily operation, updates and rollback for the reference stack. Every
-step below has been run on the reference deployment; where a step encodes a
+Bring-up, daily operation, updates and rollback for the reference stack. These
+procedures come from running the reference deployment; where a step encodes a
 lesson, the lesson is stated so you can decide whether it applies to you.
 
 ## 0. What you are deploying
@@ -17,7 +17,10 @@ services. Use `--profile observe` for the full stack.
 
 The proxy is the only egress to any model vendor. Clients talk to the proxy;
 the proxy talks to vendors and to your local model server. That single path is
-what makes metering, budgets and the fail-closed private lane possible.
+what makes metering, budgets and the fail-closed private lane possible. On the
+reference deployment, flat-rate coding plans, direct vendor accounts in desktop
+apps, and the hosted model automated agents use when local models close are the
+deliberate exceptions, and none reaches the ledger.
 
 ## 1. Prerequisites
 
@@ -31,8 +34,11 @@ what makes metering, budgets and the fail-closed private lane possible.
   cap plus your model server's resident set stays under physical RAM; the
   failure mode when it does not is the Docker VM stopping under memory
   pressure while everything native keeps running.
-- `python3` (3.10+) for the scripts. They are stdlib-only.
+- `python3` (3.10+) for the scripts. Five of the six are stdlib-only;
+  `jev-bench.py` runs inside the proxy image.
 - `curl` and `jq` for `provision-keys.example.sh`.
+- HTTPS to grafana.com on Grafana's first boot and after any plugin pin change.
+  Grafana halts if a pinned plugin can't download.
 - A local OpenAI-compatible model server if you want local rungs (Unsloth
   Desktop on the reference deployment; llama.cpp server, vLLM, Ollama with the
   OpenAI shim). From inside a
@@ -49,7 +55,8 @@ cp .env.example .env
 
    Provider keys you do not hold can stay `CHANGE_ME`; the matching wildcard
    route will fail at request time, not at startup. Remove such wildcards from
-   the config if you want a clean catalog.
+   the config if you want a clean catalog. Leave `TYPESAFE_API_KEY` empty unless
+   you hold one: any other value turns the Jev judge on.
 
 2. Review `litellm_config.example.yaml` and save your version as
    `litellm_config.yaml` (the compose file mounts that name). Keep the
@@ -84,7 +91,9 @@ python scripts/verify-stack.py --no-llm
    `--no-llm` skips the one paid probe. Run it without the flag once a key
    with a budget exists. The restricted-key probe reads
    `--restricted-key-var`; until you have a restricted virtual key it reports
-   SKIPPED, not FAIL.
+   SKIPPED, not FAIL. The embedding probe fails until `LOCAL_EMBED_URL` works,
+   so with no embedding server that one FAIL is expected. With few vendors the
+   catalog can sit under the default floor, so lower `--min-routable`.
 
 5. Mint teams and virtual keys. Edit the example specs in
    `provision-keys.example.sh`, then:
@@ -202,14 +211,16 @@ Then bump deliberately, one image at a time, with the gate before and after:
 docker exec praxen-postgres sh -c 'pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB"' > backup/litellm-db.bak.pre-<tag>.sql
 ```
 
-  Then edit `FROM`, rebuild, `up -d litellm-proxy`, confirm
+  Then edit `FROM`, keeping the digest pin, rebuild, `up -d litellm-proxy`, confirm
   `import hiredis` still fails inside the container (the wrapper removes it
   on purpose), and gate.
 - **Grafana minor bumps**: copy `grafana.db` out of the volume first;
-  migrations are forward-only. From 13.2 the core datasources become catalog
-  plugins that auto-update from grafana.com on every restart — pin them in
-  `GF_PLUGINS_PREINSTALL_SYNC` and set `GF_PLUGINS_PREINSTALL_AUTO_UPDATE=false`
-  before moving, or you lose the pin-everything property.
+  migrations are forward-only. As of 2026-11-04 the compose file runs 13.2.5.
+  From 13.2 the core datasources are catalog plugins that auto-update from
+  grafana.com on every restart, so they're pinned in
+  `GF_PLUGINS_PREINSTALL_SYNC` with `GF_PLUGINS_PREINSTALL_AUTO_UPDATE=false`.
+  Move those pins with any Grafana bump, to the newest version grafana.com lists
+  as compatible.
 - **Tempo**: stay on the 2.10 line until you rewrite the config. 3.x removes
   the `ingester`, `compactor` and local-blocks sections this config uses and
   has no downgrade path. Before any Tempo minor, boot the new image once
@@ -219,6 +230,11 @@ docker exec praxen-postgres sh -c 'pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB"
 - **Distroless images** (Tempo, Loki): they ship no shell, so an exec-form
   healthcheck fails with an OCI error and the container reads unhealthy while
   the service is fine. Liveness for both rides the Prometheus scrape job.
+- **Upgrading an older copy of this kit**: delete any `/typesafe`
+  `pass_through_endpoints` entry, add a Jev model to any limited key that POSTs
+  to `/typesafe`, add `max_tokens_from_tier_model: false` under each router's
+  `complexity_router_config`, and take `GF_PLUGINS_PREINSTALL_SYNC` and
+  `GF_PLUGINS_PREINSTALL_AUTO_UPDATE` from `docker-compose.yml`.
 
 ## 6. Rollback
 
@@ -226,7 +242,7 @@ docker exec praxen-postgres sh -c 'pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB"
 |-------------------------|-------------------------------------------------------------------------------------------|
 | An image bump           | Revert the tag, `docker compose --profile observe up -d <service>`                        |
 | LiteLLM base bump       | Revert `FROM`, rebuild, restore the pre-bump dump into a clean database                   |
-| Grafana minor bump      | Revert the tag, stop grafana, restore `grafana.db` into the volume, start                 |
+| Grafana minor bump      | Revert the tag and the plugin pins, stop grafana, restore `grafana.db` into the volume, start |
 | A config edit           | Copy the `.bak` back, restart `litellm-proxy`                                             |
 | A dashboard edit        | Copy the `.bak` back; Grafana re-reads within 30 seconds                                  |
 
@@ -264,12 +280,17 @@ cleanup; move candidates to a visible staging directory and purge by hand.
   live and timed out; see "Clients that import the model list" in section 3.
 - **Spend alerts never arrive.** `GRAFANA_SMTP_ENABLED` is still false, or the
   address in `grafana/provisioning/alerting/spend-watch.yaml` was not replaced.
+- **Local routes answer 503.** The guard's GPU rule closed them: Unsloth is
+  training, a Hub download is running and the call would load a model, or a hold
+  file sits at `/tmp/unsloth-card-hold` inside the proxy container. Recreating the
+  container clears that file.
 
 ## 8. Optional: the Jev decision layer
 
-`litellm/jev_gate.py` adds two decisions the gateway could not make before and one
-pass-through, all backed by TypeSafe AI's Jev (a typed-decision model, not a chat
-model). Read `docs/jev-decision-layer.md` first; the short version:
+`litellm/jev_gate.py` adds two decisions the gateway could not make before, and LiteLLM's
+native route lets your code call Jev through the gateway. All three use TypeSafe AI's Jev (a
+typed-decision model, not a chat model). Read `docs/jev-decision-layer.md` first; the short
+version:
 
 1. Put `TYPESAFE_API_KEY` in `.env` and **recreate** the proxy (the module is a new bind
    mount): `docker compose --profile observe up -d litellm-proxy`. With the key unset
@@ -281,10 +302,11 @@ model). Read `docs/jev-decision-layer.md` first; the short version:
 3. To let Jev pick tiers on a router, uncomment the four `classifier_*` lines under that
    router's `complexity_router_config`. Every classified prompt goes to the vendor, so do
    not do this on a router that must stay local-only. If Jev fails the built-in scorer decides.
-4. To let a script or agent call Jev through the gateway, grant the key:
-   `POST /key/update {"key": "...", "metadata": {"allowed_passthrough_routes": ["/typesafe"]}}`
-   (merge into the key's existing metadata). Then `python scripts/probe-typesafe.py --via-proxy`.
-5. Verify: `python scripts/verify-stack.py` (probe 15), `praxen_jev_*` on `/metrics/`, one
+4. Scripts and agents can call Jev through the gateway on LiteLLM's native `/typesafe` route,
+   metered to the calling key and priced from the response usage. As of 2026-11-04 (LiteLLM
+   1.106.5) any virtual key can list Jev's models, and a key with a model list can POST only with
+   a Jev model on that list. Test it with `python scripts/probe-typesafe.py --via-proxy`.
+5. Verify: `python scripts/verify-stack.py` (the TypeSafe pass-through probe), `praxen_jev_*` on `/metrics/`, one
    `jev_gate {...}` JSON line per decision in the proxy log, the Jev row on the dashboard.
 6. Roll back: remove `jev_gate.judge_instance` from `callbacks` (judge), re-comment the
    `classifier_*` lines (classifier), or unset the key (everything). Restart the proxy.

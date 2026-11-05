@@ -137,7 +137,7 @@ sentence with a normal status, or as filler, and the gateway counts them as
 answers. So the reference build now asks a second, much smaller model to
 referee. TypeSafe's Jev is not a chat model: it takes the request and the reply
 and returns one typed verdict, answered, refused or non-answer, with a
-probability, in about half a second, for a few hundredths of a cent. A
+probability, in about half a second, for a few thousandths of a cent. A
 confident decline is then treated exactly like a protocol-level refusal and the
 gateway moves to the next model on the list. Empty replies are caught without
 asking anyone. The same model can pick the tier on the cost-aware router, with
@@ -149,8 +149,9 @@ of 15, including two replies written to argue for their own grade, and the tier
 picker 16 of 16; the median round trip was 531 ms and the whole test cost a
 tenth of a cent. It is a paid, early-access service with open-ended retention,
 so the private routes are excluded and every use was opt-in per route (the
-reference deployment has since switched it on for most routes). Knobs,
-access rules and the caveats are in `docs/jev-decision-layer.md`.
+reference deployment has since switched it on for about a third of its route
+names, which carry most calls from connected tools). Knobs, access rules and
+the caveats are in `docs/jev-decision-layer.md`.
 
 ### Privacy is a routing decision
 
@@ -165,7 +166,7 @@ under the private chain, where anyone can read it.
 
 ## What it costs you
 
-The first start-up is an afternoon. Getting the metering right took months;
+The first start-up is the quick part. Getting the metering right took months;
 the fallbacks and the dashboards took about as long. Every finding above was
 preceded by a period in which the system was confidently wrong.
 

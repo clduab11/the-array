@@ -23,22 +23,11 @@ general_settings:
   # takes effect. YAML is the only authoritative surface (keep STORE_MODEL_IN_DB unset too).
   store_model_in_db: false
 
-  # OPTIONAL: TypeSafe Jev pass-through (docs/jev-decision-layer.md). Clients POST /typesafe/v1/systemone
-  # with a gateway virtual key and the proxy injects TYPESAFE_API_KEY. On LiteLLM 1.100.x this generic
-  # route is opt-in per key/team: put allowed_passthrough_routes: ["/typesafe"] in the key's or team's
-  # metadata (exact or prefix match) or the call gets 403; the master key always passes. cost_per_request
-  # is a flat estimate (~476 input tokens at $0.042/M); LiteLLM >= 1.103 ships a native /typesafe route
-  # priced from the response usage - swap to it then.
-  pass_through_endpoints:
-    - path: "/typesafe"
-      target: "https://api.typesafe.ai"
-      include_subpath: true
-      auth: true
-      headers:
-        Authorization: "Bearer os.environ/TYPESAFE_API_KEY"
-        content-type: application/json
-      cost_per_request: 0.00002
-      timeout: 30
+  # OPTIONAL: TypeSafe Jev through the gateway (docs/jev-decision-layer.md). LiteLLM's native route serves
+  # /typesafe/{path}: clients POST /typesafe/v1/systemone with a gateway virtual key, the proxy injects
+  # TYPESAFE_API_KEY, and spend is priced from the response usage. It needs no entry in this file. Do not add
+  # a pass_through_endpoints entry for /typesafe: on LiteLLM 1.104 it overrode the native route and every
+  # call returned 404.
   # Alerting is wired but disabled until a webhook exists (reads SLACK_WEBHOOK_URL).
   # alerting: ["slack"]
   # alerting_threshold: 300
@@ -55,7 +44,7 @@ litellm_settings:
   # jev_gate.judge_instance (litellm/jev_gate.py) is the soft-refusal judge: on NON-streamed calls for the
   # routes listed under content_policy_fallbacks it asks TypeSafe Jev whether the reply actually answered,
   # and a confident "refused"/"non_answer" verdict walks the same chain. With TYPESAFE_API_KEY unset it does
-  # nothing. Remove it (and the pass-through above) if you do not want that vendor in the path.
+  # nothing. Remove it if you do not want that vendor in the path.
   # unsloth_guard.guard_instance (litellm/unsloth_guard.py) runs before every call that lands on the Unsloth
   # host, fallbacks included: it keeps only standard chat parameters, forces Unsloth's server-side tools off,
   # and refuses non-chat calls (embeddings go to LOCAL_EMBED_URL instead). Keep it whenever a route points
@@ -297,9 +286,9 @@ model_list:
   # Local tier (Unsloth Desktop, OpenAI-compatible). UNSLOTH_PC_URL is the base
   # URL as seen from INSIDE the proxy container - probe it from the container's
   # network namespace before trusting it; the host reaching it proves nothing.
-  # Unsloth runs server-side tools for any keyed caller that asks for them; the
-  # reference deployment strips those request fields in a gateway callback
-  # (mirror/litellm/unsloth_guard.py) so no client can switch them on.
+  # Unsloth runs server-side tools for any keyed caller that asks for them; this
+  # kit strips those request fields in a gateway callback
+  # (litellm/unsloth_guard.py) so no client can switch them on.
   # ---------------------------------------------------------------------------
   - model_name: local-chat-example
     litellm_params:
@@ -356,6 +345,9 @@ model_list:
         # classifier_plugin: jev_gate.classifier_instance
         # classifier_plugin_timeout_ms: 4000
         # classifier_fallback: heuristic
+        # LiteLLM >= 1.104 defaults this to true and replaces the caller's max_tokens with the tier model's
+        # output ceiling. Before it was set, a 48-token probe on the reference deployment wrote 8,930 tokens.
+        max_tokens_from_tier_model: false
         tiers:
           SIMPLE: local-chat-example
           MEDIUM: fast-cloud-example

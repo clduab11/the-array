@@ -22,11 +22,11 @@ AI use costs, where its text goes, and what happens when a vendor fails.
 
 | What you get | How it works |
 |---|---|
-| A bill you can read | Every call goes into a ledger: who asked, which model answered, how much text went in and out, and the cost to a fraction of a cent. Local calls go in the same ledger at zero vendor cost, next to the cloud ones. |
+| A bill you can read | Every call through the gateway goes into a ledger: who asked, which model answered, how much text went in and out, and the cost to a fraction of a cent. Local calls go in the same ledger at zero vendor cost, next to the cloud ones. |
 | Rules that bind | Each tool can get its own key with a budget and a list of models it may use. A request for a model outside the list is refused. |
-| Answers when a vendor is down | Each chat route has a fallback list: if one model fails, the next is tried, and every list ends at a model on your own hardware. Embedding routes and whole-catalog pass-throughs have none, on purpose; they fail loudly instead. |
+| Answers when a vendor is down | Everyday chat routes and routers have a fallback list: if one model fails, the next is tried, and every list ends at a model on your own hardware. As of 2026-11-04 the reference deployment has 116 of them. Other routes, such as embedding routes and whole-catalog pass-throughs, have none, on purpose; they fail loudly instead. While local models are closed (see the guard below), that last step refuses too. |
 | A private lane | One route can reach only the vendors you chose for their privacy terms, then your own machine. If both are down, the request is refused, never retried somewhere else. |
-| A referee | TypeSafe's Jev, a paid cloud service, catches polite non-answers and rates how hard each question is. A check takes about half a second and costs a few thousandths of a cent. |
+| A referee | TypeSafe's Jev, a paid cloud service, catches polite non-answers on non-streamed replies and rates how hard each question is. A check takes about half a second and costs a few thousandths of a cent. |
 
 ## The local tier, and why it holds up
 
@@ -51,58 +51,72 @@ measured to fit. The difference was measured. Unsloth's automatic setting was
 given a long context for a 4-billion-parameter model, and llama.cpp moved part
 of the model off the graphics card to make room. It fell to about 20 tokens
 per second (a token is roughly three quarters of a word). Pinned whole to the
-card, with a slightly smaller context measured to fit, it runs at about 62.
+card, with a context measured to fit, it ran at about 62 on 2026-10-29.
+Re-measured on 2026-11-04 at 131,072 tokens, it runs at about 68.
 
-As of 2026-10-29 there are 15 local routes on one 8 GB card and 48 GB of
+As of 2026-11-04 there are 15 local routes on one 8 GB card and 48 GB of
 memory: 14 chat routes, with one model loaded at a time, and an embedding
-route. They include a 35-billion-parameter coding model at about 22 tokens
-per second that holds 114,688 tokens at once. A 30-billion-parameter model
-holds 655,360 tokens and runs at about 14 tokens per second. Those two need
-about 20 GB of the 48 GB free, so they load only when other work is stopped.
+route. Nine of the chat models hold 131,072 tokens at once. The largest two
+are a 35-billion-parameter coding model, at about 22 tokens per second and
+114,688 tokens, and a 30-billion-parameter model, at about 14 tokens per
+second and 655,360 tokens. Those two need about 20 GB of the 48 GB free, so
+they load only when other work is stopped.
 
-**Jev chooses, Unsloth answers.** On the local routers, Jev rates each
-question by difficulty, and each difficulty level points to a local model:
-easy questions go to a fast one, hard ones to a stronger one. Sometimes a
+**Jev chooses, Unsloth answers.** On the reference deployment's local routers,
+Jev rates each question by difficulty, and each difficulty level points to a
+local model: easy questions go to the fastest one, harder
+ones to slower, larger ones. The current picks date from 2026-11-04, were
+chosen on speed and context, and have no quality evaluation yet. Sometimes a
 request names a small local model directly and Jev rates the question harder
-than that model can handle. The request then moves up to a stronger local
+than that model can handle. The request then moves up to a larger local
 model, never down. Jev also records a verdict on local answers (answered,
 refused or non-answer), so the dashboards show which local models dodge which
 questions. The next step is already collecting data: a picker that weighs
-difficulty, task and content policy across the local roster. For now it
-records what it would have chosen and routes nothing, until its records are
-reviewed and it is switched on.
+difficulty, task and content policy across the local roster. As of 2026-11-04
+it records what it would have chosen and routes nothing, until its records are
+reviewed and it is switched on. This paragraph describes
+`mirror/litellm/jev_gate.py`. The kit, this repository's top-level files, has a
+simpler module that judges answers and can pick a router's tier, but doesn't
+move requests up or run the picker.
 
 Jev runs in TypeSafe's cloud. To rate a question, the gateway sends the
 question's text to TypeSafe, and to record a verdict it sends the reply as
 well. So on any route where Jev is on, a local answer still involves one
-outside service. On the reference deployment Jev is on for most routes,
-the local ones included. The private lane never uses it, and without a
-TypeSafe key it does nothing at all.
+outside service. As of 2026-11-04, on the reference deployment, Jev covers
+about a third of route names, which carry most calls from connected tools: the
+local routes, most routers, named everyday routes such as `fast` and `coding`,
+and first-party Anthropic and Google routes. TypeSafe says it doesn't train on
+customer input, but its retention is open-ended. The private lane never uses
+Jev, and without a TypeSafe key it does nothing at all.
 
 **A guard sits between the apps and the model server.** Unsloth Desktop will
 run its built-in tools on your machine whenever a request asks, for anyone
 holding its key. A small gateway module (`litellm/unsloth_guard.py`, on by
 default in this kit) removes those requests and forces the tools off. No
 client can switch them on through the front door, and no app is given the
-model server's own address.
+model server's own address. The same module closes the local routes while
+Unsloth is training and blocks new model loads during a Hub download. As of
+2026-11-04 that rule has passed unit tests and a manual shutoff, but hasn't met
+a real run. If it can't read Unsloth's status, it lets calls through.
 
 **Embeddings stay out of the way.** Embeddings are the step that turns
 documents into numbers for search. Unsloth keeps one chat model loaded at a
 time, and an embedding call there would unload it. Embeddings therefore run
-in a small separate container, and the chat model stays loaded.
+in a small separate container, so embedding calls never evict the chat model.
 
 **Msty Studio and Msty Nexus sit on the desk.** Msty Studio is the desktop
 workspace people use: chat, knowledge stacks (your own documents, indexed for
 search) and tools. Msty Nexus sits between the desktop apps and the gateway.
-It gives the apps one address and the full list of routes, and it can issue
-each app its own token, so one app's access can be revoked without touching
-the others. Nexus is a client
+It gives the apps one address and the full list of routes. A client on its
+own token can be revoked alone. On Nexus's free edition, an app paired with it,
+Msty Studio included, can't be. Nexus is a client
 of the gateway, not a replacement: the gateway is still where spend is
 counted and rules are applied. Coding tools connect the same way, or
 straight to the gateway with a key of their own.
 
 **The trade-offs are real.** Only one local model is loaded at a time, and
-switching to another takes 10 to 40 seconds. The largest models compete with
+switching to another takes 10 to 40 seconds. The first call after ten idle
+minutes waits too. The largest models compete with
 everything else for memory. Someone has to run all of it: version pins, price
 tables, retired model names and health checks all need regular attention.
 
@@ -110,21 +124,25 @@ tables, retired model names and health checks all need regular attention.
 
 - **Cloud routes:** the request goes to the vendor that route names, through
   an account you hold.
-- **Routes with Jev switched on (most of them on the reference
-  deployment):** the question's text goes to TypeSafe, and the reply too
-  when Jev records a verdict.
+- **Routes with Jev switched on (about a third of route names on the
+  reference deployment, carrying most calls from connected tools):** the
+  question's text goes to TypeSafe, and the reply too when Jev records a verdict.
 - **The private lane:** only the vendors it lists, then your own machine.
 - **Local routes without Jev:** nothing leaves the machine.
+- **Outside the gateway (reference deployment):** flat-rate coding plans,
+  direct vendor accounts in desktop apps, and the hosted model automated agents
+  use when local models close. None reaches the ledger.
 - **The ledger, dashboards, traces and logs:** these stay on your machine.
 
 ## What has been measured
 
-- **The referee (2026-09-18, small labelled sets).** Jev matched a labelled
-  set of answers 15 times out of 15, including two replies written to argue
-  for their own grade, and picked the right difficulty tier 16 times out of
-  16. The median check took 531 ms, and the whole test cost a tenth of a
-  cent. Details: [`docs/jev-decision-layer.md`](docs/jev-decision-layer.md)
-  and
+- **The referee (2026-09-18, two runs on small labelled sets).** In the first,
+  Jev matched a labelled set of answers 15 times out of 15, including two
+  replies written to argue for their own grade, and picked the right difficulty
+  tier 16 times out of 16. The median check took 531 ms, and the test cost a
+  tenth of a cent. A later run that asked more questions per call scored 14 of
+  15 and 16 of 16, plus 20 of 23 on a harder set, at a median of 563 ms.
+  Details: [`docs/jev-decision-layer.md`](docs/jev-decision-layer.md) and
   [`docs/why-a-referee-in-front-of-local-models.md`](docs/why-a-referee-in-front-of-local-models.md).
 - **What the ledger turned up.** A vendor's default priority tier billed
   every call at between about 1.3 and 2.5 times the standard rate, depending
@@ -133,10 +151,11 @@ tables, retired model names and health checks all need regular attention.
   counter that only a restart resets. Refusals arrived looking like empty
   answers. Each story, and what fixed it, is in
   [`docs/field-notes.md`](docs/field-notes.md).
-- **What has not been watched yet.** No real vendor outage has yet been seen
-  walking a fallback list on live traffic, and no monthly budget has yet been
-  seen stopping a real person in the middle of a task. The mechanisms for
-  both have been tested.
+- **What has not been watched yet.** As of 2026-11-04, no real vendor outage
+  has been seen walking a fallback list on live traffic, no monthly budget has
+  been seen stopping a real person in the middle of a task, and the guard's
+  training and download rule hasn't met a real run. The mechanisms for all three
+  have been tested.
 
 ## How it fits together
 
@@ -144,7 +163,7 @@ tables, retired model names and health checks all need regular attention.
  people and tools (Msty Studio, editors, agents)
           |
           v
- Msty Nexus  (one address, one token per app)                  optional
+ Msty Nexus  (one address, per-client tokens)                  optional
           |
           v
  the gateway: LiteLLM + Jev (TypeSafe cloud)
@@ -167,7 +186,7 @@ an existing tool connects to it by changing one address and one key.
 
 | Path | What it is |
 |---|---|
-| `docker-compose.yml` | The whole stack: the LiteLLM gateway, Postgres, Redis, Prometheus, Grafana, Tempo, Loki with Alloy, and SearXNG for private web search. Each component is pinned to an exact version tag; the live deployment also pins the gateway image by digest (`mirror/litellm/Dockerfile`). |
+| `docker-compose.yml` | The whole stack: the LiteLLM gateway, Postgres, Redis, Prometheus, Grafana, Tempo, Loki with Alloy, and SearXNG for private web search. Each component is pinned to an exact version tag, and the gateway image also by digest, as of 2026-11-04. |
 | `litellm_config.example.yaml` | The routing rules as patterns: vendor pass-throughs, a standard route beside an opt-in priority route, a private chain that refuses rather than leaks, local routes, and an embedding route with deliberately no fallback. |
 | `litellm/` | The gateway image, the Jev decision layer (`jev_gate.py`: the referee and the difficulty picker), the refusal-fallback module and the Unsloth guard. |
 | `grafana/`, [`docs/dashboards.md`](docs/dashboards.md) | Dashboards provisioned from disk: PRAXEN // OVERVIEW (is anything wrong, what needs attention, what it costs; the summary fits one screen and every deeper panel sits in collapsed sections) and FORENSICS (which request), plus the Gateway Overview starter board. |
@@ -181,7 +200,8 @@ an existing tool connects to it by changing one address and one key.
 [`DEPLOYMENT.md`](DEPLOYMENT.md) has the full procedure. The short version:
 
 1. Copy `.env.example` to `.env`. Fill in the vendor keys you hold, a master
-   key for the gateway, and passwords for the database and dashboards.
+   key for the gateway, and passwords for the database and dashboards. Leave
+   `TYPESAFE_API_KEY` empty unless you hold one.
 2. Copy `litellm_config.example.yaml` to `litellm_config.yaml`. Keep the
    patterns you need, and remove any vendor you have no key for.
 3. If you run Unsloth Desktop, set `UNSLOTH_PC_URL` and `UNSLOTH_PC_API_KEY`,
@@ -190,7 +210,9 @@ an existing tool connects to it by changing one address and one key.
    already switched on.
 4. Start the stack with `docker compose --profile observe up -d`.
 5. Run `python scripts/verify-stack.py`, and do not go further until it
-   passes.
+   passes. The embedding probe fails until `LOCAL_EMBED_URL` works, so with no
+   embedding server that one FAIL is expected. With few vendors you'll need a
+   lower `--min-routable`.
 6. Create one key with a budget, point one tool at the gateway, send one
    request, and read it back from the ledger. If it shows the model you
    expected at a cost above zero, metering works.
@@ -217,8 +239,8 @@ cost is the time it takes to run it.
 
 ## Terms used here
 
-- **Gateway:** the one program every AI request passes through. Here it is
-  LiteLLM.
+- **Gateway:** the one program connected tools send their AI requests through.
+  Here it is LiteLLM.
 - **Route:** one entry in the gateway's rules: "a request for this name goes
   there".
 - **Fallback list:** the models a route tries next, in order, when one fails.

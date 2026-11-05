@@ -237,7 +237,7 @@ services:
           cpus: "0.5"
 
   alloy:
-    image: grafana/alloy:v1.19.2   # runs as root by default - required for the docker.sock mount
+    image: grafana/alloy:v1.20.1   # runs as root by default - required for the docker.sock mount
     container_name: praxen-alloy
     profiles: ["observe", "full", "dev"]
     <<: *default-restart
@@ -262,7 +262,7 @@ services:
           cpus: "0.5"
 
   prometheus:
-    image: prom/prometheus:v3.14.0
+    image: prom/prometheus:v3.15.1
     container_name: praxen-prometheus
     profiles: ["observe", "full", "dev"]
     <<: *default-restart
@@ -293,7 +293,7 @@ services:
           cpus: "0.5"
 
   grafana:
-    image: grafana/grafana:13.1.5   # MINOR bumps migrate grafana.db forward on first boot - back it up first
+    image: grafana/grafana:13.2.5   # MINOR bumps migrate grafana.db forward on first boot - back it up first
     container_name: praxen-grafana
     profiles: ["observe", "full", "dev"]
     <<: *default-restart
@@ -310,11 +310,12 @@ services:
       # Grafana 13 REQUIRES a non-default renderer token and boot-fails without one.
       # Same value as the renderer's AUTH_TOKEN below.
       GF_RENDERING_RENDERER_TOKEN: ${RENDERER_AUTH_TOKEN:?set RENDERER_AUTH_TOKEN in .env}
-      # Pinned panel plugin, installed at boot (needs egress). Only required if your
-      # dashboards use ECharts panels. GF_INSTALL_PLUGINS is deprecated on 13.x;
-      # GF_PLUGINS_PREINSTALL_SYNC is its documented replacement (id@version).
-      # Uncomment only if your dashboards use ECharts panels (needs egress to grafana.com at boot):
-      # GF_PLUGINS_PREINSTALL_SYNC: "volkovlabs-echarts-panel@7.2.5"
+      # From 13.2 the core datasources are catalog plugins that auto-update from grafana.com on every
+      # restart, so they are pinned here and auto-update is off (needs egress to grafana.com at boot).
+      # GF_INSTALL_PLUGINS is deprecated on 13.x; GF_PLUGINS_PREINSTALL_SYNC is its replacement (id@version).
+      # volkovlabs-echarts-panel draws two panels on the OVERVIEW board.
+      GF_PLUGINS_PREINSTALL_SYNC: "volkovlabs-echarts-panel@7.2.5,grafana-postgresql-datasource@13.0.4,prometheus@13.2.5,loki@13.2.4,tempo@13.4.1"
+      GF_PLUGINS_PREINSTALL_AUTO_UPDATE: "false"
       # Credentials for the file-provisioned read-only Postgres datasource
       # (grafana/provisioning/datasources/datasources.yaml expands these at boot).
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
@@ -367,7 +368,7 @@ services:
           cpus: "1.0"
 
   grafana-image-renderer:
-    image: grafana/grafana-image-renderer:v5.12.3
+    image: grafana/grafana-image-renderer:v5.12.5
     container_name: praxen-renderer
     profiles: ["observe", "full", "dev"]
     <<: *default-restart
@@ -391,7 +392,7 @@ services:
           cpus: "1.0"
 
   searxng:
-    image: searxng/searxng:2026.9.8-3fdc6d753   # rolling release (date-tagged); verify settings schema + format=json after any bump
+    image: searxng/searxng:2026.10.7-6671d89be   # rolling release (date-tagged); verify settings schema + format=json after any bump
     container_name: praxen-searxng
     profiles: ["observe", "full", "dev"]
     <<: *default-restart
@@ -427,7 +428,7 @@ services:
   # ===========================================================================
 
   qdrant:
-    image: qdrant/qdrant:v1.15.4
+    image: qdrant/qdrant:v1.19.2
     container_name: praxen-qdrant
     profiles: ["agents", "full", "dev"]
     <<: *default-restart
@@ -440,7 +441,8 @@ services:
       - praxen-network
       - agent-network
     healthcheck:
-      test: ["CMD-SHELL", "wget -q --spider http://localhost:6333/healthz || exit 1"]
+      # Image ships bash but no curl/wget - raw /dev/tcp HTTP probe of /healthz.
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/6333 && printf 'GET /healthz HTTP/1.0\\r\\n\\r\\n' >&3 && grep -q '200' <&3"]
       interval: 15s
       timeout: 5s
       retries: 3
@@ -452,7 +454,7 @@ services:
           cpus: "1.0"
 
   n8n:
-    image: n8nio/n8n:2.23.3
+    image: n8nio/n8n:2.42.4
     container_name: praxen-n8n
     profiles: ["agents", "full", "dev"]
     <<: *default-restart
@@ -479,7 +481,8 @@ services:
       - praxen-network
       - agent-network
     healthcheck:
-      test: ["CMD-SHELL", "wget -q --spider http://localhost:5678/healthz || exit 1"]
+      # Node is the one tool this image is sure to have; recent builds drop most of the shell utilities.
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:5678/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
       interval: 15s
       timeout: 5s
       retries: 3

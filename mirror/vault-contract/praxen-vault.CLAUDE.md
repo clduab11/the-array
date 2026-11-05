@@ -1,7 +1,7 @@
 @AGENTS.md
 
 <!--
-praxen-vault CLAUDE.md: Claude adapter 1.0 for vault contract 2.2, 2026-09-23.
+praxen-vault CLAUDE.md: Claude adapter 1.1 for vault contract 2.2, 2026-11-03.
 GENERATED from ~/Desktop/the-array/vault-contract/praxen-vault.CLAUDE.md by
 sync_vault_contract.py. Edit the source and rerun the script. Its --check fails on drift, on a
 first line other than the AGENTS.md import, on any other import, and on a contract version
@@ -15,12 +15,12 @@ when no CLAUDE.md exists. On this PC the npm CLI is 2.1.220, while Claude Deskto
 claude-agent-acp 0.81.1 (SDK 0.3.280) run 2.1.280. The import covers every version, and Claude
 Code never reads AGENTS.md twice (memory, "Remove an earlier AGENTS.md workaround").
 
-Who reads this file: Claude Code started at the vault root, and claude-acp in Zed with the vault
-open as the worktree. A session started anywhere else (Desktop, for example) loads neither this
-file nor AGENTS.md, and it also skips the vault's .claude/settings.json. Zed Agent, OpenCode,
-Coder, Codex, task app and Vault Operator read AGENTS.md and never this file. the operator's earlier policy
+Who reads this file: Claude Code started at the vault root, and claude-acp with the vault open as
+the worktree. A session started anywhere else (Desktop, for example) loads neither this file nor
+AGENTS.md, and it also skips the vault's .claude/settings.json. Coder, Codex, task app and Vault
+Operator read AGENTS.md and never this file. the operator's earlier policy
 that claude-acp runs on an API key or gateway, never on his Claude subscription, was DEPRECATED
-2026-09-23 (the operator): subscription use in third-party harnesses is allowed, so claude-acp may run on
+2026-09-23: subscription use in third-party harnesses is allowed, so claude-acp may run on
 his subscription. Confirm what loaded with /context under "Memory files".
 
 Scope: map the contract onto Claude Code and settle conflicts with Claude's own configuration.
@@ -47,6 +47,5 @@ the operator's Obsidian skills carry syntax references: `obsidian-markdown` (not
 
 ### Where your own configuration disagrees
 
-- Auto memory or MemPalace drawers may record that the operator authorized the Obsidian CLI "at will", including `eval` and `plugin:install` (2026-09-22). For work in this vault the contract's command list is the newer ruling. When a task needs one of those commands, ask the operator in chat.
 - Keep text from `closed/` and `_inbox/held-external/` out of auto memory, Artifacts and connector writes (Linear, Slack, Gmail, Notion, Drive) as well, the same way the contract keeps it out of web queries and MemPalace.
 - The Explore and Plan subagents start without this file or AGENTS.md. When you delegate vault work, put the rules that matter for it in the prompt, including the `99_private-folder/` rule.
