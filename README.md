@@ -210,9 +210,8 @@ an existing tool connects to it by changing one address and one key.
    already switched on.
 4. Start the stack with `docker compose --profile observe up -d`.
 5. Run `python scripts/verify-stack.py`, and do not go further until it
-   passes. The embedding probe fails until `LOCAL_EMBED_URL` works, so with no
-   embedding server that one FAIL is expected. With few vendors you'll need a
-   lower `--min-routable`.
+   passes. Without an embedding server, the embedding probe is the one FAIL you
+   can accept. With few vendors you'll need a lower `--min-routable`.
 6. Create one key with a budget, point one tool at the gateway, send one
    request, and read it back from the ledger. If it shows the model you
    expected at a cost above zero, metering works.

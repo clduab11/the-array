@@ -428,7 +428,7 @@ services:
   # ===========================================================================
 
   qdrant:
-    image: qdrant/qdrant:v1.19.2
+    image: qdrant/qdrant:v1.19.2   # a volume with data can't skip minor versions: DEPLOYMENT.md section 5
     container_name: praxen-qdrant
     profiles: ["agents", "full", "dev"]
     <<: *default-restart

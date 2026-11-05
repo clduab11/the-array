@@ -561,7 +561,7 @@ tools:
     tier: role
     profiles:
       - rnd-researcher
-    what: Search, extract, map and crawl (third call after SearXNG and Exa; second crawler after Firecrawl)
+    what: Search, extract, map and crawl (second call after SearXNG; second crawler after Firecrawl)
     transport: http
     url: https://mcp.tavily.com/mcp/
     auth:
@@ -621,9 +621,9 @@ tools:
     command_runtime: mempalace_light
 dropped:
   - name: Brave Search
-    instead: SearXNG, then Exa
+    instead: SearXNG
   - name: Kagi
-    instead: SearXNG, then Exa; Jina read_url with a question for long pages
+    instead: SearXNG; Jina read_url with a question for long pages
   - name: SearXNG (second copy from GitHub)
     instead: SearXNG
   - name: Google Search

@@ -85,7 +85,7 @@ def main():
                    and not not_for_gateway(m["id"])})
     print(f"LiteLLM lists {len(want)} registrable models for {a.key_var} ({time.time() - t0:.1f}s); skipped wildcard routes, OpenRouter ~ aliases, {sorted(RESPONSES_ONLY)} and advised routes + intake-extract")
 
-    if prov["autoProxyModels"]:
+    if prov["autoProxyModels"] and not a.embeddings_only:
         body = {k: prov[k] for k in ("name", "kind", "scope", "baseUrl", "enabled")} | {"autoProxyModels": False}
         print("switching the record to an explicit model list (credential untouched)" + (" [dry run]" if a.dry_run else ""))
         if not a.dry_run:

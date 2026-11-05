@@ -23,6 +23,7 @@ GPU rule, on the same hook:
   - While a Hub download runs, a call that would load a model refuses with a 503 (a load during a download took the backend
     down on the reference deployment). A call the resident model can serve still runs.
   - A file at CARD_HOLD_FILE inside the container closes local routes by hand; a container recreate clears it.
+    Status is cached for CARD_TTL_S, so a call can still pass in the first seconds of a run. Set the hold first when that matters.
 A 503 walks the caller's chain, every Unsloth rung refuses too, and the caller's own fallback takes the turn. The status read
 fails OPEN: if Unsloth's status can't be read, calls go through. This rule protects a run; the G-SEC strip is the security
 control and it still fails closed. Refusals count in praxen_unsloth_card_refusals_total{reason} and log as warnings.
@@ -186,13 +187,9 @@ _CARD = _CardState()
 
 
 def _is_resident(resident: str, names: list[str]) -> bool:
-    """Whether a deployment's model is the file already loaded. Another quantization of the same repo is another file to load,
-    so the quantization has to match too. If Unsloth reports none, the repo decides."""
-    for name in names:
-        candidate = name if ":" in resident else name.split(":", 1)[0]
-        if candidate == resident or candidate.endswith("/" + resident):
-            return True
-    return False
+    """Whether a deployment's model is the file already loaded: the whole "repo:quantization", with any provider prefix.
+    Another quantization is another file to load. If Unsloth reports no quantization, only a name without one can match."""
+    return any(name == resident or name.endswith("/" + resident) for name in names)
 
 
 async def _card_refusal(kwargs: dict[str, Any]) -> tuple[str, str] | None:

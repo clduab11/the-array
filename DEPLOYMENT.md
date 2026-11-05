@@ -82,7 +82,8 @@ docker compose --profile observe up -d
 docker logs -f praxen-litellm
 ```
 
-4. Run the gate. Nothing else is done until it reads all-pass:
+4. Run the gate. Nothing else is done until it reads all-pass. Without an
+   embedding server, the embedding probe is the one FAIL you can accept:
 
 ```bash
 python scripts/verify-stack.py --no-llm
@@ -91,9 +92,9 @@ python scripts/verify-stack.py --no-llm
    `--no-llm` skips the one paid probe. Run it without the flag once a key
    with a budget exists. The restricted-key probe reads
    `--restricted-key-var`; until you have a restricted virtual key it reports
-   SKIPPED, not FAIL. The embedding probe fails until `LOCAL_EMBED_URL` works,
-   so with no embedding server that one FAIL is expected. With few vendors the
-   catalog can sit under the default floor, so lower `--min-routable`.
+   SKIPPED, not FAIL. The embedding probe fails until `LOCAL_EMBED_URL` works.
+   With few vendors the catalog can sit under the default floor, so lower
+   `--min-routable`.
 
 5. Mint teams and virtual keys. Edit the example specs in
    `provision-keys.example.sh`, then:
@@ -234,7 +235,11 @@ docker exec praxen-postgres sh -c 'pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB"
   `pass_through_endpoints` entry, add a Jev model to any limited key that POSTs
   to `/typesafe`, add `max_tokens_from_tier_model: false` under each router's
   `complexity_router_config`, and take `GF_PLUGINS_PREINSTALL_SYNC` and
-  `GF_PLUGINS_PREINSTALL_AUTO_UPDATE` from `docker-compose.yml`.
+  `GF_PLUGINS_PREINSTALL_AUTO_UPDATE` from `docker-compose.yml`. Qdrant can't
+  skip minor versions, even on one node. If its volume holds data, back it up
+  and run the latest patch of each minor in turn before this pin; from this
+  kit's old 1.15.4, that means 1.16, 1.17 and 1.18. A new volume has nothing to
+  migrate.
 
 ## 6. Rollback
 
@@ -284,6 +289,10 @@ cleanup; move candidates to a visible staging directory and purge by hand.
   training, a Hub download is running and the call would load a model, or a hold
   file sits at `/tmp/unsloth-card-hold` inside the proxy container. Recreating the
   container clears that file.
+- **Every request slows down under load.** LiteLLM's notes flag this in v1.106.5:
+  it gzips non-streaming replies on its event loop when a client sends
+  `Accept-Encoding: gzip`, as most do. v1.106.6 fixes it. As of 2026-11-04 this kit
+  stays on what the reference deployment runs until that moves.
 
 ## 8. Optional: the Jev decision layer
 

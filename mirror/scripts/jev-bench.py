@@ -5,7 +5,7 @@ from it), so the numbers describe the shipped questions. Optionally collects REA
 
   python scripts/jev-bench.py                     # synthetic labelled sets (v1) + domain set + fan-out flags (v2)
   python scripts/jev-bench.py --local local-ministral-3b   # + N real local outputs judged (goes through the proxy)
-  python scripts/jev-bench.py --out private evidence
+  python scripts/jev-bench.py --out ./jev-evidence
 
 Reads TYPESAFE_API_KEY / LITELLM_MASTER_KEY from ./.env; never prints them. Stdlib only. Run INSIDE the proxy image
 (docker cp + docker exec) when the host has no litellm package: jev_gate imports litellm.

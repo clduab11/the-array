@@ -90,7 +90,7 @@ def app_of(name, token_id):
         return "Task app"
     if n.startswith("coder"):
         return "Coder"
-    if "paperclip" in n or "hermes" in n:
+    if "paperclip" in n or "hermes" in n:   # older token names still map here
         return "Hermes"
     return name
 
