@@ -1,4 +1,4 @@
-"""the-array — TypeSafe AI Jev as a decision layer inside the LiteLLM proxy (v1.100.1).
+"""the-array — TypeSafe AI Jev as a decision layer inside the LiteLLM proxy (v1.106.5).
 
 Jev (https://docs.typesafe.ai) is a System One model: it returns typed decisions with calibrated
 probabilities instead of text. This module gives the proxy two uses for it, both opt-in per route:
@@ -157,7 +157,7 @@ class JevClient:
     async def choice(self, purpose: str, state: dict[str, Any], instructions: Any, criteria: dict[str, Any]) -> dict[str, Any] | None:
         """One Choice question. Returns {'choice','probabilities','confidence','model','usage','latency_ms'} or None."""
         api_key = os.environ.get("TYPESAFE_API_KEY")
-        if not api_key:
+        if not api_key or api_key == "CHANGE_ME":  # the template's placeholder must never turn the judge on
             M_CALLS.labels(purpose, "no_key").inc() if METRICS else None
             return None
         if self.circuit.is_open():

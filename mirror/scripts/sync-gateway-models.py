@@ -29,6 +29,13 @@ def not_for_gateway(mid):
     return "-advised" in mid or mid in ("intake-extract", "gsec-unsloth-probe", "jev-decisions")
 
 
+def endpoint_families(mid):
+    """Gateway refuses /v1/embeddings for a model registered as chat ("Model does not support this gateway endpoint"), and an
+    embedding route can't serve chat, so these get openai.embeddings. Found 2026-11-03: Knowledge Stacks stopped at once on every
+    embedding route this script had registered."""
+    return ["openai.embeddings"] if "embed" in mid.lower() else ["openai.chat_completions"]
+
+
 def dotenv(path):
     out = {}
     for line in path.read_text(encoding="utf-8").splitlines():
@@ -55,6 +62,7 @@ def main():
     ap.add_argument("--key-var", default="VKEY_FRONT_GATEWAY_WINPC", help="the LiteLLM key this Gateway record uses (.virtual-keys.env)")
     ap.add_argument("--prune", action="store_true")
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--embeddings-only", action="store_true", help="only correct embedding routes' endpoint family; register and prune nothing else")
     a = ap.parse_args()
 
     env, keys = dotenv(ROOT / ".env"), dotenv(ROOT / ".virtual-keys.env")
@@ -77,7 +85,7 @@ def main():
                    and not not_for_gateway(m["id"])})
     print(f"LiteLLM lists {len(want)} registrable models for {a.key_var} ({time.time() - t0:.1f}s); skipped wildcard routes, OpenRouter ~ aliases, {sorted(RESPONSES_ONLY)} and advised routes + intake-extract")
 
-    if prov["autoProxyModels"]:
+    if prov["autoProxyModels"] and not a.embeddings_only:
         body = {k: prov[k] for k in ("name", "kind", "scope", "baseUrl", "enabled")} | {"autoProxyModels": False}
         print("switching the record to an explicit model list (credential untouched)" + (" [dry run]" if a.dry_run else ""))
         if not a.dry_run:
@@ -86,15 +94,23 @@ def main():
                 sys.exit(f"provider update failed or lost its credential: HTTP {st} {after}")
 
     st, listing = http("GET", f"{GATEWAY}/v1/models", nx, timeout=120)
-    have = {m["front_model"]["name"] for m in listing.get("data", []) if m.get("front_model", {}).get("providerId") == a.provider}
+    records = {m["front_model"]["name"]: m["front_model"] for m in listing.get("data", []) if m.get("front_model", {}).get("providerId") == a.provider}
+    have = set(records)
     missing, stale = [m for m in want if m not in have], sorted(have - set(want))
-    print(f"Gateway already lists {len(have)} for {a.provider}; registering {len(missing)}; stale {len(stale)}" + (" (pruning)" if a.prune else ""))
+    # Every registered name, not just what LiteLLM lists: legacy/embed routes without being listed.
+    misfiled = sorted(m for m in have if "embed" in m.lower() and "openai.embeddings" not in (records[m].get("endpointFamilies") or []))
+    if a.embeddings_only:
+        missing, a.prune = [], False
+    print(f"Gateway already lists {len(have)} for {a.provider}; registering {len(missing)}; fixing {len(misfiled)} embedding routes; stale {len(stale)}" + (" (pruning)" if a.prune else ""))
 
     fails = 0
-    for mid in missing:
-        body = {"providerId": a.provider, "name": mid, "metadata": {"upstreamModelId": mid},
-                "endpointFamilies": ["openai.chat_completions"]}
+    for mid in missing + misfiled:
+        body = {"providerId": a.provider, "name": mid, "metadata": {"upstreamModelId": mid}, "endpointFamilies": endpoint_families(mid)}
+        if mid in records:
+            body["metadata"] = records[mid].get("metadata") or body["metadata"]
+            body["hidden"] = bool(records[mid].get("hidden"))
         if a.dry_run:
+            print(f"  would register {mid} as {body['endpointFamilies']}")
             continue
         st, _ = http("PUT", f"{GATEWAY}/v1/models/{a.provider}/{urllib.parse.quote(mid, safe='/')}", nx, body)
         fails += st not in (200, 201)

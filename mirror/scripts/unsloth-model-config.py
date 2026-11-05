@@ -21,7 +21,7 @@ the overrides Unsloth applies whenever a request names the model (auto-switch / 
 MODEL is the Unsloth id with quant, e.g. unsloth/Ministral-3-3B-Instruct-2512-GGUF:UD-Q4_K_XL
 (see `list`). The key is read from the-array/.env (UNSLOTH_PC_API_KEY) and never printed.
 
-Facts this tool relies on (OP UNSLOTH ALPHA, 2026-09-23; plan section 6):
+Facts this tool relies on (a change ALPHA, 2026-09-23; plan section 6):
 - Overrides are keyed "<advertised id>:<QUANT>" (case-folded); auto-switch loads resolve them.
 - Default auto-fit left only 661-689 MiB free with ~0.7 GiB spilled to shared memory, and qwen decode swung
   between ~7 and 55 tok/s (the code-read reserve at 0.98 is ~246 MiB of nvidia-smi free): pin context instead.

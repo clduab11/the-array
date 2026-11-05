@@ -81,7 +81,8 @@ TEAMS=(
 # --- Key specs -------------------------------------------------------------
 # format: key_alias|team_id|max_budget|rpm_limit|soft_budget|models_csv
 #   rpm_limit   empty => omit (inherit team rpm)
-#   soft_budget empty => proxy default alert threshold; explicit value alerts earlier
+#   soft_budget the gateway accepts it and stores nothing; spend alerts come from
+#               grafana/provisioning/alerting/spend-watch.yaml
 #   models_csv  empty => full roster (no model restriction)
 # Allow-lists pin MODEL NAMES as written in the proxy config. Renaming a
 # route that a key pins breaks that key: update the key FIRST, then the YAML.

@@ -9,7 +9,7 @@ by hand (readiness, routable count, a chain 200, an allowlist 403, embedder dims
 gates drift and get skipped under time pressure; a script does not. Reads secrets from
 .env / .virtual-keys.env and NEVER prints them. Every LiteLLM call it makes is tagged `health-gate` (header
 x-litellm-tags) AND carries User-Agent `praxen-health-gate/1`, so the boards' TRAFFIC picker can leave
-gate traffic out of the client view (OP FAILED-REQUESTS, 2026-10-07). Gate 5's 403 is raised at key
+gate traffic out of the client view (a change, 2026-10-07). Gate 5's 403 is raised at key
 lookup: since LiteLLM v1.106.5 (10-28) its SpendLogs row keeps no tag from any carrier (header, body
 tags, metadata.tags; probed 2026-10-30, C3) but keeps metadata.user_agent, which the boards match.
 
@@ -30,7 +30,7 @@ SEARXNG = "http://localhost:8080"
 PROM_UID, TEMPO_UID, LOKI_UID, PG_UID = "afimxbo42ap6oe", "dfipt8nyznn5sc", "praxen-loki", "praxen-litellm-pg"
 GATE_TAG = "health-gate"   # SpendLogs request_tags marker for gate traffic (same tag as scripts/route-resolve.py)
 GATE_UA = "praxen-health-gate/1"   # metadata.user_agent marker; SQL_SYNTH in build-praxen-boards.py matches 'praxen-health-gate%'
-# Config v4.29.0 / jev_gate v6 (OP JEV-LANES, 2026-10-28): the lane routers decline to their primary (classifier_fallback
+# Config v4.29.0 / jev_gate v6 (a change, 2026-10-28): the lane routers decline to their primary (classifier_fallback
 # default_model), every other router to LiteLLM's heuristic. Same names as jev_gate.py LANE_ROUTERS_DEFAULT; move both together.
 LANE_ROUTERS = {"array/reasoning", "array/fast", "array/coding"}
 
@@ -118,9 +118,9 @@ def main():
         tail = (rr.stdout.strip().splitlines() or ["no output"])[-1].strip()
         gate("every name resolves (route-resolve)", rr.returncode == 0, f"{tail[:150]} in {time.time()-t:.0f}s")
 
-    # 3b. OP UNSLOTH CHARLIE (config v4.19.0): G-SEC. A server-side-tool bait sent THROUGH the proxy to the Unsloth probe
+    # 3b. a change CHARLIE (config v4.19.0): G-SEC. A server-side-tool bait sent THROUGH the proxy to the Unsloth probe
     #     route must not make Unsloth run a tool: litellm/unsloth_guard.py strips enable_tools & co. per deployment. Proof is
-    #     the absence of any new execute_tool line in Unsloth's tauri.log (ALPHA p12 saw two before the guard existed).
+    #     the absence of any new execute_tool line in Unsloth's tauri.log (an earlier audit saw two before the guard existed).
     tlog = Path.home() / ".unsloth" / "studio" / "tauri.log"
     if a.no_local:
         gate("unsloth G-SEC (no server tool ran)", True, "SKIPPED (--no-local)")
@@ -187,7 +187,7 @@ def main():
     names = [m.get("name") or m.get("id") for m in ((jbody(b) or {}).get("models") or (jbody(b) or {}).get("data") or [])]
     gate("typesafe native route (/typesafe/v1/models)", s == 200 and any(str(n).startswith("jev") for n in names), f"HTTP {s} models={names} in {time.time()-t:.1f}s")
 
-    # 6c. Jev v2 (config v4.15.0, OP JEV pt2): the classifier plugin must be registered on EVERY complexity router (the two local
+    # 6c. Jev v2 (config v4.15.0, a change pt2): the classifier plugin must be registered on EVERY complexity router (the two local
     #     routers joined at v4.15.0), and the array/* + go/* namespaces must list. /v1/model/info exposes each deployment's
     #     litellm_params, so this is a config-truth probe with no LLM call.
     t = time.time(); s, b = http(f"{LITELLM}/v1/model/info", H, timeout=180)
@@ -288,7 +288,7 @@ def main():
         gate("jev routes each tier (array/auto)", bool(tier_map) and bool(notes) and not bad,
              f"{' · '.join(notes)} in {time.time()-t:.0f}s" + (f"; MISMATCH on {bad}" if bad else ""))
 
-    # 6e. OP JEV-DECISIONS (config v4.28.0 / jev_gate v5, 2026-10-19): the OpenAI routers are classified by OpenAI Decisions
+    # 6e. a change (config v4.28.0 / jev_gate v5, 2026-10-19): the OpenAI routers are classified by OpenAI Decisions
     #     THROUGH LiteLLM (an in-process llm_router.adecisions call on the jev-decisions entry). One exemplar through
     #     array/auto-openai: the chat must answer, Jev must not decline, praxen_decisions_calls_total{outcome="ok"} must move, and
     #     SpendLogs must hold the sub-call (call_type adecisions, model_group jev-decisions) priced above zero. ~$0.0002 a run.

@@ -4,7 +4,7 @@
 **Stack epoch at writing:** compose v1.7.8 (tempo 2.9.5 → 2.10.8, 2026-09-10) · LiteLLM base v1.100.1 (`litellm/Dockerfile` pin, bumped 2026-09-10 from v1.100.0 — one-fix patch, no schema change) · litellm_config.yaml v4.13.1 · gate `scripts/verify-stack.py` 14/14 before, between and after the day's bumps (v1.100.1 + tempo 2.10.8)
 
 CHANGELOG
-- **2.0.0 (2026-09-10, OP REPO-READY / Phase India rewrite)** — full rewrite for the stack as it runs on pc-host since the Branch B cutover (2026-07-17/18). Replaces the banner-deprecated v1.1.0 (2026-04-09, Mac). The prior file's rung left `backup/ops/` on 2026-10-02 under the two-rung rule (staged in `to-be-deleted/`).
+- **2.0.0 (2026-09-10, a change / Phase India rewrite)** — full rewrite for the stack as it runs on pc-host since the Branch B cutover (2026-07-17/18). Replaces the banner-deprecated v1.1.0 (2026-04-09, Mac). The prior file's rung left `backup/ops/` on 2026-10-02 under the two-rung rule (staged in `to-be-deleted/`).
 - **1.1.0 (2026-04-09)** — a Mac, Docker 8GB VM, MLflow, init-db.sh, 54-tool MCP wiring. Deprecated 2026-05-24; every phase in it is dead (§10).
 
 ---
@@ -12,8 +12,8 @@ CHANGELOG
 ## §0 — Read me first
 
 - **This file** is the *procedure* layer: how to bring the stack up from nothing, run it daily, change it, bump it, bind clients to it, roll it back, and recognise its known failures. It contains no rulings and no history beyond what a procedure needs.
-- **`AGENTS.md`** is the *contract* every agent loads (commands, boundaries, where things live), and **`docs/rules/*.md`** hold the durable rules per surface (litellm, compose, grafana, keys, local-serving, workspace, clients, comms) with their why. `CLAUDE.md` is only a one-line import of `AGENTS.md`. Closed-op history lives in `docs/history/`. When a procedure here and a rule there disagree, the rule wins and this file is wrong — fix this file.
-- **`docs/STATE.md`** is *continuity*: one page, "what was true at the last session". Session start = read it, then verify the config epoch against the live `litellm_config.yaml` header. **The repo wins on conflict** with either STATE.md or this playbook; dated `handoffs/` docs are the long-form record.
+- **`AGENTS.md`** is the *contract* every agent loads (commands, boundaries, where things live), and **the private rules** cover each surface (litellm, compose, grafana, keys, local-serving, workspace, clients, comms) with their why. `CLAUDE.md` is only a one-line import of `AGENTS.md`. Closed-op history lives in `docs/history/`. When a procedure here and a rule there disagree, the rule wins and this file is wrong — fix this file.
+- **`docs/STATE.md`** is *continuity*: one page, "what was true at the last session". Session start = read it, then verify the config epoch against the live `litellm_config.yaml` header. **The repo wins on conflict** with either STATE.md or this playbook; dated private design notes are the long-form record.
 - Every command below is written for **Git Bash on pc-host** unless the block says `# elevated PowerShell`. Dumps and restores are byte-sensitive — run them from Git Bash, not PowerShell (PowerShell redirection re-encodes native output).
 - Two identifiers that trip everyone: the compose **service key** is `litellm-proxy`; the **container name** is `praxen-litellm`. `docker compose` takes the service key; `docker exec` / `docker logs` take the container name.
 
@@ -32,7 +32,6 @@ CHANGELOG
 
 **Tooling on PATH:** `docker`, `git` (set `core.autocrlf=false` before first checkout — `provision-keys.sh`, YAML and the Alloy River config are LF-sensitive), `python` (3.x; `verify-stack.py` and `check-image-updates.py` are stdlib-only; `extract_chains.py` needs PyYAML), `jq` 1.8.2 (hard dependency of `provision-keys.sh`), `curl`.
 
-**Firewall (Private profile, inbound, elevated PowerShell).** Three published ports are LAN/tailnet-exposed (opened for the Mac's clients; any LAN or tailnet device reaches them); each is gated by a named rule. Create any that are missing:
 
 ```bash
 # elevated PowerShell
@@ -71,15 +70,14 @@ Everything else (postgres 5432, redis 6379, prometheus 9090, tempo 3210, parked 
 | `scripts/check-image-updates.py` | Reports which pins are behind upstream. Reports only, never applies. |
 | `scripts/extract_chains.py` / `scripts/sync-venice-pricing.py` | Stdout dumper of aliases/chains/terminal tally (`fallback-chains/chains-reference.md` is authored around it) / re-injects per-entry Venice pricing from the live vendor API — run it on the staged copy (`--config litellm_config.yaml.next`), then swap + restart (§5). |
 | `fallback-chains/chains-reference.md` / `docs/litellm-config-changelog-archive.md` | Chain snapshot regenerated at every routing bump / verbatim rolled-out config changelogs (§5). |
-| `AGENTS.md` + `docs/rules/` / `docs/STATE.md` | Contract and durable rules / continuity page (§0). `CLAUDE.md` only imports `AGENTS.md`. |
+| `AGENTS.md` + the private rules / `docs/STATE.md` | Contract and durable rules / continuity page (§0). `CLAUDE.md` only imports `AGENTS.md`. |
 | `tailscale-serve.json` | Sidecar serve config — sidecar retired 2026-07-28, file kept for the parked service. |
-| `backup/`, `to-be-deleted/`, `handoffs/` | Rollback ladder / visible soft-delete staging / active handoffs — doctrine below. `deliverables/`, `Claude outputs/`, `.firecrawl/`, `.worktrees/` are gitignored working dirs. |
+| `backup/`, `to-be-deleted/` | Rollback ladder / visible soft-delete staging — doctrine below. Other working dirs are gitignored. |
 
-**backup/ doctrine.** Every destructive pass gets a rung FIRST: `<file>.bak.<stage>` in `backup/<class>/` — `compose/`, `litellm-config/`, `db/` (pg dumps, `grafana.db`), `dashboards/`, `grafana-provisioning/`, `prometheus/`, `claude-md/`, `ops/`, `keys/`, `current/<date>/` (full operative snapshots incl. `.env`); the full class list is in `docs/rules/workspace.md`. Never delete a rung without an explicit go. The ladder IS the rollback path — git exists but the ladder is what every rollback command below reads.
+**backup/ doctrine.** Every destructive pass gets a rung FIRST: `<file>.bak.<stage>` in `backup/<class>/` — `compose/`, `litellm-config/`, `db/` (pg dumps, `grafana.db`), `dashboards/`, `grafana-provisioning/`, `prometheus/`, `claude-md/`, `ops/`, `keys/`, `current/<date>/` (full operative snapshots incl. `.env`); the full class list is in `the private rules`. Never delete a rung without an explicit go. The ladder IS the rollback path — git exists but the ladder is what every rollback command below reads.
 
 **to-be-deleted/ doctrine.** Nothing is hard-deleted. Cleanup candidates move to `./to-be-deleted/` (visible, gitignored) with a `MANIFEST.md` line per file (origin path, reason, UTC date), reference-checked first. the operator empties it manually. Never auto-purge.
 
-**handoffs/ doctrine.** Root holds ACTIVE dated handoffs only; executed ones move to `handoffs/archive/`. **Empty root = nothing in flight** (the memory-export dir and `reference-agent-overview-v2.json` are reference material, not handoffs — a rule-protected `hermes*` name, never stage it on the keyword).
 
 ## §3 — First bring-up on a fresh box, in order
 
@@ -104,7 +102,7 @@ cp .env.template .env
 | `GATEWAY_RUNTIME_DIR` | `host-exporter` (optional) — the gateway app runtime folder it bind-mounts read-only for per-app usage; defaults to this machine's `%APPDATA%\gateway app Runtime`. On a machine without Gateway, point it at an empty folder (the overview then reads the source as DOWN). |
 | `ANTHROPIC_API_KEY` `OPENAI_API_KEY` `GEMINI_API_KEY` `MISTRAL_API_KEY` `PERPLEXITY_API_KEY` `COHERE_API_KEY` `XAI_API_KEY` `VENICE_API_KEY` `OPENROUTER_API_KEY` | `litellm-proxy` provider credentials |
 | `GROQ_API_KEY`, `HUGGINGFACE_API_KEY`, `MERCURY_API_KEY` | `litellm-proxy` (sat orphaned for 14 days once — in `.env` but not in the compose whitelist, so three provider lanes 401'd) |
-| `TYPESAFE_API_KEY` | `litellm-proxy` — the Jev classifier, judge and local front (`litellm/jev_gate.py`) and LiteLLM's native `/typesafe/{path}` route (v1.104.0+; open to every virtual key, spend lands as `typesafe/<model>`). Empty = Jev declines and LiteLLM's heuristic routes. The optional `JEV_*` knobs are passed as `${VAR:-}` and are not in the template; unset means the code default. |
+| `TYPESAFE_API_KEY` | `litellm-proxy` — the Jev classifier, judge and local front (`litellm/jev_gate.py`) and LiteLLM's native `/typesafe/{path}` route (v1.104.0+; any virtual key can list Jev's models, and a key with a model list can POST only with a Jev model on that list; spend lands as `typesafe/<model>`). Empty = Jev declines and LiteLLM's heuristic routes. The optional `JEV_*` knobs are passed as `${VAR:-}` and are not in the template; unset means the code default. |
 | `SEARXNG_SECRET` | `searxng` — overrides `server.secret_key` (the settings file is not interpolated). Compose refuses to start the service without it. |
 | `GRAFANA_SMTP_ENABLED`, `GRAFANA_SMTP_HOST`, `GRAFANA_SMTP_USER`, `GRAFANA_SMTP_PASSWORD`, `GRAFANA_SMTP_FROM` | `grafana` — alert email (`GF_SMTP_*`); disabled when unset. |
 | `GATEWAY_ADMIN_TOKEN` | **NOT consumed by compose.** Read by `scripts/sync-gateway-models.py` when it registers routes in Gateway. |
@@ -213,7 +211,7 @@ docker logs --tail 200 praxen-litellm
 
 Logs — verbose/historical: Grafana board `praxen-command` (the OVERVIEW), collapsed section **LOGS & REQUEST LOG** (open it; it runs no query while closed) — `$logcontainer` picks the container, `$logq` is a free regex; the warn/error panel is deduped. FORENSICS holds the correlated per-request log window. Loki keeps 7 days.
 
-**Grafana** `http://localhost:3200` (also `http://198.51.100.10:3200` from the tailnet) — `admin` / `GRAFANA_ADMIN_PASSWORD`; root lands on `praxen-command`. **Dashboards and datasources are file-provisioned: disk is the only author surface.** Edit `grafana/dashboards/*.json`, Grafana re-polls within 30s. UI "Save" is rejected by design (`Cannot save provisioned dashboard`); the API/MCP `update_dashboard` path rejects likewise. New board = drop a JSON with a stable `uid` and NO top-level `id`. Datasource edits = edit the YAML, then recreate grafana (`up -d grafana`); a DB-side datasource save would recreate the exact fossil class §9 warns about. Alert-rule edits = edit or add a file in `grafana/provisioning/alerting/`, then `docker compose --profile observe restart grafana` (never the provisioning reload API); `python scripts/verify-praxen-boards.py` proves the three rule uids loaded. The boards default to TRAFFIC = clients, which hides the health gate's own calls (`docs/rules/grafana.md`). Text panels never use `body.theme-*` classes (Grafana 13 hardcodes `theme-dark` in the served HTML).
+**Grafana** `http://localhost:3200` (also `http://198.51.100.10:3200` from the tailnet) — `admin` / `GRAFANA_ADMIN_PASSWORD`; root lands on `praxen-command`. **Dashboards and datasources are file-provisioned: disk is the only author surface.** Edit `grafana/dashboards/*.json`, Grafana re-polls within 30s. UI "Save" is rejected by design (`Cannot save provisioned dashboard`); the API/MCP `update_dashboard` path rejects likewise. New board = drop a JSON with a stable `uid` and NO top-level `id`. Datasource edits = edit the YAML, then recreate grafana (`up -d grafana`); a DB-side datasource save would recreate the exact fossil class §9 warns about. Alert-rule edits = edit or add a file in `grafana/provisioning/alerting/`, then `docker compose --profile observe restart grafana` (never the provisioning reload API); `python scripts/verify-praxen-boards.py` proves the three rule uids loaded. The boards default to TRAFFIC = clients, which hides the health gate's own calls (`the private rules`). Text panels never use `body.theme-*` classes (Grafana 13 hardcodes `theme-dark` in the served HTML).
 
 **LiteLLM admin UI** `http://localhost:4000/ui` — `praxen-admin` with its own DB password on `default_user_id` (since config v4.26.3, 2026-10-08: `general_settings.disable_env_credential_login: true`, so `UI_USERNAME` / `UI_PASSWORD` no longer sign in and the env-credential banner is gone). Set or reset it with `python scripts/set-ui-admin-password.py` (master key; signs out every UI session; the first sign-in forces a change at `/ui/change-password`, which works only from a session opened with the DB password: type it by hand, browser autofill supplies stale passwords). No restart needed for a reset. Read-only use. **Never save config through the UI's config-update path**: `STORE_MODEL_IN_DB=True` means a UI save writes `LiteLLM_Config` rows that MERGE over the YAML at every boot and shadow it silently (§9). Keys/teams/budgets DO live in the DB and are edited via `/key/update`, `/team/update` — that is the sanctioned DB-side surface.
 
@@ -331,15 +329,14 @@ Post-bump: `provisioned=true` on `praxen-command`, all datasource uids present (
 python scripts/verify-stack.py
 ```
 
-**Image prune (the operator R13, 2026-10-06; narrowed 2026-10-08 to "the most recent backup + the current version"):** after a bump passes, keep the running tag plus the most recent prior (rollback) tag per service and `docker image rm` the rest one ref at a time (never `docker image prune -a`; never an image any container uses, running or stopped; the LiteLLM base pin in `litellm/Dockerfile` counts as running; fenced images are untouched). **SearXNG** pins the newest tag on bump day (the operator R12); `check-image-updates.py` ranks same-day builds by push time.
+**Image prune:** after a bump passes, keep the running tag plus the most recent prior (rollback) tag per service and `docker image rm` the rest one ref at a time (never `docker image prune -a`; never an image any container uses, running or stopped; the LiteLLM base pin in `litellm/Dockerfile` counts as running; fenced images are untouched). **SearXNG** pins the newest tag on bump day; `check-image-updates.py` ranks same-day builds by push time.
 
 ## §7 — Client bindings
 
-- **Other devices** (the phone, any LAN or tailnet client; the Mac's clients before that tier was retired) → the PC's **host tailnet node** `http://198.51.100.10:4000/v1`, Grafana `:3200`, SearXNG `:8080`. MagicDNS is ON tailnet-wide (verified 2026-09-30, `docs/rules/compose.md`), so the node's name resolves too, and `tailscale serve` publishes Paperclip, web chat app and Gateway under it on HTTPS, tailnet only. The retired sidecar node (`praxen-litellm` @ `198.51.100.11`) is bound by nothing — expire it in the console when convenient.
+- **Other devices** (the phone, any LAN or tailnet client; the Mac's clients before that tier was retired) → the PC's **host tailnet node** `http://198.51.100.10:4000/v1`, Grafana `:3200`, SearXNG `:8080`. MagicDNS is ON tailnet-wide (verified 2026-09-30, `the private rules`), so the node's name resolves too, and `tailscale serve` publishes web chat app and Gateway under it on HTTPS, tailnet only.
 - **PC clients** (desktop chat apps and the gateway on pc-host, Coder Code) → `http://localhost:4000/v1`.
 - **The gateway app fronts LiteLLM on ONE key** (`front-gateway-winpc`, deliberately allowlist-free; per-app attribution lives in Gateway client tokens, not LiteLLM). Gateway provider base URL is the BARE root `http://localhost:4000` (`/v1/v1` 404s). Gateway is a CLIENT of the proxy — LiteLLM stays sole vendor-facing egress; no vendor keys in Gateway except the ruled Venice-direct exception. **Coder Code stays on the LiteLLM lane permanently.** Gateway 0.5.x locks legacy admin-role client tokens on Free — tokens must be Inference-role.
 - Every client rebind list must cover EVERY service the client touches (`:4000`, `:8080`, `:3200`) — SearXNG was missed at the Branch B cutover and darked the Mac MCP for two weeks.
-- Break-glass keys (`front-studio-pc`, `front-go-*`, `coder-code-windows`) bind DIRECT to LiteLLM so a wedged Gateway does not darken every app at once.
 
 **Local `api_base` from inside the proxy netns:**
 - `UNSLOTH_PC_URL` **MUST be `http://host.docker.internal:8888/v1`.** The PC's Tailscale IP is unreachable from the container (8s timeout) while the host reaches it fine — host-side probes prove nothing. That misbinding killed the terminal local rung of every fallback chain for a week in July 2026 with green healthchecks throughout.

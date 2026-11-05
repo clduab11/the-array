@@ -1,4 +1,4 @@
-# Sanitized structural mirror of the-array/litellm_config.yaml (2026-10-30). Comments and identity values
+# Sanitized structural mirror of the-array/litellm_config.yaml (2026-11-04). Comments and identity values
 # removed or replaced; budgets are placeholders. See mirror/README.md before restoring from it.
 general_settings:
   master_key: os.environ/LITELLM_MASTER_KEY
@@ -261,10 +261,8 @@ litellm_settings:
         - local-ministral-3b
         - local-qwen3.5-4b
     - praxen/local-router:
-        - local-gemma4-uncensored
         - local-qwen3.5-4b
     - array/auto-local:
-        - local-gemma4-uncensored
         - local-qwen3.5-4b
     - legacy-go/local:
         - local-qwen3.5-4b
@@ -516,10 +514,8 @@ litellm_settings:
         - local-ministral-3b
         - local-qwen3.5-4b
     - praxen/local-router:
-        - local-gemma4-uncensored
         - local-qwen3.5-4b
     - array/auto-local:
-        - local-gemma4-uncensored
         - local-qwen3.5-4b
     - legacy-go/local:
         - local-qwen3.5-4b
@@ -2553,6 +2549,9 @@ model_list:
       api_key: os.environ/UNSLOTH_PC_API_KEY
       max_tokens: 8192
       timeout: 240
+      extra_body:
+        chat_template_kwargs:
+          enable_thinking: false
     model_info:
       supports_function_calling: true
       supports_vision: true
@@ -2647,7 +2646,7 @@ model_list:
   - model_name: praxen/local-router
     litellm_params:
       model: auto_router/complexity_router
-      complexity_router_default_model: local-ministral-3b
+      complexity_router_default_model: local-gemma4-e2b
       complexity_router_config:
         classifier_type: custom
         classifier_plugin: jev_gate.classifier_instance
@@ -2655,11 +2654,11 @@ model_list:
         classifier_fallback: heuristic
         max_tokens_from_tier_model: false
         tiers:
-          SIMPLE: local-ministral-3b
+          SIMPLE: local-gemma4-e2b
           MEDIUM: local-qwen3.5-4b
-          COMPLEX: local-gemma4-12b
+          COMPLEX: local-nemotron-bolt-e4b
           REASONING: local-gemma4-uncensored
-        default_model: local-ministral-3b
+        default_model: local-gemma4-e2b
   - model_name: array/auto
     litellm_params:
       model: auto_router/complexity_router
@@ -2695,7 +2694,7 @@ model_list:
   - model_name: array/auto-local
     litellm_params:
       model: auto_router/complexity_router
-      complexity_router_default_model: local-ministral-3b
+      complexity_router_default_model: local-gemma4-e2b
       complexity_router_config:
         classifier_type: custom
         classifier_plugin: jev_gate.classifier_instance
@@ -2703,11 +2702,11 @@ model_list:
         classifier_fallback: heuristic
         max_tokens_from_tier_model: false
         tiers:
-          SIMPLE: local-ministral-3b
+          SIMPLE: local-gemma4-e2b
           MEDIUM: local-qwen3.5-4b
-          COMPLEX: local-gemma4-12b
+          COMPLEX: local-nemotron-bolt-e4b
           REASONING: local-gemma4-uncensored
-        default_model: local-ministral-3b
+        default_model: local-gemma4-e2b
   - model_name: go/local
     litellm_params:
       model: auto_router/complexity_router

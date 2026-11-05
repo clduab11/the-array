@@ -12,11 +12,7 @@ it off there; presence still follows `clients_only` and `profiles`, and a `setup
 Per-client rules come from the 2026-09-16 format research (sources in the PDF):
   Claude Code   .mcp.json "mcpServers"; ${VAR}; Windows stdio via cmd /c npx
   VS Code       mcp.json "servers"; ${env:VAR} for stdio env; ${input:...} for HTTP headers (vscode#336232)
-  Zed           "context_servers"; no reference syntax: stdio inherits the user environment, keyed HTTP goes
-                through mcp-remote, which expands ${VAR} itself; ALL hosted tools (OAuth and no-auth too) go via
-                mcp-remote so Zed's ACP agents get them; commands use the full npx.cmd path (no shell)
-  OpenCode      "mcp" (V1 shape); {env:VAR}; command is one array; "environment"
-  Coder Code     same as OpenCode, command wrapped in cmd /c, environment mapped explicitly
+  Coder Code     "mcp" (V1 shape); {env:VAR}; command is one array, wrapped in cmd /c; "environment" mapped explicitly
   Codex         [mcp_servers.<name>]; env_vars / bearer_token_env_var / env_http_headers (names, not values)
   desktop chat app   one JSON per stdio tool for Add New Tool; {FRONT_VAR} from Workspaces > Environments
   task app       manual checklist (no import; npx.cmd; OAuth for remote tools)
@@ -33,8 +29,8 @@ import tempfile
 import yaml
 
 HERE = pathlib.Path(__file__).resolve().parent
-CLIENTS = ["claude-code", "claude-code-wsl", "vscode", "zed", "opencode", "opencode-wsl",
-           "coder", "codex", "codex-wsl", "grok", "paperclip", "hermes", "front-studio", "front-go"]
+CLIENTS = ["claude-code", "claude-code-wsl", "vscode",
+           "coder", "codex", "codex-wsl", "grok", "paperclip", "front-studio", "front-go"]
 TOKEN_SHAPES = re.compile(r"(sk-[A-Za-z0-9]{12,}|jina_[A-Za-z0-9]{12,}|tvly-[A-Za-z0-9]{8,}|fc-[A-Za-z0-9]{16,}|ghp_[A-Za-z0-9]{16,}"
                           r"|github_pat_[A-Za-z0-9_]{16,}|hf_[A-Za-z0-9]{16,}|lin_api_[A-Za-z0-9]{16,}|ntn_[A-Za-z0-9]{16,}|ctx7sk[A-Za-z0-9-]{8,})")
 
@@ -145,38 +141,13 @@ def render_vscode(manifest, tools):
     return {"mcp.json": {"inputs": inputs_on, "servers": on}, "optional.mcp.json": {"inputs": inputs_off, "servers": off}}
 
 
-def render_zed(manifest, tools):
-    # Every hosted tool goes through mcp-remote here, never as a bare {"url": ...} entry. Zed hands each
-    # context_server to every external ACP agent verbatim (crates/agent_servers/src/acp.rs, mcp_servers_for_project):
-    # stdio as command+args+env, HTTP as url+headers only. The OAuth session Zed itself holds is never forwarded and
-    # the agent's mcpCapabilities are never consulted, so a {"url"} entry works in Zed's own agent, 401s inside Claude,
-    # Codex, OpenCode, Coder, Copilot and Grok (they get the URL without the token), and is dropped by stdio-only agents
-    # (Mistral Vibe). mcp-remote is one shape all of them accept, does the OAuth dance itself, and caches the grant in
-    # ~/.mcp-auth so one browser sign-in serves Zed and every agent. Verified 2026-09-19 (Zed 1.20.2).
-    servers = {}
-    for tool, enabled in tools:
-        if tool["transport"] == "stdio":
-            command, args = stdio_parts(tool, manifest["runtimes"], manifest["runtimes"]["npx"])
-            entry = {"command": command, "args": args}  # full npx.cmd path: Zed spawns without a shell, so bare "npx" fails on Windows
-            if tool.get("env"):
-                entry["env"] = dict(tool["env"])  # literals only; keys come from Zed's inherited user environment
-        else:
-            args = ["-y", manifest["runtimes"]["mcp_remote"], tool["url"]]
-            for header, value in http_headers(tool, lambda s: "${%s}" % s).items():
-                args += ["--header", f"{header}:{value}"]
-            entry = {"command": manifest["runtimes"]["npx"], "args": args}
-        entry["enabled"] = enabled
-        servers[tool["id"]] = entry
-    return {"context_servers.jsonc": {"context_servers": servers}}
-
-
-def render_opencode_like(manifest, tools, coder=False):
+def render_coder(manifest, tools):
     servers = {}
     for tool, enabled in tools:
         secrets = secrets_of(tool)
         if tool["transport"] == "stdio":
             command, args = stdio_parts(tool, manifest["runtimes"], "npx")
-            full = (["cmd", "/c", command, *args] if coder else [command, *args]) if tool["runner"] == "npx" else [command, *args]
+            full = ["cmd", "/c", command, *args] if tool["runner"] == "npx" else [command, *args]
             entry = {"type": "local", "command": full}
             env = {**(tool.get("env") or {}), **{s: "{env:%s}" % s for s in secrets}}
             if env:
@@ -246,20 +217,12 @@ def render_paperclip(manifest, tools):
         "Paperclip stores company connectors in its Connectors UI; this file is a reference, not an import.",
         "Use the approved `mempalace-read` local-stdio template. Its manifest allow-list exposes `palace_query` only.",
         "The generic light MCP executable also exposes write tools, so do not paste its command into Paperclip.",
-        "The live connection status is recorded in `docs/STATE.md` under OP PAPERCLIP → DELTA.", ""
+        "The live connection status is recorded in `docs/STATE.md` under a change → DELTA.", ""
     ])}
 
 
-def render_hermes(manifest, tools):
-    tool = next((tool for tool, _ in tools if tool["id"] == "mempalace" and tool["transport"] == "http"), None)
-    if tool is None:
-        raise ValueError("Hermes profile is missing the MemPalace HTTP entry")
-    config = {"mcp_servers": {"mempalace": {
-        "url": tool["url"], "enabled": False, "lazy": True,
-        "tools": {"include": ["palace_query"]}
-    }}}
-    body = yaml.safe_dump(config, sort_keys=False, allow_unicode=True)
-    return {"mcp-servers.yaml": "# Disabled until the documented container-to-hub 403 is resolved.\n" + body}
+
+
 
 
 def render_front_studio(manifest, tools):
@@ -369,15 +332,11 @@ def main():
             "claude-code": render_claude_code,
             "claude-code-wsl": lambda m, t: render_claude_code(m, t, windows=False),
             "vscode": render_vscode,
-            "zed": render_zed,
-            "opencode": render_opencode_like,
-            "opencode-wsl": render_opencode_like,
-            "coder": lambda m, t: render_opencode_like(m, t, coder=True),
+            "coder": render_coder,
             "codex": render_codex,
             "codex-wsl": render_codex_wsl,
             "grok": render_grok,
             "paperclip": render_paperclip,
-            "hermes": render_hermes,
             "front-studio": render_front_studio,
             "front-go": render_front_go,
         }
@@ -391,8 +350,6 @@ def main():
             write(candidate, client, renderers[client](client_manifest, tools))
             if client == "paperclip":
                 print(f"{client:16} connector reference")
-            elif client == "hermes":
-                print(f"{client:16} disabled MemPalace template")
             else:
                 print(f"{client:16} {sum(e for _, e in tools):2} on, {sum(not e for _, e in tools):2} off")
         (candidate / "SECRETS.md").write_text(secrets_md(manifest), encoding="utf-8", newline="\n")

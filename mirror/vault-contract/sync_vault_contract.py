@@ -20,24 +20,24 @@ Sources, next to this script. None is named AGENTS.md or CLAUDE.md, so
                                         claudeMdExcludes). Must parse as strict JSON.
 
 Targets:
-  <vault>/AGENTS.md                     byte copy of the contract (OpenCode, Zed Agent, Codex,
-                                        Coder, task app via an additional folder)
-  <vault>/CLAUDE.md                     byte copy of the adapter (Claude Code, claude-acp in Zed)
+  <vault>/AGENTS.md                     byte copy of the contract (Codex, Coder, task app via an
+                                        additional folder)
+  <vault>/CLAUDE.md                     byte copy of the adapter (Claude Code, claude-acp)
   <vault>/.claude/settings.json         byte copy of the settings (Claude Code started at the
-                                        vault root, claude-acp in Zed)
+                                        vault root, claude-acp)
   <vault>/.vault-operator/data/rules/00-praxen-vault-contract.md
                                         generated header + contract (Vault Operator 3.8.2);
                                         written only once Vault Operator has created
                                         <vault>/.vault-operator/data/
 
 Checks, in both modes:
-  - Files that shadow AGENTS.md at the vault root: Zed Agent loads the first of .rules,
-    .cursorrules, .windsurfrules, .clinerules, .github/copilot-instructions.md and AGENT.md
-    before AGENTS.md; Codex prefers AGENTS.override.md.
+  - Files other harnesses read as instructions at the vault root: .rules, .cursorrules,
+    .windsurfrules, .clinerules, .github/copilot-instructions.md and AGENT.md (Zed Agent, removed
+    2026-11-03, loaded the first of them before AGENTS.md); Codex prefers AGENTS.override.md.
   - Other instruction names at the root (CONTEXT.md, CLAUDE.local.md, GEMINI.md, HERMES.md,
     .hermes.md, SOUL.md, IDENTITY.md, USER.md, .claude/CLAUDE.md).
-  - Instruction-named files below the root, in any letter case. OpenCode 1.18.27 and Coder attach
-    the first AGENTS.md / CLAUDE.md / CONTEXT.md they find in each folder above a file they read,
+  - Instruction-named files below the root, in any letter case. Coder attaches the first
+    AGENTS.md / CLAUDE.md / CONTEXT.md it finds in each folder above a file it reads,
     Claude Code attaches nested CLAUDE.md, CLAUDE.local.md and AGENTS.md the same way, and
     Windows matches names without regard to case, so a note called claude.md becomes injected
     instructions.
@@ -70,15 +70,17 @@ PRIVATE_DIR = "99_private-folder"
 STATE_NOTE = Path("90-meta") / "vault-state.md"
 STATE_MAX_AGE_DAYS = 14
 
-# Zed Agent loads the FIRST of these at the worktree root, so any of them replaces AGENTS.md for Zed.
-ZED_SHADOWS = [".rules", ".cursorrules", ".windsurfrules", ".clinerules",
-               ".github/copilot-instructions.md", "AGENT.md"]
+# Instruction files other harnesses read at a project root. Zed Agent, removed 2026-11-03, loaded the FIRST
+# of these ahead of AGENTS.md; coder.exe names .cursorrules and copilot-instructions.md, and Cursor, Cline and
+# Windsurf read their own. None belongs in the vault, so the check stays.
+ROOT_SHADOWS = [".rules", ".cursorrules", ".windsurfrules", ".clinerules",
+                ".github/copilot-instructions.md", "AGENT.md"]
 # Other root-level names some harness loads as instructions (lower case) and who loads them.
 ROOT_FLAGGED = {
     "agents.override.md": "Codex loads it in place of AGENTS.md",
-    "context.md": "OpenCode and Coder load it as instructions whenever AGENTS.md is missing (deprecated name)",
+    "context.md": "Coder loads it as instructions whenever AGENTS.md is missing (deprecated name)",
     "claude.local.md": "Claude Code loads it beside CLAUDE.md",
-    "gemini.md": "Gemini CLI loads it; Zed Agent would too if AGENTS.md were missing",
+    "gemini.md": "Gemini CLI loads it",
     "hermes.md": "Hermes Agent loads it before AGENTS.md",
     ".hermes.md": "Hermes Agent loads it before AGENTS.md",
     "soul.md": "task app loads it when the vault is a workspace root",
@@ -87,12 +89,12 @@ ROOT_FLAGGED = {
 }
 # Names a harness loads from a SUBFOLDER when it reads a file there (lower case).
 NESTED_NAMES = {
-    "agents.md": "OpenCode, Coder and Claude Code attach it when they read a file below it",
-    "claude.md": ("Claude Code attaches it when it reads a file below it; so do OpenCode and Coder "
-                  "when started without their DISABLE_CLAUDE_CODE_PROMPT flag (Zed, a terminal)"),
+    "agents.md": "Coder and Claude Code attach it when they read a file below it",
+    "claude.md": ("Claude Code attaches it when it reads a file below it; so does Coder "
+                  "when started without its DISABLE_CLAUDE_CODE_PROMPT flag (a terminal)"),
     "claude.local.md": "Claude Code attaches it when it reads a file below it",
-    "context.md": "OpenCode and Coder attach it (deprecated instruction name) when they read a file below it",
-    "agent.md": "Zed Agent loads it if this folder is ever opened as a project",
+    "context.md": "Coder attaches it (deprecated instruction name) when it reads a file below it",
+    "agent.md": "an instruction name some harnesses load if this folder is ever opened as a project",
     "agents.override.md": "Codex loads it if started in this folder",
     "gemini.md": "Gemini CLI loads it when a tool touches a file below it",
 }
@@ -235,7 +237,7 @@ def targets(vault, src, claude_src, settings_src):
 
 def scan(vault, scan_private):
     """Yield (label, vault-relative path, reason, counts_as_problem) for instruction-file hazards."""
-    shadows = {s.lower() for s in ZED_SHADOWS}
+    shadows = {s.lower() for s in ROOT_SHADOWS}
     for dirpath, dirnames, filenames in os.walk(vault):
         here = Path(dirpath)
         at_root = here == vault
@@ -345,9 +347,9 @@ def main():
         print(f"  FAIL      vault not found: {vault}")
         return 1
 
-    for name in ZED_SHADOWS:
+    for name in ROOT_SHADOWS:
         if (vault / name).exists():
-            print(f"  SHADOWED  {name} exists at the vault root; Zed Agent will load it instead of AGENTS.md")
+            print(f"  SHADOWED  {name} exists at the vault root; a harness that reads it may follow it over AGENTS.md")
             problems += 1
 
     for label, path, want, active in targets(vault, src, claude_src, settings_src):

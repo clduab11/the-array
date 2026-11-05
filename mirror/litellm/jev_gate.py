@@ -1,7 +1,6 @@
 """the-array — TypeSafe AI Jev as a decision layer inside the LiteLLM proxy (v1.106.5).
 
-CHANGELOG jev_gate v7 (2026-10-29, OP JEV-LOCAL-MATRIX Phase 1 — the operator: "make it a 3D table instead of 2D if possible",
-  "Yes, start Phase 1"; design handoffs/2026-10-29-op-jev-local-matrix.md): a RECORD-ONLY 3D local picker. LOCAL_MATRIX maps
+CHANGELOG jev_gate v7 (2026-10-29, a change — the operator; design a private design note): a RECORD-ONLY 3D local picker. LOCAL_MATRIX maps
   Tier (Jev's choice) x Task (images -> vision; code_task >= 0.70 -> code; needs_tools >= 0.70 or a request `tools` list ->
   tools; else general) x Posture (uncensored when the requested local is; standard otherwise) to an ordered list of local
   routes. _matrix_pick walks a cell and takes the first candidate that is routed, in the key's allowlist, has vision when the
@@ -14,10 +13,9 @@ CHANGELOG jev_gate v7 (2026-10-29, OP JEV-LOCAL-MATRIX Phase 1 — the operator:
   via UNSLOTH_PC_URL / UNSLOTH_PC_API_KEY, cached 5 s, 1 s timeout; a failed read means resident unknown and big MoEs
   blocked as ram_unknown. Direct calls keep the front's floor: the cell tier is never below the requested model's tier.
   Knobs: JEV_LOCAL_MATRIX (record; off disables), JEV_LOCAL_MATRIX_JSON ({} — replaces whole cells). Unit-tested inside the
-  proxy container (deliverables/evidence/2026-10-29-op-jev-local-matrix-phase1/test_matrix.py). Prior: v6, below.
+  proxy container (private evidence). Prior: v6, below.
 
-CHANGELOG - prior jev_gate v6 (2026-10-28, config v4.29.0, OP JEV-LANES — the operator: "Make Jev the agent-in-the-middle that evaluates which
-  model deploys how", all eligible array/* lanes): array/reasoning, array/fast and array/coding are complexity routers now, with
+CHANGELOG - prior jev_gate v6 (2026-10-28, config v4.29.0, a change — the operator, all eligible array/* lanes): array/reasoning, array/fast and array/coding are complexity routers now, with
   classifier_fallback default_model, so every decline lands on the lane's old primary. This module adds:
   - LANE_POLICY on those three (ROUTER_POLICY; JEV_ROUTER_POLICY_JSON can add {"lane": true} to another router): the cloud
     rules (uncertain -> the more capable of the two leading tiers) plus size_basis "conversation" (the size floor counts EVERY
@@ -38,7 +36,7 @@ CHANGELOG - prior jev_gate v6 (2026-10-28, config v4.29.0, OP JEV-LANES — the 
   - Record: praxen_jev_lane_gate_total{router,outcome} (classified | lane_mode_off | lane_not_enabled | router_refused) beside
     the unchanged praxen_jev_classifier_* families; decisions image_floor / tier_floor / tier_ceiling join the policy set.
   Knobs: JEV_LANE_MODE (1), JEV_LANE_ROUTERS (array/reasoning,array/fast,array/coding). Unit-tested against LiteLLM v1.106.5 in
-  a separate container process (deliverables/evidence/2026-10-28-op-jev-lanes/validate_offline.py). v5 and v4 are verbatim in
+  a separate container process (private evidence). v5 and v4 are verbatim in
   docs/litellm-config-changelog-archive.md.
 
 Jev (https://docs.typesafe.ai) is a System One model: it returns typed decisions with calibrated
@@ -185,7 +183,7 @@ PREMIUM_INPUT_PER_TOKEN = _env_float("JEV_PREMIUM_INPUT_PER_MTOK", 4.0) / 1_000_
 BUDGET_INPUT_PER_TOKEN = _env_float("JEV_BUDGET_INPUT_PER_MTOK", 0.30) / 1_000_000
 OBSERVE_RPM = max(0, int(_env_float("JEV_OBSERVE_RPM", 120)))   # judge calls/min for the v3 observe-only groups
 # Groups whose content must never leave for TypeSafe, by name (the private* lanes are excluded by prefix). intake-extract carries
-# sensitive document intake under turn_off_message_logging (docs/rules/keys.md, data governance).
+# sensitive document intake under turn_off_message_logging (the private rules, data governance).
 EXCLUDE_GROUPS = frozenset({"intake-extract"} | {g.strip() for g in _env("JEV_EXCLUDE_GROUPS", "").split(",") if g.strip()})
 
 # v4 knobs (2026-10-08): OpenAI's Decisions API as the classifier backend of the OpenAI routers
@@ -197,7 +195,7 @@ DECISIONS_SAFETY_ID = _env("JEV_DECISIONS_SAFETY_ID", "praxen-the-array-jev-rout
 BACKENDS = ("typesafe", "openai_decisions")
 ROUTER_BACKEND_DEFAULT: dict[str, str] = {"array/auto-openai": "openai_decisions", "praxen/openai-router": "openai_decisions"}
 
-# v6 knobs (2026-10-28, OP JEV-LANES): the array/* lane routers
+# v6 knobs (2026-10-28, a change): the array/* lane routers
 LANE_MODE = _env("JEV_LANE_MODE", "1").strip().lower() not in ("0", "false", "no", "off")   # 0 = kill switch: every lane declines
 LANE_ROUTERS_DEFAULT = "array/reasoning,array/fast,array/coding"
 _LANE_RAW = _env("JEV_LANE_ROUTERS", LANE_ROUTERS_DEFAULT).strip()
@@ -208,16 +206,16 @@ LANE_ROUTERS = (frozenset() if _LANE_RAW.lower() in ("none", "-")
 # pinned context (docs/STATE.md local tier and the Unsloth per-model rows), whether it is an uncensored build, and whether it is
 # GATED (call-by-name only: never an escalation target). Vision comes from the running router's model_info.supports_vision.
 LOCAL_FACTS: dict[str, dict[str, Any]] = {
-    "local-ministral-3b": {"tier": "SIMPLE", "ctx": 53248},
-    "local-qwen3.5-4b": {"tier": "MEDIUM", "ctx": 122880, "uncensored": True},
-    "local-qwen3.5-4b-mtp": {"tier": "MEDIUM", "ctx": 114688},
-    "local-sharp-spark-4b": {"tier": "MEDIUM", "ctx": 98304},
-    "local-gemma4-12b": {"tier": "COMPLEX", "ctx": 32768},
+    "local-ministral-3b": {"tier": "SIMPLE", "ctx": 131072},
+    "local-qwen3.5-4b": {"tier": "MEDIUM", "ctx": 131072, "uncensored": True},
+    "local-qwen3.5-4b-mtp": {"tier": "MEDIUM", "ctx": 131072},
+    "local-sharp-spark-4b": {"tier": "MEDIUM", "ctx": 131072},
+    "local-gemma4-12b": {"tier": "COMPLEX", "ctx": 131072},
     "local-gemma4-uncensored": {"tier": "REASONING", "ctx": 196608, "uncensored": True},
     "local-huihui-gpt": {"tier": "REASONING", "ctx": 131072, "uncensored": True, "gated": True},
     "local-ornith-35b": {"tier": "REASONING", "ctx": 114688, "uncensored": True, "gated": True},
-    "local-nemotron-bolt-e4b": {"tier": "SIMPLE", "ctx": 131072, "gated": True},  # config v4.30.0: call-by-name until the operator rules
-    "local-gemma4-e2b": {"tier": "SIMPLE", "ctx": 131072, "gated": True},  # config v4.32.0 (matrix Phase 0)
+    "local-nemotron-bolt-e4b": {"tier": "COMPLEX", "ctx": 131072},  # config v4.34.0: array/auto-local COMPLEX tier
+    "local-gemma4-e2b": {"tier": "SIMPLE", "ctx": 131072},  # config v4.34.0: array/auto-local SIMPLE tier and default
     "local-lfm3-omni-2b": {"tier": "SIMPLE", "ctx": 128000, "gated": True},  # config v4.32.0
     "local-lfm3-1.7b-uncensored": {"tier": "SIMPLE", "ctx": 262144, "uncensored": True, "gated": True},  # config v4.32.0
     "local-lfm2.5-24b": {"tier": "COMPLEX", "ctx": 131072, "gated": True},  # config v4.32.0
@@ -239,7 +237,7 @@ STATE_PRIOR_CHARS = 600
 TIER_ORDER = ("SIMPLE", "MEDIUM", "COMPLEX", "REASONING")
 
 
-# ─── v7: the 3D local matrix (OP JEV-LOCAL-MATRIX; Phase 1 records, never routes) ─────────────────
+# ─── v7: the 3D local matrix (a change; Phase 1 records, never routes) ─────────────────
 # Tier x Task x Posture -> ordered local routes. Orderings are judgment from the 2026-10-29 measurements (speed, size, vendor
 # numbers), not an eval; Phase 1's records are what corrects them.
 LOCAL_MATRIX_MODE = _env("JEV_LOCAL_MATRIX", "record").strip().lower()
@@ -427,7 +425,7 @@ ROUTER_POLICY: dict[str, dict[str, Any]] = {
     # v4 (2026-10-08): the OpenAI routers are classified by OpenAI Decisions, which under-routed MEDIUM prompts it scored
     # SIMPLE at 0.70-0.94 on the bench (8 vs Jev's 3 of 49 prompts); min_top 0.95 sends such verdicts to the more capable of
     # the two leading tiers (simulated: 2 under / 2 over). Tuned on the bench's own prompts: re-bench on a fresh set before
-    # treating 0.95 as settled (deliverables/evidence/2026-10-07-op-keyring/jev/decisions-bench.txt).
+    # treating 0.95 as settled (private evidence).
     "array/auto-openai": {"min_top": 0.95},
     "praxen/openai-router": {"min_top": 0.95},
 }

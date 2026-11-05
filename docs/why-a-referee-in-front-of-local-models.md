@@ -14,7 +14,7 @@ failure modes nobody's dashboard shows you:
    uncensored 26B you keep on disk *precisely for this case*. Same for the empty 200 (all `max_tokens` burned on
    reasoning, zero content) and for filler ("That's a great question with many perspectives!").
 2. **Waking the wrong model.** On an 8 GB card only one real model is hot at a time. Every misrouted "hi" that lands
-   on the 26B MoE is a 15–45 s JIT swap for nothing, and every design question that lands on the 3B is a bad answer
+   on the 26B MoE is a 10-40 s model swap for nothing, and every design question that lands on the 3B is a bad answer
    you'll re-ask. Keyword heuristics ("contains `prove`") are what most of us use to pick a tier, and they are exactly
    as good as they sound.
 
@@ -58,7 +58,7 @@ Cost per referee call on a typical short reply: ~800 input tokens ≈ **$0.00003
 ### 2. The dispatcher: which local tier gets this prompt?
 
 LiteLLM's complexity router already lets you map `SIMPLE / MEDIUM / COMPLEX / REASONING` to four models and ships a
-rule-based scorer. It also accepts `classifier_type: custom`, so a 40-line plugin asks Jev one Choice over the four
+rule-based scorer. It also accepts `classifier_type: custom`, so a short plugin asks Jev one Choice over the four
 tiers with a structured rubric (what / not for / examples per tier). Top probability ≥ 0.60 wins; below that the
 plugin takes the **more capable** of the two leading tiers, because under-routing is the expensive mistake. Prompt
 size stays in code: anything ≥ ~3K tokens is floored at COMPLEX. If Jev is slow or down (2.5 s timeout, 30 s circuit
@@ -105,10 +105,12 @@ So here is exactly how I have it wired, and why:
   priority tier is worth paying for). On the local router it is **commented out**, and the built-in heuristic scorer
   decides. Not because it would work worse — the bench says it would work better — but because "every prompt
   leaves the box to decide which local model answers" is a privacy decision, not a technical one. The config makes
-  it three lines to flip if that trade is fine for your lane.
+  it four lines to flip if that trade is fine for your lane.
 - **Update, October 2026:** the reference deployment has since made that trade on its local routers. Jev picks the
   tier there too, and a request sent straight to a small local model can be moved up to a stronger one, never down.
   The private lanes still never reach Jev. The current module is `mirror/litellm/jev_gate.py`.
+- **Update, November 2026:** the local router's simple tier is now Gemma 4 E2B and its complex tier Nemotron Bolt
+  E4B, chosen on speed and context. They have no quality evaluation yet.
 
 Other caveats, plainly: early access and waitlisted, and the vendor says the price may be subsidized; not trained
 on customer input but retention is open-ended (ZDR is an enterprise term); the vendor's accuracy claims are on a

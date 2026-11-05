@@ -115,6 +115,7 @@ def parse_pins(compose, dockerfile):
 
 
 def split_ref(ref):
+    ref = ref.split("@", 1)[0]  # a digest pin (tag@sha256:...) is judged by its tag
     repo, _, tag = ref.rpartition(":")
     if not repo or "/" in tag:
         # no tag at all (rpartition split on a registry port or nothing)

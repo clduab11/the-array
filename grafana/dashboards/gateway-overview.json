@@ -741,7 +741,7 @@
       "id": 12,
       "type": "stat",
       "title": "JEV EST. SPEND (range)",
-      "description": "Input tokens x $0.042/Mtok (output is free). The classifier and judge call the vendor directly, so this counter - not the spend ledger - is their meter until the native LiteLLM route prices pass-through calls from usage.",
+      "description": "Input tokens x $0.042/Mtok (output is free). The classifier and judge call the vendor directly, so this counter - not the spend ledger - is their meter.",
       "datasource": {
         "type": "prometheus",
         "uid": "afimxbo42ap6oe"

@@ -26,6 +26,8 @@ updates:
     groups:
       compose-patch-minor:
         update-types: ["patch", "minor"]
+        # Grafana gets its own PR, because its plugin pins have to move with it.
+        exclude-patterns: ["grafana/grafana"]
     ignore:
       # Postgres and Redis MAJOR moves need dump/restore or a migration decision,
       # never a tag edit.
@@ -33,11 +35,8 @@ updates:
         update-types: ["version-update:semver-major"]
       - dependency-name: "redis"
         update-types: ["version-update:semver-major"]
-      # Grafana 13.2+ externalizes the datasources into catalog plugins that
-      # auto-update from grafana.com on every restart — held until the pins are
-      # reproduced in GF_PLUGINS_PREINSTALL_SYNC with auto-update off.
-      - dependency-name: "grafana/grafana"
-        versions: [">= 13.2"]
+      # Grafana's datasource plugins are pinned in GF_PLUGINS_PREINSTALL_SYNC with
+      # auto-update off, so move those pins with any Grafana bump.
       # Tempo 3.x removes the ingester/compactor/local-blocks config this stack
       # uses and has no downgrade path — a config rewrite, gated separately.
       - dependency-name: "grafana/tempo"

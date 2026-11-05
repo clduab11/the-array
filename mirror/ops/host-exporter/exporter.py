@@ -1,5 +1,5 @@
 """
-praxen-host-exporter (OP GRAFANA Phase 2, the operator 2026-10-30): what the host and Unsloth Desktop are doing, as Prometheus metrics.
+praxen-host-exporter (a change, the operator 2026-10-30): what the host and Unsloth Desktop are doing, as Prometheus metrics.
 
 Source: Unsloth Desktop's READ-ONLY status API on the Windows host (GET /api/system, GET /api/inference/status), reached from
 the container as host.docker.internal:8888 with UNSLOTH_PC_API_KEY, the same two calls litellm/jev_gate.py already makes. No
@@ -7,7 +7,7 @@ inference, no model loads, nothing written. /api/system reports host-wide RAM (p
 GlobalMemoryStatusEx), CPU, disk and per-GPU VRAM / utilisation / temperature / power; /api/inference/status the loaded model.
 Not visible from here: Windows commit charge and per-process memory (the overview labels them NOT INSTRUMENTED).
 
-Phase 3 (2026-10-30, the operator "Phase 3 is a go"): which client APP sent each Gateway request. LiteLLM sees one key per Gateway lane
+Phase 3 (2026-10-30, the operator): which client APP sent each Gateway request. LiteLLM sees one key per Gateway lane
 (desktop chat app, web chat app and Go share `openai-compatible` = key front-gateway-winpc), so the split lives only in Gateway's own
 usage_events table (one row per request, with the pairing/client token that made it). GATEWAY_DB_DIR is a READ-ONLY bind mount of
 %APPDATA%\\gateway app Runtime; every GATEWAY_TTL seconds the exporter copies gateway.db + its WAL into /tmp and reads the copy, never
@@ -90,8 +90,8 @@ def app_of(name, token_id):
         return "Task app"
     if n.startswith("coder"):
         return "Coder"
-    if "paperclip" in n or "hermes" in n:
-        return "Paperclip"
+    if "paperclip" in n or "hermes" in n:   # older token names still map here
+        return "Hermes"
     return name
 
 
