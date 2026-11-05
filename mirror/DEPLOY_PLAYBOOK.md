@@ -363,7 +363,13 @@ cp backup/compose/docker-compose.yml.bak.pre-<stage> docker-compose.yml
 docker compose --profile observe up -d <service>
 ```
 
-**LiteLLM base + Postgres restore** (revert the Dockerfile FROM line first; restore the rung taken BEFORE the bump you are reverting — newest is `.pre-v1.105.0-rc.2.sql` (2026-10-08, the v1.104.0 → v1.105.0-rc.2 bump; 6 forward-only migrations; the image `praxen-litellm-proxy:v1.104.0-rollback` is tagged); `WITH (FORCE)` drops Grafana's open datasource connections):
+**LiteLLM base + Postgres restore** (revert the Dockerfile FROM line first; restore the rung taken BEFORE the bump you are reverting — newest is `.pre-v1.106.6.sql` (2026-11-04, the v1.106.5 → v1.106.6 bump; 0 migrations; the image `praxen-litellm-proxy:v1.106.5-rollback` is tagged); `WITH (FORCE)` drops Grafana's open datasource connections):
+
+Check the rung first, and stop unless this prints `rung OK`. Reverting an older bump? Use that bump's rung here and in the restore below.
+
+```bash
+test -s backup/db/litellm-db.bak.pre-v1.106.6.sql && tail -c 200 backup/db/litellm-db.bak.pre-v1.106.6.sql | grep -q 'dump complete' && echo 'rung OK'
+```
 
 ```bash
 docker compose --profile observe stop litellm-proxy
@@ -374,7 +380,7 @@ docker exec praxen-postgres sh -c 'psql -U "$POSTGRES_USER" -d postgres -c "DROP
 ```
 
 ```bash
-docker exec -i praxen-postgres sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB"' < backup/db/litellm-db.bak.pre-v<tag>.sql
+docker exec -i praxen-postgres sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB"' < backup/db/litellm-db.bak.pre-v1.106.6.sql
 ```
 
 ```bash

@@ -1,4 +1,4 @@
-"""the-array — fall back on refusals in STREAMED chat completions (LiteLLM v1.106.5).
+"""the-array — fall back on refusals in STREAMED chat completions (LiteLLM v1.106.6).
 
 Non-streamed refusals are already handled by LiteLLM: when a response ends with
 finish_reason "content_filter", Router._acompletion raises ContentPolicyViolationError,

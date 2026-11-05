@@ -1,4 +1,4 @@
-"""the-array — TypeSafe AI Jev as a decision layer inside the LiteLLM proxy (v1.106.5).
+"""the-array — TypeSafe AI Jev as a decision layer inside the LiteLLM proxy (v1.106.6).
 
 Jev (https://docs.typesafe.ai) is a System One model: it returns typed decisions with calibrated
 probabilities instead of text. This module gives the proxy two uses for it, both opt-in per route:
