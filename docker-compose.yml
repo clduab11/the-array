@@ -293,7 +293,7 @@ services:
           cpus: "0.5"
 
   grafana:
-    image: grafana/grafana:13.2.5   # MINOR bumps migrate grafana.db forward on first boot - back it up first
+    image: grafana/grafana:13.3.0   # MINOR bumps migrate grafana.db forward on first boot - back it up first
     container_name: praxen-grafana
     profiles: ["observe", "full", "dev"]
     <<: *default-restart
