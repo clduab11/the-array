@@ -13,7 +13,7 @@
 # v1.106.6 is the version the reference deployment runs. It includes the fix for
 # GHSA-w4c7-34wj-hqm8 and the fix for v1.106.5's gzip slowdown, and it is signed
 # with the post-incident key.
-FROM ghcr.io/berriai/litellm:v1.106.6@sha256:37e2dafb088a7723beb998590682957386dfc83ffea1848486f8e0e5cfac0b06
+FROM ghcr.io/berriai/litellm:v1.109.1@sha256:11175975a3093e05e92faee2fe2fe3412a3ae2fcaa849eb0fe25d5f0d8bcb2e9
 
 # hiredis 3.4.0 (still bundled in this tag) has an open segfault after Redis read
 # timeouts, fixed in 3.4.1 which the tag does not ship; removing it makes
